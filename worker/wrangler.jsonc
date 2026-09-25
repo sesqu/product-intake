@@ -10,7 +10,8 @@
   },
   "kv_namespaces": [
     {
-      "binding": "AUTH"
+      "binding": "AUTH",
+      "id": "234d48b2a6104d759f600588dbdb69fb"
     }
   ]
 }
