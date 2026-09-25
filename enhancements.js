@@ -324,6 +324,7 @@
   async function handleAllegroCallback() {
     const params = new URLSearchParams(location.search);
     const code = params.get('code');
+    const state = params.get('state');
     const error = params.get('error');
     if (error) {
       toast('Allegro: '+error);
@@ -341,7 +342,7 @@
       const r = await fetch(b+'/api/allegro/exchange',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({code})
+        body:JSON.stringify({code,state})
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || 'Błąd autoryzacji');
