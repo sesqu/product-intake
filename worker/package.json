@@ -9,5 +9,15 @@
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
+  },
+  "cloudflare": {
+    "bindings": {
+      "ALLEGRO_CLIENT_SECRET": {
+        "description": "Client Secret z aplikacji Allegro. Wklej go wyłącznie do Cloudflare jako sekret — nigdy do GitHuba."
+      },
+      "AUTH": {
+        "description": "KV do przechowywania tokenów OAuth Allegro. Cloudflare utworzy zasób automatycznie."
+      }
+    }
   }
 }
