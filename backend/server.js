@@ -9,7 +9,7 @@ app.use(cors({ origin: allowedOrigin }));
 app.use(express.json({ limit: '1mb' }));
 
 const tokenCache = {
-  allegro: { token: null, expiresAt: 0 },
+  allegro: { token: null, refreshToken: null, expiresAt: 0 },
   amazon: { token: null, expiresAt: 0 }
 };
 
@@ -18,11 +18,11 @@ const clean = v => String(v ?? '').trim();
 const norm = v => clean(v).toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 const first = a => Array.isArray(a) && a.length ? a[0] : null;
 
-async function allegroToken() {
-  if (tokenCache.allegro.token && tokenCache.allegro.expiresAt > now() + 60_000) return tokenCache.allegro.token;
+async function exchangeAllegroToken(params) {
   const id = process.env.ALLEGRO_CLIENT_ID;
   const secret = process.env.ALLEGRO_CLIENT_SECRET;
   if (!id || !secret) throw new Error('Allegro credentials are not configured');
+
   const auth = Buffer.from(id + ':' + secret).toString('base64');
   const r = await fetch(process.env.ALLEGRO_TOKEN_URL || 'https://allegro.pl/auth/oauth/token', {
     method: 'POST',
@@ -30,14 +30,36 @@ async function allegroToken() {
       Authorization: 'Basic ' + auth,
       'Content-Type': 'application/x-www-form-urlencoded'
     },
-    body: new URLSearchParams({ grant_type: 'client_credentials' })
+    body: new URLSearchParams(params)
   });
   const body = await r.json().catch(()=>({}));
-  if (!r.ok || !body.access_token) throw new Error('Allegro OAuth error: ' + (body.error_description || body.error || r.status));
+  if (!r.ok || !body.access_token) {
+    throw new Error('Allegro OAuth error: ' + (body.error_description || body.error || r.status));
+  }
+
   tokenCache.allegro = {
     token: body.access_token,
+    refreshToken: body.refresh_token || tokenCache.allegro.refreshToken || process.env.ALLEGRO_REFRESH_TOKEN || null,
     expiresAt: now() + Math.max(60, Number(body.expires_in || 3600)) * 1000
   };
+  return body;
+}
+
+async function allegroToken() {
+  if (tokenCache.allegro.token && tokenCache.allegro.expiresAt > now() + 60_000) {
+    return tokenCache.allegro.token;
+  }
+
+  const refreshToken = tokenCache.allegro.refreshToken || process.env.ALLEGRO_REFRESH_TOKEN;
+  if (!refreshToken) {
+    throw new Error('Allegro account is not connected yet');
+  }
+
+  const body = await exchangeAllegroToken({
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+    redirect_uri: process.env.ALLEGRO_REDIRECT_URI || ''
+  });
   return body.access_token;
 }
 
@@ -252,12 +274,52 @@ function chooseBest(allegro, amazon) {
   };
 }
 
+app.get('/api/allegro/auth-url', (req,res) => {
+  const clientId = process.env.ALLEGRO_CLIENT_ID;
+  const redirectUri = process.env.ALLEGRO_REDIRECT_URI;
+  if (!clientId || !redirectUri) {
+    return res.status(500).json({error:'ALLEGRO_CLIENT_ID or ALLEGRO_REDIRECT_URI is not configured'});
+  }
+  const url = new URL('https://allegro.pl/auth/oauth/authorize');
+  url.searchParams.set('response_type','code');
+  url.searchParams.set('client_id',clientId);
+  url.searchParams.set('redirect_uri',redirectUri);
+  res.json({url:url.toString()});
+});
+
+app.post('/api/allegro/exchange', async (req,res) => {
+  try {
+    const code = clean(req.body?.code);
+    if (!code) return res.status(400).json({error:'Missing authorization code'});
+    const body = await exchangeAllegroToken({
+      grant_type:'authorization_code',
+      code,
+      redirect_uri: process.env.ALLEGRO_REDIRECT_URI || ''
+    });
+    res.json({
+      ok:true,
+      expiresIn:body.expires_in,
+      hasRefreshToken:Boolean(body.refresh_token)
+    });
+  } catch (e) {
+    res.status(502).json({error:e.message});
+  }
+});
+
+app.get('/api/allegro/status', async (req,res) => {
+  const hasRefresh = Boolean(tokenCache.allegro.refreshToken || process.env.ALLEGRO_REFRESH_TOKEN);
+  res.json({
+    configured:Boolean(process.env.ALLEGRO_CLIENT_ID && process.env.ALLEGRO_CLIENT_SECRET && process.env.ALLEGRO_REDIRECT_URI),
+    connected:hasRefresh
+  });
+});
+
 app.get('/health', (req,res) => {
   res.json({
     status:'ok',
     version:'0.1.0',
     integrations:{
-      allegro:Boolean(process.env.ALLEGRO_CLIENT_ID && process.env.ALLEGRO_CLIENT_SECRET),
+      allegro:Boolean(process.env.ALLEGRO_CLIENT_ID && process.env.ALLEGRO_CLIENT_SECRET && process.env.ALLEGRO_REDIRECT_URI),
       amazon:Boolean(process.env.AMAZON_LWA_CLIENT_ID && process.env.AMAZON_LWA_CLIENT_SECRET && process.env.AMAZON_LWA_REFRESH_TOKEN && process.env.AMAZON_MARKETPLACE_ID)
     }
   });
