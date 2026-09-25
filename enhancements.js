@@ -205,7 +205,7 @@
   }
   function showIntegrations() {
     const base = localStorage.getItem(KEYS.apiBase) || '';
-    openModal('Integracje', '<div style="display:grid;gap:14px"><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Allegro API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Backend przygotowany do wyszukiwania katalogu po GTIN/EAN.</div></div><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Amazon SP-API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Backend przygotowany do Catalog Items API po EAN/ASIN.</div></div><div><label>Adres naszego backendu API</label><input id="apiBaseInput" placeholder="np. https://api.twojadomena.pl" value="'+safe(base)+'"><div style="color:#919baa;font-size:11px;margin-top:6px">Tu zapisujemy tylko adres API. Client secretów i tokenów nigdy nie przechowujemy w przeglądarce.</div></div><div><button id="saveApiBase" class="btn primary">Zapisz adres</button> <button id="testApiBase" class="btn">Test połączenia</button></div><div id="apiTestResult" style="font-size:12px;color:#919baa"></div></div>');
+    openModal('Integracje', '<div style="display:grid;gap:14px"><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Allegro API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Wyszukiwanie katalogu po GTIN/EAN wymaga połączenia konta Allegro przez OAuth.</div><div style="margin-top:10px"><button id="connectAllegro" class="btn primary">Połącz konto Allegro</button> <button id="checkAllegro" class="btn">Sprawdź status</button></div><div id="allegroStatus" style="font-size:12px;color:#919baa;margin-top:8px"></div></div><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Amazon SP-API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Backend przygotowany do Catalog Items API po EAN/ASIN.</div></div><div><label>Adres naszego backendu API</label><input id="apiBaseInput" placeholder="np. https://api.twojadomena.pl" value="'+safe(base)+'"><div style="color:#919baa;font-size:11px;margin-top:6px">Tu zapisujemy tylko adres API. Client secretów i tokenów nigdy nie przechowujemy w przeglądarce.</div></div><div><button id="saveApiBase" class="btn">Zapisz adres</button> <button id="testApiBase" class="btn">Test połączenia</button></div><div id="apiTestResult" style="font-size:12px;color:#919baa"></div></div>');
     $('saveApiBase').onclick = () => {
       localStorage.setItem(KEYS.apiBase, $('apiBaseInput').value.trim().replace(/\/$/,''));
       $('apiTestResult').textContent = 'Zapisano.';
@@ -219,6 +219,30 @@
         const j = await r.json();
         $('apiTestResult').textContent = r.ok ? 'Połączenie działa: '+(j.status||'OK') : 'API zwróciło błąd.';
       } catch { $('apiTestResult').textContent='Brak połączenia z API.'; }
+    };
+    $('connectAllegro').onclick = async () => {
+      const b = ($('apiBaseInput').value.trim() || localStorage.getItem(KEYS.apiBase) || '').replace(/\/$/,'');
+      if (!b) return $('allegroStatus').textContent='Najpierw zapisz adres backendu.';
+      localStorage.setItem(KEYS.apiBase,b);
+      $('allegroStatus').textContent='Pobieram link logowania…';
+      try {
+        const r = await fetch(b+'/api/allegro/auth-url');
+        const j = await r.json();
+        if (!r.ok || !j.url) throw new Error(j.error || 'Brak URL');
+        location.href = j.url;
+      } catch (e) {
+        $('allegroStatus').textContent='Błąd: '+(e.message||'brak połączenia');
+      }
+    };
+    $('checkAllegro').onclick = async () => {
+      const b = ($('apiBaseInput').value.trim() || localStorage.getItem(KEYS.apiBase) || '').replace(/\/$/,'');
+      if (!b) return $('allegroStatus').textContent='Najpierw zapisz adres backendu.';
+      $('allegroStatus').textContent='Sprawdzam…';
+      try {
+        const r = await fetch(b+'/api/allegro/status');
+        const j = await r.json();
+        $('allegroStatus').textContent = j.connected ? 'Allegro połączone.' : (j.configured ? 'Skonfigurowane, ale konto nie jest jeszcze połączone.' : 'Backend nie ma jeszcze konfiguracji Allegro.');
+      } catch { $('allegroStatus').textContent='Nie udało się sprawdzić statusu.'; }
     };
   }
 
@@ -297,6 +321,38 @@
     });
   }
 
+  async function handleAllegroCallback() {
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+    if (error) {
+      toast('Allegro: '+error);
+      history.replaceState({},'',location.pathname);
+      return;
+    }
+    if (!code) return;
+    const b = (localStorage.getItem(KEYS.apiBase)||'').replace(/\/$/,'');
+    if (!b) {
+      toast('Otrzymano kod Allegro, ale nie ustawiono adresu backendu.');
+      return;
+    }
+    toast('Łączę konto Allegro…');
+    try {
+      const r = await fetch(b+'/api/allegro/exchange',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({code})
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'Błąd autoryzacji');
+      addHistory('Połączono Allegro','OAuth');
+      toast('Konto Allegro połączone.');
+      history.replaceState({},'',location.pathname);
+    } catch (e) {
+      toast('Allegro: '+(e.message||'błąd połączenia'));
+    }
+  }
+
   function boot() {
     ensureIds();
     setupPhotos();
@@ -304,6 +360,7 @@
     bindAutosave();
     loadDraft();
     addHistory('Otwarto aplikację','Product Intake');
+    handleAllegroCallback();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
