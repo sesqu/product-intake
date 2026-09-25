@@ -1,0 +1,12 @@
+{
+  "name": "Product Intake",
+  "short_name": "Product Intake",
+  "description": "Przyjmowanie, identyfikacja i przygotowanie produktów do sprzedaży",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0d10",
+  "theme_color": "#0b0d10",
+  "lang": "pl",
+  "orientation": "portrait-primary"
+}
