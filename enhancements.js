@@ -1,4 +1,5 @@
 (() => {
+  const DEFAULT_API_BASE = 'https://product-intake.sesquu.workers.dev';
   const KEYS = {
     draft: 'productIntake.draft.v2',
     products: 'productIntake.products.v2',
@@ -204,7 +205,7 @@
     openModal('Lokalizacje', locs.length ? locs.map(x => '<span style="display:inline-block;padding:8px 10px;margin:5px;border:1px solid #2a323c;border-radius:9px">'+safe(x)+'</span>').join('') : '<div style="color:#919baa">Lokalizacje pojawią się po zapisaniu produktów.</div>');
   }
   function showIntegrations() {
-    const base = localStorage.getItem(KEYS.apiBase) || '';
+    const base = localStorage.getItem(KEYS.apiBase) || DEFAULT_API_BASE;
     openModal('Integracje', '<div style="display:grid;gap:14px"><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Allegro API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Wyszukiwanie katalogu po GTIN/EAN wymaga połączenia konta Allegro przez OAuth.</div><div style="margin-top:10px"><button id="connectAllegro" class="btn primary">Połącz konto Allegro</button> <button id="checkAllegro" class="btn">Sprawdź status</button></div><div id="allegroStatus" style="font-size:12px;color:#919baa;margin-top:8px"></div></div><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Amazon SP-API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Backend przygotowany do Catalog Items API po EAN/ASIN.</div></div><div><label>Adres naszego backendu API</label><input id="apiBaseInput" placeholder="np. https://api.twojadomena.pl" value="'+safe(base)+'"><div style="color:#919baa;font-size:11px;margin-top:6px">Tu zapisujemy tylko adres API. Client secretów i tokenów nigdy nie przechowujemy w przeglądarce.</div></div><div><button id="saveApiBase" class="btn">Zapisz adres</button> <button id="testApiBase" class="btn">Test połączenia</button></div><div id="apiTestResult" style="font-size:12px;color:#919baa"></div></div>');
     $('saveApiBase').onclick = () => {
       localStorage.setItem(KEYS.apiBase, $('apiBaseInput').value.trim().replace(/\/$/,''));
@@ -221,7 +222,7 @@
       } catch { $('apiTestResult').textContent='Brak połączenia z API.'; }
     };
     $('connectAllegro').onclick = async () => {
-      const b = ($('apiBaseInput').value.trim() || localStorage.getItem(KEYS.apiBase) || '').replace(/\/$/,'');
+      const b = ($('apiBaseInput').value.trim() || localStorage.getItem(KEYS.apiBase) || DEFAULT_API_BASE).replace(/\/$/,'');
       if (!b) return $('allegroStatus').textContent='Najpierw zapisz adres backendu.';
       localStorage.setItem(KEYS.apiBase,b);
       $('allegroStatus').textContent='Pobieram link logowania…';
@@ -289,7 +290,7 @@
 
   const demoLookup = window.lookup;
   window.lookup = async function() {
-    const base = (localStorage.getItem(KEYS.apiBase)||'').replace(/\/$/,'');
+    const base = (localStorage.getItem(KEYS.apiBase)||DEFAULT_API_BASE).replace(/\/$/,'');
     if (!base) return demoLookup();
     if (!$('lpn').value.trim()) return toast('Najpierw wpisz lub zeskanuj LPN');
     if (!$('ean').value.trim() && !$('asin').value.trim()) return toast('Podaj EAN lub ASIN');
@@ -332,7 +333,7 @@
       return;
     }
     if (!code) return;
-    const b = (localStorage.getItem(KEYS.apiBase)||'').replace(/\/$/,'');
+    const b = (localStorage.getItem(KEYS.apiBase)||DEFAULT_API_BASE).replace(/\/$/,'');
     if (!b) {
       toast('Otrzymano kod Allegro, ale nie ustawiono adresu backendu.');
       return;
