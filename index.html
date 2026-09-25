@@ -20,3 +20,4 @@ function quality(){const vals=[!!lpn.value.trim(),identified,confirm.checked,!!c
 function finish(){quality();const vals=[lpn.value.trim(),identified,confirm.checked,condition.value,contents.value.trim(),loc.value.trim(),shipping.value];if(vals.some(v=>!v))return toast('Brakuje wymaganych danych');toast('Produkt oznaczony jako gotowy')}
 ['lpn','confirm','condition','contents','loc','shipping'].forEach(id=>document.getElementById(id).addEventListener('input',quality));render();
 </script></body></html>
+<!-- trigger-pages-build -->
