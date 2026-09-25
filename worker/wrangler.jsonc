@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "product-intake-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-26",
+  "vars": {
+    "ALLOWED_ORIGIN": "https://sesqu.github.io",
+    "ALLEGRO_CLIENT_ID": "83274784",
+    "ALLEGRO_REDIRECT_URI": "https://sesqu.github.io/product-intake/"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "AUTH"
+    }
+  ]
+}
