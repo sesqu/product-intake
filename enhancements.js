@@ -674,10 +674,12 @@
     }
   };
 
-  const basePrev = window.prev;
   window.prev = function() {
-    basePrev?.();
-    saveDraft();
+    if (typeof step !== 'undefined' && step > 0) {
+      step--;
+      if (typeof render === 'function') render();
+      saveDraft();
+    }
   };
 
   function bindAutosave() {
