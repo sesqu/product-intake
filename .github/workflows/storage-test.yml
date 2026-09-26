@@ -10,6 +10,8 @@ on:
       - 'pwa-updates.js'
       - 'navigation.js'
       - 'cloud-products.js'
+      - 'catalog-lookup.js'
+      - 'modal.js'
       - 'secondary-views.js'
       - 'product-editor.js'
       - 'enhancements.js'
