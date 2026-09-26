@@ -335,3 +335,14 @@
     padding-right:9px;
   }
 }
+
+
+/* Prevent mobile cards and fields from widening the viewport */
+@media(max-width:620px){
+  body{font-size:14px;overflow-x:hidden}
+  .app,.main,.layout,.card,.body,.section,.grid,.grid>div{min-width:0;max-width:100%}
+  .card{width:100%}
+  .copy{white-space:normal;overflow-wrap:anywhere}
+  .scan{min-width:0}
+  .scan input{min-width:0}
+}
