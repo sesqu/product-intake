@@ -29,10 +29,20 @@ for (const ean of realEans) {
 
 
 
-const seedResponse = await fetch(base + '/api/products/seed-real', {
-  method:'POST',
-  headers
-});
+let seedResponse = null;
+for (let attempt = 0; attempt < 18; attempt++) {
+  const r = await fetch(base + '/api/products/seed-real', {
+    method:'POST',
+    headers,
+    body:'{}'
+  });
+  if (r.status !== 404) {
+    seedResponse = r;
+    break;
+  }
+  await new Promise(resolve => setTimeout(resolve, 10000));
+}
+if (!seedResponse) throw new Error('SEED-REAL endpoint nie został wdrożony na czas');
 if (!seedResponse.ok) {
   throw new Error('SEED-REAL: ' + seedResponse.status + ' ' + await seedResponse.text());
 }
