@@ -14,6 +14,88 @@
   let latestGpsr = null;
   let latestConfidence = null;
 
+  const VERIFIED_REAL_TEST_PRODUCTS = [
+    {
+      lpn:'REAL-EAN-195949544026',
+      ean:'195949544026',
+      productName:'Słuchawki bezprzewodowe nauszne Apple AirPods Max Bluetooth USB-C Midnight',
+      brand:'Apple',
+      model:'AirPods Max',
+      category:'Bezprzewodowe',
+      confidence:100,
+      source:'Allegro API',
+      status:'catalog-test',
+      testRecord:true,
+      identified:true,
+      confirm:false,
+      contents:'TEST katalogowy — bez fizycznej weryfikacji sztuki',
+      loc:'TEST-LIVE',
+      photos:[]
+    },
+    {
+      lpn:'REAL-EAN-4548736132580',
+      ean:'4548736132580',
+      productName:'Słuchawki bezprzewodowe wokółuszne Sony WH-1000XM5 ANC',
+      brand:'Sony',
+      model:'WH-1000XM5',
+      category:'Bezprzewodowe',
+      confidence:100,
+      source:'Allegro API',
+      status:'catalog-test',
+      testRecord:true,
+      identified:true,
+      confirm:false,
+      contents:'TEST katalogowy — bez fizycznej weryfikacji sztuki',
+      loc:'TEST-LIVE',
+      photos:[]
+    },
+    {
+      lpn:'REAL-EAN-6925281994258',
+      ean:'6925281994258',
+      productName:'Głośnik przenośny JBL Flip 6 czarny 30 W',
+      brand:'JBL',
+      model:'Flip 6',
+      category:'Głośniki przenośne',
+      confidence:100,
+      source:'Allegro API',
+      status:'catalog-test',
+      testRecord:true,
+      identified:true,
+      confirm:false,
+      contents:'TEST katalogowy — bez fizycznej weryfikacji sztuki',
+      loc:'TEST-LIVE',
+      photos:[]
+    }
+  ];
+
+  function ensureVerifiedRealProductsLocal() {
+    let products = [];
+    try { products = JSON.parse(localStorage.getItem(KEYS.products) || '[]'); } catch {}
+    products = Array.isArray(products) ? products : [];
+    products = products.filter(p => !String(p?.lpn || '').startsWith('TEST-SEED-'));
+
+    const byLpn = new Map(products.map(p => [String(p?.lpn || '').trim().toLowerCase(), p]));
+    const now = new Date().toISOString();
+
+    for (const fixture of VERIFIED_REAL_TEST_PRODUCTS) {
+      const key = fixture.lpn.toLowerCase();
+      if (!byLpn.has(key)) {
+        byLpn.set(key, {
+          ...fixture,
+          id: crypto.randomUUID ? crypto.randomUUID() : ('real-' + fixture.ean),
+          savedAt: now
+        });
+      }
+    }
+
+    const merged = [...byLpn.values()]
+      .sort((a,b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')))
+      .slice(0,500);
+
+    localStorage.setItem(KEYS.products, JSON.stringify(merged));
+    return merged;
+  }
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
   }
@@ -71,6 +153,7 @@
     try {
       const cloud = await cloudGetProducts();
 
+      ensureVerifiedRealProductsLocal();
       let local = [];
       try { local = JSON.parse(localStorage.getItem(KEYS.products) || '[]'); } catch {}
       local = Array.isArray(local) ? local : [];
@@ -111,6 +194,17 @@
     }
 
     localStorage.setItem(markerKey, 'done');
+  }
+
+  async function pushVerifiedRealProductsToCloud() {
+    for (const product of VERIFIED_REAL_TEST_PRODUCTS) {
+      try {
+        const local = getProducts().find(p => String(p?.lpn || '') === product.lpn) || product;
+        await cloudSaveProduct(local);
+      } catch (e) {
+        console.warn('Verified fixture cloud save failed', product.ean, e);
+      }
+    }
   }
 
   async function initializeCloudProducts() {
@@ -662,6 +756,7 @@
   }
 
   async function showProducts() {
+    ensureVerifiedRealProductsLocal();
     openModal(
       'Produkty gotowe',
       '<div style="padding:24px;color:#919baa;text-align:center">Ładuję i synchronizuję produkty…</div>'
@@ -687,7 +782,7 @@
     openModal(
       'Produkty gotowe',
       '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px">'+
-        '<div style="color:#919baa;font-size:12px">Źródło: wspólna baza online • '+products.length+' produktów</div>'+
+        '<div style="color:#919baa;font-size:12px">Źródło: lokalnie + wspólna baza online • '+products.length+' produktów • build v16</div>'+
         '<button id="refreshProducts" class="btn">Odśwież</button>'+
       '</div>'+
       '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#919baa"><th style="padding:9px">LPN</th><th>Nazwa</th><th>EAN / ASIN</th><th>Lokalizacja</th><th>Zapisano</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
@@ -1123,7 +1218,9 @@
     setupFinalStep();
     bindAutosave();
     loadDraft();
+    ensureVerifiedRealProductsLocal();
     await initializeCloudProducts();
+    await pushVerifiedRealProductsToCloud();
     await seedRealCatalogProducts();
     addHistory('Otwarto aplikację','Product Intake');
     handleAllegroCallback();
