@@ -44,6 +44,8 @@
     out.categoryMeta = catalogState.categoryMeta;
     out.gpsrData = catalogState.gpsrData;
     out.confidence = catalogState.confidence;
+    out.identification = catalogState.identification || null;
+    out.conflictResolutions = catalogState.conflictResolutions || {};
 
     return out;
   }
@@ -69,6 +71,10 @@
 
     catalog().applyGpsr(draft.gpsrData || null);
     catalog().applyConfidence(draft.confidence);
+    catalog().applyIdentificationState(
+      draft.identification || null,
+      draft.conflictResolutions || {}
+    );
     catalog().updateEanRequirementUi();
     drawPhotos();
 
