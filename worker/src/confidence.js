@@ -335,7 +335,7 @@ export function analyzeIdentification(products, queryEan, selectedId='') {
   const selectedAnalysis = scoreCandidate(
     selected,
     queryEan,
-    requiresTesterChoice ? criticalDisagreements.length : 0
+    criticalDisagreements.length
   );
 
   return {
