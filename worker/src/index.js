@@ -2,7 +2,7 @@ const AAPI = "https://api.allegro.pl";
 const AOAUTH = "https://allegro.pl/auth/oauth";
 
 function out(data, status, origin) {
-  return new Response(JSON.stringify(data), {
+  return new Response(status === 204 ? null : JSON.stringify(data), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
@@ -47,7 +47,8 @@ async function exchangeAuthorizationCode(env, code, codeVerifier) {
   const r = await fetch(AOAUTH + "/token", {
     method: "POST",
     headers: {
-      "content-type": "application/x-www-form-urlencoded"
+      "content-type": "application/x-www-form-urlencoded",
+      "user-agent": env.ALLEGRO_USER_AGENT || "test-dodawanie/1 (+https://github.com/sesqu/product-intake)"
     },
     body: new URLSearchParams({
       grant_type: "authorization_code",
@@ -75,7 +76,8 @@ async function refreshAccessToken(env, refreshToken) {
     method: "POST",
     headers: {
       authorization: basic(env.ALLEGRO_CLIENT_ID, env.ALLEGRO_CLIENT_SECRET),
-      "content-type": "application/x-www-form-urlencoded"
+      "content-type": "application/x-www-form-urlencoded",
+      "user-agent": env.ALLEGRO_USER_AGENT || "test-dodawanie/1 (+https://github.com/sesqu/product-intake)"
     },
     body: new URLSearchParams({
       grant_type: "refresh_token",
@@ -245,8 +247,8 @@ async function handle(request, env) {
   }
 
   if (url.pathname === "/api/allegro/auth-url" && request.method === "GET") {
-    if (!env.ALLEGRO_CLIENT_ID || !env.ALLEGRO_REDIRECT_URI) {
-      return out({ error: "Brak konfiguracji Allegro" }, 500, origin);
+    if (!env.ALLEGRO_CLIENT_ID || !env.ALLEGRO_CLIENT_SECRET || !env.ALLEGRO_REDIRECT_URI) {
+      return out({ error: "Brak pełnej konfiguracji Allegro (Client ID / Client Secret / redirect URI)" }, 500, origin);
     }
     const { state, codeChallenge } = await createOAuthState(env);
     const auth = new URL(AOAUTH + "/authorize");
@@ -254,6 +256,7 @@ async function handle(request, env) {
     auth.searchParams.set("client_id", env.ALLEGRO_CLIENT_ID);
     auth.searchParams.set("redirect_uri", env.ALLEGRO_REDIRECT_URI);
     auth.searchParams.set("state", state);
+    auth.searchParams.set("prompt", "confirm");
     auth.searchParams.set("code_challenge_method", "S256");
     auth.searchParams.set("code_challenge", codeChallenge);
     return out({ url: auth.toString() }, 200, origin);
