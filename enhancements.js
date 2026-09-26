@@ -580,7 +580,47 @@
   }
   function showIntegrations() {
     const base = localStorage.getItem(KEYS.apiBase) || DEFAULT_API_BASE;
-    openModal('Integracje', '<div style="display:grid;gap:14px"><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Allegro API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Wyszukiwanie katalogu po GTIN/EAN wymaga połączenia konta Allegro przez OAuth.</div><div style="margin-top:10px"><button id="connectAllegro" class="btn primary">Połącz konto Allegro</button> <button id="checkAllegro" class="btn">Sprawdź status</button></div><div id="allegroStatus" style="font-size:12px;color:#919baa;margin-top:8px"></div></div><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Amazon SP-API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Backend przygotowany do Catalog Items API po EAN/ASIN.</div></div><div><label>Adres naszego backendu API</label><input id="apiBaseInput" placeholder="np. https://api.twojadomena.pl" value="'+safe(base)+'"><div style="color:#919baa;font-size:11px;margin-top:6px">Tu zapisujemy tylko adres API. Client secretów i tokenów nigdy nie przechowujemy w przeglądarce.</div></div><div><button id="saveApiBase" class="btn">Zapisz adres</button> <button id="testApiBase" class="btn">Test połączenia</button></div><div id="apiTestResult" style="font-size:12px;color:#919baa"></div></div>');
+    openModal('Integracje', '<div style="display:grid;gap:14px"><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Allegro API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Wyszukiwanie katalogu po GTIN/EAN wymaga połączenia konta Allegro przez OAuth.</div><div style="margin-top:10px"><button id="connectAllegro" class="btn primary">Połącz konto Allegro</button> <button id="checkAllegro" class="btn">Sprawdź status</button></div><div id="allegroStatus" style="font-size:12px;color:#919baa;margin-top:8px"></div></div><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Synchronizacja urządzeń</b><div style="color:#919baa;font-size:12px;margin-top:4px">Ten kod łączy iPhone, iPad i komputer z tą samą bazą produktów. Traktuj go jak hasło — osoba z tym kodem może odczytać produkty.</div><div style="margin-top:10px"><label>Kod synchronizacji</label><input id="workspaceKeyInput" type="password" autocomplete="off" value="'+safe(getWorkspaceKey())+'" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace"></div><div style="margin-top:10px"><button id="copyWorkspaceKey" class="btn">Kopiuj kod</button> <button id="useWorkspaceKey" class="btn primary">Użyj tego kodu</button> <button id="syncNow" class="btn">Synchronizuj teraz</button></div><div id="syncStatus" style="font-size:12px;color:#919baa;margin-top:8px">Wspólna baza online jest aktywna.</div></div><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Amazon SP-API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Backend przygotowany do Catalog Items API po EAN/ASIN.</div></div><div><label>Adres naszego backendu API</label><input id="apiBaseInput" placeholder="np. https://api.twojadomena.pl" value="'+safe(base)+'"><div style="color:#919baa;font-size:11px;margin-top:6px">Tu zapisujemy tylko adres API. Client secretów i tokenów nigdy nie przechowujemy w przeglądarce.</div></div><div><button id="saveApiBase" class="btn">Zapisz adres</button> <button id="testApiBase" class="btn">Test połączenia</button></div><div id="apiTestResult" style="font-size:12px;color:#919baa"></div></div>');
+    if ($('copyWorkspaceKey')) $('copyWorkspaceKey').onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(getWorkspaceKey());
+        $('syncStatus').textContent = 'Kod skopiowany. Wklej go na drugim urządzeniu.';
+      } catch {
+        $('workspaceKeyInput').type = 'text';
+        $('workspaceKeyInput').select();
+        $('syncStatus').textContent = 'Zaznaczyłem kod — skopiuj go ręcznie.';
+      }
+    };
+
+    if ($('useWorkspaceKey')) $('useWorkspaceKey').onclick = async () => {
+      const key = $('workspaceKeyInput').value.trim();
+      if (!/^[A-Za-z0-9_-]{32,128}$/.test(key)) {
+        $('syncStatus').textContent = 'Nieprawidłowy kod synchronizacji.';
+        return;
+      }
+
+      $('syncStatus').textContent = 'Łączę z bazą…';
+      localStorage.setItem(KEYS.workspaceKey, key);
+      localStorage.setItem('productIntake.cloudMigrated.' + key.slice(0,12), 'done');
+
+      try {
+        const products = await syncProductsFromCloud(true);
+        $('syncStatus').textContent = 'Połączono • ' + products.length + ' produktów w tej bazie.';
+      } catch (e) {
+        $('syncStatus').textContent = 'Błąd: ' + (e.message || 'nie udało się połączyć');
+      }
+    };
+
+    if ($('syncNow')) $('syncNow').onclick = async () => {
+      $('syncStatus').textContent = 'Synchronizuję…';
+      try {
+        const products = await syncProductsFromCloud(true);
+        $('syncStatus').textContent = 'Gotowe • ' + products.length + ' produktów.';
+      } catch (e) {
+        $('syncStatus').textContent = 'Błąd: ' + (e.message || 'brak połączenia');
+      }
+    };
+
     $('saveApiBase').onclick = () => {
       localStorage.setItem(KEYS.apiBase, $('apiBaseInput').value.trim().replace(/\/$/,''));
       $('apiTestResult').textContent = 'Zapisano.';
