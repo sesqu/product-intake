@@ -1,0 +1,48 @@
+const base = 'https://product-intake.sesquu.workers.dev';
+const workspace = 'LIVE_TEST_' + 'A'.repeat(40);
+const headers = {'content-type':'application/json','x-workspace-key':workspace};
+
+async function waitForApi() {
+  for (let i=0;i<18;i++) {
+    const r = await fetch(base + '/api/products', {headers:{'x-workspace-key':workspace}});
+    if (r.status !== 404) return;
+    await new Promise(r => setTimeout(r, 10000));
+  }
+  throw new Error('Nowy endpoint /api/products nie został wdrożony na czas');
+}
+
+await waitForApi();
+
+const fixtures = [
+  {lpn:'LIVE-TEST-001',productName:'Live test 1',loc:'CLOUD-A1'},
+  {lpn:'LIVE-TEST-002',productName:'Live test 2',loc:'CLOUD-A2'},
+  {lpn:'LIVE-TEST-003',productName:'Live test 3',loc:'CLOUD-A3'}
+];
+
+try {
+  for (const product of fixtures) {
+    const r = await fetch(base + '/api/products', {
+      method:'POST', headers, body:JSON.stringify({product})
+    });
+    if (!r.ok) throw new Error('POST ' + product.lpn + ': ' + r.status + ' ' + await r.text());
+  }
+
+  const read = await fetch(base + '/api/products', {
+    headers:{'x-workspace-key':workspace}
+  });
+  if (!read.ok) throw new Error('GET: ' + read.status + ' ' + await read.text());
+  const body = await read.json();
+
+  const lpns = new Set((body.products || []).map(p => p.lpn));
+  for (const p of fixtures) {
+    if (!lpns.has(p.lpn)) throw new Error('Brak po odczycie: ' + p.lpn);
+  }
+
+  console.log('PASS LIVE:', fixtures.map(x=>x.lpn).join(', '), 'count=', body.count);
+} finally {
+  for (const product of fixtures) {
+    await fetch(base + '/api/products?lpn=' + encodeURIComponent(product.lpn), {
+      method:'DELETE', headers:{'x-workspace-key':workspace}
+    }).catch(()=>{});
+  }
+}
