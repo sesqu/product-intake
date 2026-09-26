@@ -251,7 +251,7 @@
     if (document.getElementById('mobileNav')) return;
 
     const style = document.createElement('style');
-    style.textContent = \`
+    style.textContent = `
       #mobileNav{display:none}
       @media(max-width:950px){
         #mobileNav{
@@ -267,16 +267,16 @@
         }
         #mobileNav button.primaryMobile{background:#172033;color:#fff}
         body{padding-bottom:76px}
-      }\`;
+      }`;
     document.head.appendChild(style);
 
     const nav = document.createElement('div');
     nav.id = 'mobileNav';
-    nav.innerHTML = \`
+    nav.innerHTML = `
       <button class="primaryMobile" data-act="add">Dodaj</button>
       <button data-act="products">Produkty</button>
       <button data-act="integrations">Integracje</button>
-      <button data-act="more">Więcej</button>\`;
+      <button data-act="more">Więcej</button>`;
     document.body.appendChild(nav);
 
     nav.querySelector('[data-act="add"]').onclick = () => {
