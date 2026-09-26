@@ -12,7 +12,7 @@
   let photoData = [];
   const CatalogLookup = window.ProductIntakeCatalogLookup;
 
-  window.ProductIntakePWA?.setup({build:28,label:'v28'});
+  window.ProductIntakePWA?.setup({build:29,label:'v29'});
 
 
   const CloudProducts = window.ProductIntakeCloudProducts;
