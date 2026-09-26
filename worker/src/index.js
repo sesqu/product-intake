@@ -330,6 +330,33 @@ function pvalue(product, names) {
   return "";
 }
 
+function stripHtml(value) {
+  return clean(value)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+\n/g, "\n")
+    .replace(/\n\s+/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+function flattenDescription(description) {
+  if (!description) return "";
+  if (typeof description === "string") return stripHtml(description);
+
+  const chunks = [];
+  for (const section of description.sections || []) {
+    for (const item of section.items || []) {
+      if (item?.content) chunks.push(stripHtml(item.content));
+      if (item?.text) chunks.push(stripHtml(item.text));
+    }
+  }
+  return chunks.filter(Boolean).join("\n\n").slice(0, 12000);
+}
+
 function mapProduct(p, ean) {
   if (!p) return null;
   return {
@@ -344,6 +371,7 @@ function mapProduct(p, ean) {
     category: p.category?.name || p.category?.id || "",
     categoryId: p.category?.id || "",
     image: first(p.images)?.url || "",
+    description: flattenDescription(p.description),
     productSafety: p.productSafety || null,
     parameters: (p.parameters || []).slice(0, 40).map(x => ({
       name: x.name || x.id || "",
