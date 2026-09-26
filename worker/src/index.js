@@ -48,7 +48,7 @@ async function exchangeAuthorizationCode(env, code, codeVerifier) {
     method: "POST",
     headers: {
       "content-type": "application/x-www-form-urlencoded",
-      "user-agent": env.ALLEGRO_USER_AGENT || "test-dodawanie/1 (+https://github.com/sesqu/product-intake)"
+      "user-agent": env.ALLEGRO_USER_AGENT || "Product-Intake/1.1 (+https://github.com/sesqu/product-intake)"
     },
     body: new URLSearchParams({
       grant_type: "authorization_code",
@@ -77,7 +77,7 @@ async function refreshAccessToken(env, refreshToken) {
     headers: {
       authorization: basic(env.ALLEGRO_CLIENT_ID, env.ALLEGRO_CLIENT_SECRET),
       "content-type": "application/x-www-form-urlencoded",
-      "user-agent": env.ALLEGRO_USER_AGENT || "test-dodawanie/1 (+https://github.com/sesqu/product-intake)"
+      "user-agent": env.ALLEGRO_USER_AGENT || "Product-Intake/1.1 (+https://github.com/sesqu/product-intake)"
     },
     body: new URLSearchParams({
       grant_type: "refresh_token",
@@ -198,7 +198,7 @@ async function allegroSearch(env, ean) {
         authorization: "Bearer " + token,
         accept: "application/vnd.allegro.public.v1+json",
         "accept-language": "pl-PL",
-        "user-agent": env.ALLEGRO_USER_AGENT || "test-dodawanie/1 (+https://github.com/sesqu/product-intake)"
+        "user-agent": env.ALLEGRO_USER_AGENT || "Product-Intake/1.1 (+https://github.com/sesqu/product-intake)"
       }
     });
   };
