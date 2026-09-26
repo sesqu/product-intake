@@ -11,6 +11,7 @@ const scripts = [
   'catalog-lookup.js',
   'intake-session.js',
   'secondary-views.js',
+  'product-list.js',
   'product-editor.js',
   'enhancements.js',
   'sw.js'
