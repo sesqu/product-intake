@@ -80,7 +80,22 @@
   function loadDraft() {
     try {
       const raw = localStorage.getItem(KEYS.draft);
-      if (raw) writeDraft(JSON.parse(raw));
+      if (raw) {
+        writeDraft(JSON.parse(raw));
+        return;
+      }
+
+      const products = JSON.parse(localStorage.getItem(KEYS.products) || '[]');
+      const latest = products[0];
+      const skipRecoveryId = localStorage.getItem('productIntake.skipRecoveryId');
+      const isRecent = latest?.savedAt && (Date.now() - new Date(latest.savedAt).getTime() < 30 * 60 * 1000);
+
+      if (latest && isRecent && latest.id !== skipRecoveryId) {
+        const recovered = {...latest, step:4, identified:true};
+        writeDraft(recovered);
+        localStorage.setItem(KEYS.draft, JSON.stringify(recovered));
+        setTimeout(() => toast('Przywrócono ostatnio zapisany produkt.'), 150);
+      }
     } catch {}
   }
 
@@ -173,7 +188,7 @@
     products.unshift(record);
     localStorage.setItem(KEYS.products, JSON.stringify(products.slice(0,500)));
     addHistory('Produkt gotowy', d.lpn + (d.productName ? ' • ' + d.productName : ''));
-    localStorage.removeItem(KEYS.draft);
+    saveDraft();
     toast('Produkt zapisany jako gotowy.');
     return true;
   }
@@ -398,6 +413,8 @@
     const productsBtn = $('successProducts');
 
     if (nextBtn) nextBtn.onclick = () => {
+      const products = getProducts();
+      if (products[0]?.id) localStorage.setItem('productIntake.skipRecoveryId', products[0].id);
       localStorage.removeItem(KEYS.draft);
       location.href = location.pathname;
     };
