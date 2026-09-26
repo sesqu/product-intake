@@ -14,7 +14,7 @@
   let latestGpsr = null;
   let latestConfidence = null;
 
-  window.ProductIntakePWA?.setup({build:23,label:'v23'});
+  window.ProductIntakePWA?.setup({build:24,label:'v24'});
 
 
   const CloudProducts = window.ProductIntakeCloudProducts;
