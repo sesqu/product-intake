@@ -377,6 +377,20 @@
     }
   };
 
+  window.next = function() {
+    const confirmed = !!document.querySelector('#confirm:checked');
+    if (typeof step !== 'undefined' && step === 0 && typeof identified !== 'undefined' && !identified) {
+      return toast('Najpierw sprawdź produkt');
+    }
+    if (typeof step !== 'undefined' && step === 1 && !confirmed) {
+      return toast('Tester musi potwierdzić identyfikację');
+    }
+    if (typeof step !== 'undefined' && step < 4) {
+      step++;
+      if (typeof render === 'function') render();
+    }
+  };
+
   function bindAutosave() {
     document.addEventListener('input', e => {
       if (e.target.matches('input,select,textarea')) saveDraft();
