@@ -124,108 +124,48 @@
 
   async function seedRealCatalogProducts() {
     const key = getWorkspaceKey();
-    const flag = 'productIntake.realCatalogSeed.v2.' + key.slice(0,12);
+    const flag = 'productIntake.realCatalogSeed.v3.' + key.slice(0,12);
     if (localStorage.getItem(flag) === 'done') return;
 
-    const eans = [
-      '195949544026',
-      '4548736132580',
-      '6925281994258'
-    ];
-
-    // Clean up the earlier fake seed records so only real catalog tests remain.
-    const oldTestLpns = ['TEST-SEED-001','TEST-SEED-002','TEST-SEED-003'];
     try {
-      let local = JSON.parse(localStorage.getItem(KEYS.products) || '[]');
-      if (Array.isArray(local)) {
-        local = local.filter(p => !oldTestLpns.includes(String(p?.lpn || '')));
-        localStorage.setItem(KEYS.products, JSON.stringify(local));
-      }
-      await Promise.all(oldTestLpns.map(lpn =>
-        fetch(apiBase() + '/api/products?lpn=' + encodeURIComponent(lpn), {
-          method:'DELETE',
-          headers:{'x-workspace-key':getWorkspaceKey()}
-        }).catch(()=>null)
-      ));
-    } catch {}
+      const r = await fetch(apiBase() + '/api/products/seed-real', {
+        method:'POST',
+        headers: cloudHeaders(),
+        body:'{}'
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || 'Nie udało się dodać realnych produktów');
 
-    let saved = 0;
+      const seeded = Array.isArray(data.products) ? data.products : [];
 
-    for (const ean of eans) {
-      try {
-        const r = await fetch(apiBase() + '/api/search?ean=' + encodeURIComponent(ean));
-        const data = await r.json().catch(() => ({}));
-        if (!r.ok || !data.best?.name) continue;
+      let local = [];
+      try { local = JSON.parse(localStorage.getItem(KEYS.products) || '[]'); } catch {}
+      local = Array.isArray(local) ? local : [];
+      local = local.filter(p => !String(p?.lpn || '').startsWith('TEST-SEED-'));
 
-        const best = data.best;
-        const record = {
-          lpn: 'REAL-EAN-' + ean,
-          ean,
-          asin: best.asin || '',
-          productName: best.name || '',
-          brand: best.brand || '',
-          model: best.model || '',
-          category: data.categoryMeta?.categoryName || best.category || '',
-          parameters: Array.isArray(best.parameters)
-            ? best.parameters.map(p => (p.name || p.key || '') + ': ' + (p.value ?? '')).join('\n')
-            : '',
-          condition: '',
-          contents: 'TEST katalogowy — bez fizycznej weryfikacji sztuki',
-          flaws: '',
-          loc: 'TEST-LIVE',
-          shipping: '',
-          weight: '',
-          confirm: false,
-          identified: true,
-          confidence: Number(data.confidence ?? 0),
-          categoryMeta: data.categoryMeta || null,
-          gpsrData: data.gpsr || null,
-          photos: [],
-          status: 'catalog-test',
-          source: 'Allegro API',
-          testRecord: true
-        };
-
-        if (window.ProductStorage) {
-          window.ProductStorage.saveProduct(localStorage, KEYS.products, record, 500);
-        }
-
-        await cloudSaveProduct(record);
-        saved++;
-      } catch (e) {
-        console.warn('Real catalog seed failed for', ean, e);
-      }
-    }
-
-    const expectedLpns = new Set(eans.map(ean => 'REAL-EAN-' + ean));
-    let visibleProducts = [];
-
-    for (let attempt = 0; attempt < 8; attempt++) {
-      try {
-        visibleProducts = await syncProductsFromCloud(true);
-      } catch {
-        visibleProducts = getProducts();
+      const byLpn = new Map();
+      for (const p of [...local, ...seeded]) {
+        const lpn = String(p?.lpn || '').trim();
+        if (!lpn) continue;
+        byLpn.set(lpn.toLowerCase(), p);
       }
 
-      const visibleLpns = new Set(visibleProducts.map(p => String(p?.lpn || '')));
-      if ([...expectedLpns].every(lpn => visibleLpns.has(lpn))) break;
-      await new Promise(resolve => setTimeout(resolve, 1500));
-    }
+      const merged = [...byLpn.values()]
+        .sort((a,b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')))
+        .slice(0,500);
 
-    visibleProducts = (visibleProducts.length ? visibleProducts : getProducts())
-      .filter(p => !String(p?.lpn || '').startsWith('TEST-SEED-'));
+      localStorage.setItem(KEYS.products, JSON.stringify(merged));
 
-    localStorage.setItem(KEYS.products, JSON.stringify(visibleProducts.slice(0,500)));
-
-    const visibleLpns = new Set(visibleProducts.map(p => String(p?.lpn || '')));
-    const verifiedCount = [...expectedLpns].filter(lpn => visibleLpns.has(lpn)).length;
-
-    if (saved === eans.length && verifiedCount === eans.length) {
-      localStorage.setItem(flag, 'done');
-      addHistory('Dodano realne produkty testowe', eans.join(', '));
-      setTimeout(() => toast('Gotowe • 3 realne produkty z Allegro są w bazie.'), 350);
-    } else {
-      setTimeout(() => toast('Test produktów: widoczne ' + verifiedCount + '/3. Odśwież Produkty za chwilę.'), 350);
+      if (seeded.length === 3) {
+        localStorage.setItem(flag,'done');
+        addHistory('Dodano realne produkty testowe', seeded.map(p => p.ean || p.lpn).join(', '));
+        setTimeout(() => toast('Gotowe • 3 realne produkty z Allegro są w bazie.'), 350);
+      } else {
+        setTimeout(() => toast('Dodano ' + seeded.length + '/3 realnych produktów.'), 350);
+      }
+    } catch (e) {
+      console.warn('Real catalog seed failed', e);
+      setTimeout(() => toast('Nie udało się dodać realnych produktów: ' + (e.message || 'błąd')), 350);
     }
   }
 
