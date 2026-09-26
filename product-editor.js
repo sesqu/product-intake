@@ -290,8 +290,7 @@ async function enrichProductFromAllegro(product, force = false) {
   };
   if (!next.gpsrMaster) next.gpsrMaster = initialGpsrMaster(next);
 
-  let saved = {record:next};
-  if (window.ProductStorage) saved = window.ProductStorage.saveProduct(localStorage, KEYS.products, next, 500);
+  const saved = window.ProductStorage.saveProduct(localStorage, KEYS.products, next, 500);
   try { await cloudSaveProduct(saved.record); } catch {}
   return saved.record;
 }
@@ -422,17 +421,14 @@ async function saveEditorProduct() {
   const saveBtn = $('peSave');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Zapisuję…'; }
 
-  let result = {record:product, updated:true};
-  if (window.ProductStorage) {
-    result = window.ProductStorage.saveProduct(localStorage, KEYS.products, product, 500);
-  }
+  let result = window.ProductStorage.saveProduct(localStorage, KEYS.products, product, 500);
 
   let cloudOk = false;
   try {
     const cloud = await cloudSaveProduct(result.record);
     if (cloud?.record) {
       result.record = {...result.record, ...cloud.record};
-      if (window.ProductStorage) window.ProductStorage.saveProduct(localStorage, KEYS.products, result.record, 500);
+      window.ProductStorage.saveProduct(localStorage, KEYS.products, result.record, 500);
     }
     cloudOk = true;
   } catch (e) {
