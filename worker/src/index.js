@@ -8,8 +8,8 @@ function out(data, status, origin) {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
       "access-control-allow-origin": origin,
-      "access-control-allow-methods": "GET,POST,OPTIONS",
-      "access-control-allow-headers": "content-type"
+      "access-control-allow-methods": "GET,POST,DELETE,OPTIONS",
+      "access-control-allow-headers": "content-type,x-workspace-key"
     }
   });
 }
@@ -26,6 +26,79 @@ const first = a => Array.isArray(a) && a.length ? a[0] : null;
 
 function basic(clientId, secret) {
   return "Basic " + btoa(clientId + ":" + secret);
+}
+
+async function sha256Hex(value) {
+  const bytes = new TextEncoder().encode(String(value));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+function workspaceSecret(request) {
+  const key = clean(request.headers.get("x-workspace-key"));
+  if (!/^[A-Za-z0-9_-]{32,128}$/.test(key)) {
+    throw new Error("Brak lub nieprawidłowy kod synchronizacji");
+  }
+  return key;
+}
+
+async function workspacePrefix(request) {
+  return "workspace:" + await sha256Hex(workspaceSecret(request)) + ":";
+}
+
+async function cloudProductKey(request, lpn) {
+  return (await workspacePrefix(request)) + "product:" + await sha256Hex(norm(lpn));
+}
+
+async function listCloudProducts(env, request) {
+  const prefix = (await workspacePrefix(request)) + "product:";
+  let cursor;
+  const names = [];
+
+  for (let i = 0; i < 20; i++) {
+    const page = await env.AUTH.list({ prefix, cursor, limit: 1000 });
+    names.push(...(page.keys || []).map(k => k.name));
+    if (page.list_complete || !page.cursor) break;
+    cursor = page.cursor;
+  }
+
+  const products = await Promise.all(
+    names.map(name => env.AUTH.get(name, "json").catch(() => null))
+  );
+
+  return products
+    .filter(Boolean)
+    .sort((a, b) => String(b.savedAt || "").localeCompare(String(a.savedAt || "")));
+}
+
+async function saveCloudProduct(env, request, input) {
+  const product = input && typeof input === "object" ? input : {};
+  const lpn = clean(product.lpn);
+  if (!lpn) throw new Error("LPN / SKU jest wymagany");
+
+  const key = await cloudProductKey(request, lpn);
+  const existing = await env.AUTH.get(key, "json").catch(() => null);
+  const now = new Date().toISOString();
+
+  const record = {
+    ...(existing || {}),
+    ...product,
+    id: existing?.id || clean(product.id) || crypto.randomUUID(),
+    lpn,
+    status: "ready",
+    savedAt: now,
+    cloudUpdatedAt: now
+  };
+
+  await env.AUTH.put(key, JSON.stringify(record));
+  return { record, created: !existing, updated: Boolean(existing) };
+}
+
+async function deleteCloudProduct(env, request, lpn) {
+  const cleanLpn = clean(lpn);
+  if (!cleanLpn) throw new Error("Brak LPN / SKU");
+  const key = await cloudProductKey(request, cleanLpn);
+  await env.AUTH.delete(key);
 }
 
 async function storeTokens(env, body) {
@@ -357,6 +430,35 @@ async function handle(request, env) {
         connected: Boolean(await env.AUTH.get("allegro:refresh_token"))
       }
     }, 200, origin);
+  }
+
+  if (url.pathname === "/api/products" && request.method === "GET") {
+    try {
+      const products = await listCloudProducts(env, request);
+      return out({ ok: true, products, count: products.length }, 200, origin);
+    } catch (e) {
+      return out({ error: e.message }, 401, origin);
+    }
+  }
+
+  if (url.pathname === "/api/products" && request.method === "POST") {
+    try {
+      const body = await request.json();
+      const result = await saveCloudProduct(env, request, body?.product || body);
+      return out({ ok: true, ...result }, result.created ? 201 : 200, origin);
+    } catch (e) {
+      return out({ error: e.message }, 400, origin);
+    }
+  }
+
+  if (url.pathname === "/api/products" && request.method === "DELETE") {
+    try {
+      const lpn = clean(url.searchParams.get("lpn"));
+      await deleteCloudProduct(env, request, lpn);
+      return out({ ok: true }, 200, origin);
+    } catch (e) {
+      return out({ error: e.message }, 400, origin);
+    }
   }
 
   if (url.pathname === "/api/allegro/auth-url" && request.method === "GET") {
