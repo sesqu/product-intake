@@ -96,175 +96,8 @@
     return merged;
   }
 
-  const APP_BUILD = 21;
-  const APP_VERSION_LABEL = 'v21';
-  let pwaRegistration = null;
-  let updateInProgress = false;
+  window.ProductIntakePWA?.setup({build:22,label:'v22'});
 
-  function ensureUpdateUi() {
-    if ($('piUpdateButton')) return;
-
-    const style = document.createElement('style');
-    style.id = 'piUpdateStyles';
-    style.textContent = `
-      #piUpdateButton{
-        position:fixed;
-        top:calc(env(safe-area-inset-top,0px) + 8px);
-        right:10px;
-        z-index:2500;
-        display:none;
-        align-items:center;
-        gap:7px;
-        border:1px solid rgba(127,156,255,.45);
-        background:rgba(26,36,56,.96);
-        color:#eef3ff;
-        padding:9px 11px;
-        border-radius:11px;
-        box-shadow:0 12px 34px rgba(0,0,0,.35);
-        backdrop-filter:blur(14px);
-        font-size:12px;
-        font-weight:750;
-        cursor:pointer
-      }
-      #piUpdateButton::before{
-        content:'';
-        width:8px;height:8px;border-radius:999px;
-        background:#7f9cff;
-        box-shadow:0 0 0 4px rgba(127,156,255,.12)
-      }
-      #piVersionBadge{
-        position:fixed;
-        right:12px;
-        bottom:calc(84px + env(safe-area-inset-bottom,0px));
-        z-index:850;
-        color:#626d7b;
-        font-size:10px;
-        line-height:1;
-        pointer-events:none;
-        user-select:none
-      }
-      @media(min-width:1151px){
-        #piVersionBadge{bottom:12px}
-      }
-    `;
-    document.head.appendChild(style);
-
-    const button = document.createElement('button');
-    button.id = 'piUpdateButton';
-    button.type = 'button';
-    button.textContent = 'Aktualizacja dostępna';
-    button.onclick = applyAvailableUpdate;
-    document.body.appendChild(button);
-
-    const badge = document.createElement('div');
-    badge.id = 'piVersionBadge';
-    badge.textContent = APP_VERSION_LABEL;
-    document.body.appendChild(badge);
-  }
-
-  function showUpdateAvailable(remoteVersion) {
-    ensureUpdateUi();
-    const button = $('piUpdateButton');
-    if (!button) return;
-    button.dataset.version = String(remoteVersion || '');
-    button.textContent = 'Aktualizacja dostępna';
-    button.style.display = 'inline-flex';
-  }
-
-  async function fetchRemoteVersion() {
-    try {
-      const r = await fetch('./version.json?ts=' + Date.now(), {
-        cache:'no-store',
-        headers:{'cache-control':'no-cache'}
-      });
-      if (!r.ok) return null;
-      const data = await r.json();
-      const version = Number(data?.version);
-      return Number.isFinite(version) ? version : null;
-    } catch {
-      return null;
-    }
-  }
-
-  async function checkForAppUpdate() {
-    const remoteVersion = await fetchRemoteVersion();
-    if (remoteVersion != null && remoteVersion > APP_BUILD) {
-      showUpdateAvailable(remoteVersion);
-      try { await pwaRegistration?.update?.(); } catch {}
-      return true;
-    }
-    return false;
-  }
-
-  async function applyAvailableUpdate() {
-    if (updateInProgress) return;
-    updateInProgress = true;
-    ensureUpdateUi();
-
-    const button = $('piUpdateButton');
-    if (button) {
-      button.disabled = true;
-      button.textContent = 'Aktualizuję…';
-      button.style.display = 'inline-flex';
-    }
-
-    try {
-      if ('serviceWorker' in navigator) {
-        const reg = pwaRegistration || await navigator.serviceWorker.getRegistration();
-        if (reg) {
-          try { await reg.update(); } catch {}
-          if (reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
-        }
-      }
-
-      if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(
-          keys
-            .filter(k => k.startsWith('product-intake-'))
-            .map(k => caches.delete(k))
-        );
-      }
-
-      const url = new URL(location.href);
-      url.searchParams.set('app_update', String(Date.now()));
-      location.replace(url.toString());
-    } catch (e) {
-      updateInProgress = false;
-      if (button) {
-        button.disabled = false;
-        button.textContent = 'Spróbuj ponownie';
-      }
-    }
-  }
-
-  function setupPwaUpdates() {
-    ensureUpdateUi();
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (updateInProgress) location.reload();
-      });
-
-      window.addEventListener('load', async () => {
-        try {
-          pwaRegistration = await navigator.serviceWorker.register('./sw.js', {updateViaCache:'none'});
-          await pwaRegistration.update();
-        } catch {}
-        checkForAppUpdate();
-      });
-    } else {
-      window.addEventListener('load', checkForAppUpdate);
-    }
-
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') checkForAppUpdate();
-    });
-    window.addEventListener('pageshow', () => checkForAppUpdate());
-    setInterval(checkForAppUpdate, 3 * 60 * 1000);
-  }
-
-  setupPwaUpdates();
 
   function randomWorkspaceKey() {
     const bytes = new Uint8Array(32);
@@ -1688,122 +1521,18 @@
   }
 
   function setMobileNavActive(name) {
-    const nav = $('mobileNav');
-    if (!nav) return;
-    nav.querySelectorAll('button[data-act]').forEach(btn => {
-      const active = btn.dataset.act === name;
-      btn.classList.toggle('primaryMobile', active);
-      btn.setAttribute('aria-current', active ? 'page' : 'false');
+    window.ProductIntakeNavigation?.setActive(name);
+  }
+
+  function setupNavigation() {
+    window.ProductIntakeNavigation?.setup({
+      closeModal: closePiModal,
+      showProducts,
+      showIntegrations,
+      showLocations,
+      showHistory,
+      openModal
     });
-  }
-
-  function setupMobileNav() {
-    if (document.getElementById('mobileNav')) return;
-
-    const style = document.createElement('style');
-    style.textContent = `
-      #toast{z-index:2200}
-      #mobileNav{display:none}
-      @media(max-width:1150px){
-        #mobileNav{
-          position:fixed;
-          left:8px;right:8px;
-          bottom:calc(8px + env(safe-area-inset-bottom,0px));
-          z-index:1800;
-          display:grid;
-          grid-template-columns:repeat(4,1fr);
-          gap:6px;
-          padding:7px;
-          background:rgba(13,16,20,.97);
-          backdrop-filter:blur(18px);
-          -webkit-backdrop-filter:blur(18px);
-          border:1px solid #303945;
-          border-radius:16px;
-          box-shadow:0 18px 48px rgba(0,0,0,.48)
-        }
-        #mobileNav button{
-          min-height:46px;
-          border:0;
-          background:transparent;
-          color:#aeb6c1;
-          padding:10px 5px;
-          border-radius:11px;
-          font-size:12px;
-          line-height:1;
-          font-weight:720;
-          letter-spacing:.01em;
-          transition:background .15s,color .15s,transform .15s
-        }
-        #mobileNav button:active{transform:scale(.98)}
-        #mobileNav button.primaryMobile{
-          background:#1a2640;
-          color:#fff;
-          box-shadow:inset 0 0 0 1px rgba(127,156,255,.12)
-        }
-        body{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
-        #piModalCard:not(.pi-editor-card){
-          padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))!important
-        }
-        #toast{
-          bottom:calc(96px + env(safe-area-inset-bottom,0px));
-          left:14px;right:14px;text-align:center
-        }
-      }`;
-    document.head.appendChild(style);
-
-    const nav = document.createElement('div');
-    nav.id = 'mobileNav';
-    nav.setAttribute('role','navigation');
-    nav.setAttribute('aria-label','Główna nawigacja');
-    nav.innerHTML = `
-      <button class="primaryMobile" data-act="add" aria-current="page">Dodaj</button>
-      <button data-act="products">Produkty</button>
-      <button data-act="integrations">Integracje</button>
-      <button data-act="more">Więcej</button>`;
-    document.body.appendChild(nav);
-
-    nav.querySelector('[data-act="add"]').onclick = () => {
-      closePiModal();
-      setMobileNavActive('add');
-      window.scrollTo({top:0,behavior:'smooth'});
-    };
-    nav.querySelector('[data-act="products"]').onclick = () => {
-      setMobileNavActive('products');
-      showProducts();
-    };
-    nav.querySelector('[data-act="integrations"]').onclick = () => {
-      setMobileNavActive('integrations');
-      showIntegrations();
-    };
-    nav.querySelector('[data-act="more"]').onclick = () => {
-      setMobileNavActive('more');
-      openModal('Więcej',
-        '<div style="display:grid;gap:8px">'+
-        '<button id="mLocations" class="btn">Lokalizacje</button>'+
-        '<button id="mHistory" class="btn">Historia</button>'+
-        '<button id="mSettings" class="btn">Ustawienia</button>'+
-        '</div>');
-      document.getElementById('mLocations').onclick = showLocations;
-      document.getElementById('mHistory').onclick = showHistory;
-      document.getElementById('mSettings').onclick = () => {
-        setMobileNavActive('more');
-        openModal('Ustawienia','<div style="color:#919baa">Ustawienia aplikacji będziemy rozwijać w kolejnych iteracjach.</div>');
-      };
-    };
-  }
-
-  function setupNav() {
-    const navs = [...document.querySelectorAll('.nav')];
-    if (navs[1]) navs[1].onclick = showProducts;
-    if (navs[2]) navs[2].onclick = showLocations;
-    if (navs[3]) navs[3].onclick = showHistory;
-    if (navs[4]) {
-      const integrations = navs[4].cloneNode(true);
-      integrations.textContent = 'Integracje';
-      navs[4].parentNode.insertBefore(integrations, navs[4]);
-      integrations.onclick = showIntegrations;
-      navs[4].onclick = () => openModal('Ustawienia','<div style="color:#919baa">Ustawienia aplikacji będziemy rozwijać w kolejnych iteracjach.</div>');
-    }
   }
 
   function normalizeRemote(data) {
@@ -1978,8 +1707,7 @@
     async function boot() {
     ensureIds();
     setupPhotos();
-    setupNav();
-    setupMobileNav();
+    setupNavigation();
     setupFinalStep();
     bindAutosave();
     loadDraft();
