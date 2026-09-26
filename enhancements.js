@@ -96,8 +96,8 @@
     return merged;
   }
 
-  const APP_BUILD = 19;
-  const APP_VERSION_LABEL = 'v19';
+  const APP_BUILD = 20;
+  const APP_VERSION_LABEL = 'v20';
   let pwaRegistration = null;
   let updateInProgress = false;
 
@@ -948,11 +948,17 @@
     m.style.cssText = 'position:fixed;inset:0;z-index:1000;background:rgba(4,6,9,.72);backdrop-filter:blur(8px);display:none;padding:18px;overflow:auto';
     m.innerHTML = '<div id="piModalCard" style="max-width:1120px;margin:2vh auto;background:#11161c;border:1px solid #2a323c;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden"><div class="pi-modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #252c35;position:sticky;top:0;background:#11161c;z-index:20"><b id="piModalTitle"></b><button id="piModalClose" class="btn">Zamknij</button></div><div id="piModalBody" style="padding:18px"></div></div>';
     document.body.appendChild(m);
-    $('piModalClose').onclick = () => m.style.display='none';
-    m.addEventListener('click', e => { if (e.target === m) m.style.display='none'; });
+    $('piModalClose').onclick = closePiModal;
+    m.addEventListener('click', e => { if (e.target === m) closePiModal(); });
     return m;
   }
+  function closePiModal() {
+    const m = $('piModal');
+    if (m) m.style.display = 'none';
+    document.body.classList.remove('pi-editor-open');
+  }
   function openModal(title, html) {
+    document.body.classList.remove('pi-editor-open');
     const m = makeModal();
     $('piModalTitle').textContent = title;
     $('piModalBody').innerHTML = html;
@@ -968,6 +974,7 @@
     s.id = 'piProductStyles';
     s.textContent = `
       .pi-products-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+      body.pi-editor-open #mobileNav{display:none!important}
       .pi-modal-header{min-height:58px}
       .pi-modal-header #piModalTitle{font-size:18px;line-height:1.1}
       .pi-modal-header #piModalClose{padding:9px 12px}
@@ -1344,6 +1351,8 @@
 
   function renderProductEditor(product) {
     ensureProductEditorStyles();
+    document.body.classList.add('pi-editor-open');
+    setMobileNavActive('products');
     editorProduct = product;
     editorPhotos = Array.isArray(product.photos) ? [...product.photos] : [];
     const params = normalizeParameterItems(product);
@@ -1514,6 +1523,7 @@
   }
 
   async function showProducts() {
+    setMobileNavActive('products');
     ensureProductEditorStyles();
     ensureVerifiedRealProductsLocal();
     openModal(
@@ -1582,14 +1592,17 @@
   }
 
   function showHistory() {
+    setMobileNavActive('more');
     const h = JSON.parse(localStorage.getItem(KEYS.history) || '[]');
     openModal('Historia', h.length ? h.map(x => '<div style="padding:10px 0;border-bottom:1px solid #252c35"><b>'+safe(x.action)+'</b><div style="color:#919baa;font-size:12px;margin-top:3px">'+new Date(x.time).toLocaleString('pl-PL')+' • '+safe(x.details)+'</div></div>').join('') : '<div style="color:#919baa">Brak historii.</div>');
   }
   function showLocations() {
+    setMobileNavActive('more');
     const locs = [...new Set(getProducts().map(p=>p.loc).filter(Boolean))].sort();
     openModal('Lokalizacje', locs.length ? locs.map(x => '<span style="display:inline-block;padding:8px 10px;margin:5px;border:1px solid #2a323c;border-radius:9px">'+safe(x)+'</span>').join('') : '<div style="color:#919baa">Lokalizacje pojawią się po zapisaniu produktów.</div>');
   }
   function showIntegrations() {
+    setMobileNavActive('integrations');
     const base = localStorage.getItem(KEYS.apiBase) || DEFAULT_API_BASE;
     openModal('Integracje', '<div style="display:grid;gap:14px"><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Allegro API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Wyszukiwanie katalogu po GTIN/EAN wymaga połączenia konta Allegro przez OAuth.</div><div style="margin-top:10px"><button id="connectAllegro" class="btn primary">Połącz konto Allegro</button> <button id="checkAllegro" class="btn">Sprawdź status</button></div><div id="allegroStatus" style="font-size:12px;color:#919baa;margin-top:8px"></div></div><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Synchronizacja urządzeń</b><div style="color:#919baa;font-size:12px;margin-top:4px">Ten kod łączy iPhone, iPad i komputer z tą samą bazą produktów. Traktuj go jak hasło — osoba z tym kodem może odczytać produkty.</div><div style="margin-top:10px"><label>Kod synchronizacji</label><input id="workspaceKeyInput" type="password" autocomplete="off" value="'+safe(getWorkspaceKey())+'" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace"></div><div style="margin-top:10px"><button id="copyWorkspaceKey" class="btn">Kopiuj kod</button> <button id="useWorkspaceKey" class="btn primary">Użyj tego kodu</button> <button id="syncNow" class="btn">Synchronizuj teraz</button></div><div id="syncStatus" style="font-size:12px;color:#919baa;margin-top:8px">Wspólna baza online jest aktywna.</div></div><div style="padding:14px;border:1px solid #2a323c;border-radius:12px"><b>Amazon SP-API</b><div style="color:#919baa;font-size:12px;margin-top:4px">Backend przygotowany do Catalog Items API po EAN/ASIN.</div></div><div><label>Adres naszego backendu API</label><input id="apiBaseInput" placeholder="np. https://api.twojadomena.pl" value="'+safe(base)+'"><div style="color:#919baa;font-size:11px;margin-top:6px">Tu zapisujemy tylko adres API. Client secretów i tokenów nigdy nie przechowujemy w przeglądarce.</div></div><div><button id="saveApiBase" class="btn">Zapisz adres</button> <button id="testApiBase" class="btn">Test połączenia</button></div><div id="apiTestResult" style="font-size:12px;color:#919baa"></div></div>');
     if ($('copyWorkspaceKey')) $('copyWorkspaceKey').onclick = async () => {
@@ -1672,37 +1685,65 @@
     };
   }
 
+  function setMobileNavActive(name) {
+    const nav = $('mobileNav');
+    if (!nav) return;
+    nav.querySelectorAll('button[data-act]').forEach(btn => {
+      const active = btn.dataset.act === name;
+      btn.classList.toggle('primaryMobile', active);
+      btn.setAttribute('aria-current', active ? 'page' : 'false');
+    });
+  }
+
   function setupMobileNav() {
     if (document.getElementById('mobileNav')) return;
 
     const style = document.createElement('style');
     style.textContent = `
-      #toast{z-index:1200}
-            #mobileNav{display:none}
+      #toast{z-index:2200}
+      #mobileNav{display:none}
       @media(max-width:1150px){
         #mobileNav{
           position:fixed;
           left:8px;right:8px;
           bottom:calc(8px + env(safe-area-inset-bottom,0px));
-          z-index:999;
-          display:grid;grid-template-columns:repeat(4,1fr);gap:5px;
-          padding:6px;
-          background:rgba(13,16,20,.94);
-          backdrop-filter:blur(14px);
-          border:1px solid #28303a;
-          border-radius:13px;
-          box-shadow:0 16px 45px rgba(0,0,0,.35)
+          z-index:1800;
+          display:grid;
+          grid-template-columns:repeat(4,1fr);
+          gap:6px;
+          padding:7px;
+          background:rgba(13,16,20,.97);
+          backdrop-filter:blur(18px);
+          -webkit-backdrop-filter:blur(18px);
+          border:1px solid #303945;
+          border-radius:16px;
+          box-shadow:0 18px 48px rgba(0,0,0,.48)
         }
         #mobileNav button{
-          border:0;background:transparent;color:#aeb6c1;
-          padding:8px 4px;
-          border-radius:8px;
-          font-size:11px;font-weight:650
+          min-height:46px;
+          border:0;
+          background:transparent;
+          color:#aeb6c1;
+          padding:10px 5px;
+          border-radius:11px;
+          font-size:12px;
+          line-height:1;
+          font-weight:720;
+          letter-spacing:.01em;
+          transition:background .15s,color .15s,transform .15s
         }
-        #mobileNav button.primaryMobile{background:#172033;color:#fff}
-        body{padding-bottom:calc(74px + env(safe-area-inset-bottom,0px))}
+        #mobileNav button:active{transform:scale(.98)}
+        #mobileNav button.primaryMobile{
+          background:#1a2640;
+          color:#fff;
+          box-shadow:inset 0 0 0 1px rgba(127,156,255,.12)
+        }
+        body{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+        #piModalCard:not(.pi-editor-card){
+          padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))!important
+        }
         #toast{
-          bottom:calc(80px + env(safe-area-inset-bottom,0px));
+          bottom:calc(96px + env(safe-area-inset-bottom,0px));
           left:14px;right:14px;text-align:center
         }
       }`;
@@ -1710,19 +1751,30 @@
 
     const nav = document.createElement('div');
     nav.id = 'mobileNav';
+    nav.setAttribute('role','navigation');
+    nav.setAttribute('aria-label','Główna nawigacja');
     nav.innerHTML = `
-      <button class="primaryMobile" data-act="add">Dodaj</button>
+      <button class="primaryMobile" data-act="add" aria-current="page">Dodaj</button>
       <button data-act="products">Produkty</button>
       <button data-act="integrations">Integracje</button>
       <button data-act="more">Więcej</button>`;
     document.body.appendChild(nav);
 
     nav.querySelector('[data-act="add"]').onclick = () => {
+      closePiModal();
+      setMobileNavActive('add');
       window.scrollTo({top:0,behavior:'smooth'});
     };
-    nav.querySelector('[data-act="products"]').onclick = showProducts;
-    nav.querySelector('[data-act="integrations"]').onclick = showIntegrations;
+    nav.querySelector('[data-act="products"]').onclick = () => {
+      setMobileNavActive('products');
+      showProducts();
+    };
+    nav.querySelector('[data-act="integrations"]').onclick = () => {
+      setMobileNavActive('integrations');
+      showIntegrations();
+    };
     nav.querySelector('[data-act="more"]').onclick = () => {
+      setMobileNavActive('more');
       openModal('Więcej',
         '<div style="display:grid;gap:8px">'+
         '<button id="mLocations" class="btn">Lokalizacje</button>'+
@@ -1731,7 +1783,10 @@
         '</div>');
       document.getElementById('mLocations').onclick = showLocations;
       document.getElementById('mHistory').onclick = showHistory;
-      document.getElementById('mSettings').onclick = () => openModal('Ustawienia','<div style="color:#919baa">Ustawienia aplikacji będziemy rozwijać w kolejnych iteracjach.</div>');
+      document.getElementById('mSettings').onclick = () => {
+        setMobileNavActive('more');
+        openModal('Ustawienia','<div style="color:#919baa">Ustawienia aplikacji będziemy rozwijać w kolejnych iteracjach.</div>');
+      };
     };
   }
 
