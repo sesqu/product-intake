@@ -69,8 +69,25 @@
 
   async function syncProductsFromCloud(quiet = false) {
     try {
-      const products = await cloudGetProducts();
-      localStorage.setItem(KEYS.products, JSON.stringify(products.slice(0,500)));
+      const cloud = await cloudGetProducts();
+
+      let local = [];
+      try { local = JSON.parse(localStorage.getItem(KEYS.products) || '[]'); } catch {}
+      local = Array.isArray(local) ? local : [];
+
+      const byLpn = new Map();
+      for (const p of [...local, ...cloud]) {
+        const key = String(p?.lpn || '').trim().toLowerCase();
+        if (!key) continue;
+        const prev = byLpn.get(key);
+        if (!prev || String(p.savedAt || '') >= String(prev.savedAt || '')) byLpn.set(key, p);
+      }
+
+      const products = [...byLpn.values()]
+        .sort((a,b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')))
+        .slice(0,500);
+
+      localStorage.setItem(KEYS.products, JSON.stringify(products));
       if (!quiet) toast('Synchronizacja zakończona • ' + products.length + ' produktów');
       return products;
     } catch (e) {
@@ -102,6 +119,76 @@
     } catch (e) {
       console.warn('Cloud sync unavailable', e);
     }
+  }
+
+  async function seedRealCatalogProducts() {
+    const key = getWorkspaceKey();
+    const flag = 'productIntake.realCatalogSeed.v1.' + key.slice(0,12);
+    if (localStorage.getItem(flag) === 'done') return;
+
+    const eans = [
+      '195949544026',
+      '4548736132580',
+      '6925281994258'
+    ];
+
+    let saved = 0;
+
+    for (const ean of eans) {
+      try {
+        const r = await fetch(apiBase() + '/api/search?ean=' + encodeURIComponent(ean));
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || !data.best?.name) continue;
+
+        const best = data.best;
+        const record = {
+          lpn: 'REAL-EAN-' + ean,
+          ean,
+          asin: best.asin || '',
+          productName: best.name || '',
+          brand: best.brand || '',
+          model: best.model || '',
+          category: data.categoryMeta?.categoryName || best.category || '',
+          parameters: Array.isArray(best.parameters)
+            ? best.parameters.map(p => (p.name || p.key || '') + ': ' + (p.value ?? '')).join('\n')
+            : '',
+          condition: '',
+          contents: 'TEST katalogowy — bez fizycznej weryfikacji sztuki',
+          flaws: '',
+          loc: 'TEST-LIVE',
+          shipping: '',
+          weight: '',
+          confirm: false,
+          identified: true,
+          confidence: Number(data.confidence ?? 0),
+          categoryMeta: data.categoryMeta || null,
+          gpsrData: data.gpsr || null,
+          photos: [],
+          status: 'catalog-test',
+          source: 'Allegro API',
+          testRecord: true
+        };
+
+        if (window.ProductStorage) {
+          window.ProductStorage.saveProduct(localStorage, KEYS.products, record, 500);
+        }
+
+        await cloudSaveProduct(record);
+        saved++;
+      } catch (e) {
+        console.warn('Real catalog seed failed for', ean, e);
+      }
+    }
+
+    if (saved === eans.length) {
+      localStorage.setItem(flag, 'done');
+      addHistory('Dodano realne produkty testowe', eans.join(', '));
+      setTimeout(() => toast('Dodano 3 realne produkty z Allegro API.'), 350);
+    } else if (saved > 0) {
+      setTimeout(() => toast('Dodano ' + saved + '/3 realnych produktów testowych.'), 350);
+    }
+
+    try { await syncProductsFromCloud(true); } catch {}
   }
 
   function ensureIds() {
@@ -989,8 +1076,8 @@
     setupFinalStep();
     bindAutosave();
     loadDraft();
-    seedVisibleTestProducts();
     await initializeCloudProducts();
+    await seedRealCatalogProducts();
     addHistory('Otwarto aplikację','Product Intake');
     handleAllegroCallback();
   }
