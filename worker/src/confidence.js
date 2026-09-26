@@ -89,7 +89,14 @@ function candidateCompleteness(product) {
 }
 
 function exactCatalogEan(product, queryEan) {
-  const catalogEan = clean(product?.catalogEan || product?.ean);
+  const hasExplicitCatalogEan =
+    product &&
+    Object.prototype.hasOwnProperty.call(product,'catalogEan');
+
+  const catalogEan = hasExplicitCatalogEan
+    ? clean(product?.catalogEan)
+    : clean(product?.ean);
+
   return Boolean(
     catalogEan &&
     normalizeIdentity(catalogEan) === normalizeIdentity(queryEan)
