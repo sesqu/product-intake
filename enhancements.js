@@ -308,46 +308,14 @@
     return true;
   }
 
-  function makeModal() {
-    let m = $('piModal');
-    if (m) return m;
-    m = document.createElement('div');
-    m.id = 'piModal';
-    m.style.cssText = 'position:fixed;inset:0;z-index:1000;background:rgba(4,6,9,.72);backdrop-filter:blur(8px);display:none;padding:18px;overflow:auto';
-    m.innerHTML = '<div id="piModalCard" style="max-width:1120px;margin:2vh auto;background:#11161c;border:1px solid #2a323c;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden"><div class="pi-modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #252c35;position:sticky;top:0;background:#11161c;z-index:20"><b id="piModalTitle"></b><button id="piModalClose" class="btn">Zamknij</button></div><div id="piModalBody" style="padding:18px"></div></div>';
-    document.body.appendChild(m);
-    $('piModalClose').onclick = closePiModal;
-    m.addEventListener('click', e => { if (e.target === m) closePiModal(); });
-    return m;
-  }
+  const Modal = window.ProductIntakeModal;
+
   function closePiModal() {
-    const m = $('piModal');
-    if (m) m.style.display = 'none';
-    $('piModalCard')?.classList.remove('pi-editor-card');
-    document.body.classList.remove('pi-editor-open');
-  }
-  function openModal(title, html) {
-    document.body.classList.remove('pi-editor-open');
-    const m = makeModal();
-    $('piModalCard')?.classList.remove('pi-editor-card');
-    $('piModalTitle').textContent = title;
-    $('piModalBody').innerHTML = html;
-    m.style.display = 'block';
+    return Modal.close();
   }
 
-  function setupCatalogLookup() {
-    CatalogLookup?.setup({
-      keys:KEYS,
-      defaultApiBase:DEFAULT_API_BASE,
-      safe,
-      toast,
-      saveDraft,
-      addHistory,
-      setIdentified:value => {
-        if (typeof identified !== 'undefined') identified = Boolean(value);
-      },
-      quality:() => updateQualityPanel()
-    });
+  function openModal(title, html) {
+    return Modal.open(title, html);
   }
 
   const ProductEditor = window.ProductIntakeProductEditor;
