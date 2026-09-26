@@ -132,6 +132,22 @@
       '6925281994258'
     ];
 
+    // Clean up the earlier fake seed records so only real catalog tests remain.
+    const oldTestLpns = ['TEST-SEED-001','TEST-SEED-002','TEST-SEED-003'];
+    try {
+      let local = JSON.parse(localStorage.getItem(KEYS.products) || '[]');
+      if (Array.isArray(local)) {
+        local = local.filter(p => !oldTestLpns.includes(String(p?.lpn || '')));
+        localStorage.setItem(KEYS.products, JSON.stringify(local));
+      }
+      await Promise.all(oldTestLpns.map(lpn =>
+        fetch(apiBase() + '/api/products?lpn=' + encodeURIComponent(lpn), {
+          method:'DELETE',
+          headers:{'x-workspace-key':getWorkspaceKey()}
+        }).catch(()=>null)
+      ));
+    } catch {}
+
     let saved = 0;
 
     for (const ean of eans) {
