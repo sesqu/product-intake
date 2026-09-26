@@ -50,7 +50,51 @@ async function cloudProductKey(request, lpn) {
   return (await workspacePrefix(request)) + "product:" + await sha256Hex(norm(lpn));
 }
 
-async function listCloudProducts(env, request) {
+async function workspaceIndexKey(request) {
+  return (await workspacePrefix(request)) + "index:v1";
+}
+
+function productSummary(record) {
+  return {
+    id: record.id || "",
+    lpn: record.lpn || "",
+    ean: record.ean || "",
+    asin: record.asin || "",
+    productName: record.productName || "",
+    brand: record.brand || "",
+    model: record.model || "",
+    category: record.category || "",
+    loc: record.loc || "",
+    status: record.status || "",
+    savedAt: record.savedAt || "",
+    source: record.source || "",
+    testRecord: Boolean(record.testRecord)
+  };
+}
+
+async function readWorkspaceIndex(env, request) {
+  const key = await workspaceIndexKey(request);
+  const raw = await env.AUTH.get(key, "json").catch(() => null);
+  const products = Array.isArray(raw?.products) ? raw.products : [];
+  return products
+    .filter(p => p && p.lpn)
+    .filter(p => !String(p.lpn).startsWith("TEST-SEED-"))
+    .sort((a,b) => String(b.savedAt || "").localeCompare(String(a.savedAt || "")));
+}
+
+async function writeWorkspaceIndex(env, request, products) {
+  const key = await workspaceIndexKey(request);
+  const cleanProducts = (products || [])
+    .filter(p => p && p.lpn)
+    .filter(p => !String(p.lpn).startsWith("TEST-SEED-"))
+    .slice(0, 500);
+  await env.AUTH.put(key, JSON.stringify({
+    updatedAt: new Date().toISOString(),
+    products: cleanProducts
+  }));
+}
+
+async function backfillWorkspaceIndex(env, request) {
   const prefix = (await workspacePrefix(request)) + "product:";
   let cursor;
   const names = [];
@@ -66,10 +110,20 @@ async function listCloudProducts(env, request) {
     names.map(name => env.AUTH.get(name, "json").catch(() => null))
   );
 
-  return products
+  const summaries = products
     .filter(Boolean)
     .filter(p => !String(p?.lpn || "").startsWith("TEST-SEED-"))
-    .sort((a, b) => String(b.savedAt || "").localeCompare(String(a.savedAt || "")));
+    .map(productSummary)
+    .sort((a,b) => String(b.savedAt || "").localeCompare(String(a.savedAt || "")));
+
+  await writeWorkspaceIndex(env, request, summaries);
+  return summaries;
+}
+
+async function listCloudProducts(env, request) {
+  const indexed = await readWorkspaceIndex(env, request);
+  if (indexed.length) return indexed;
+  return backfillWorkspaceIndex(env, request);
 }
 
 async function saveCloudProduct(env, request, input) {
@@ -92,14 +146,89 @@ async function saveCloudProduct(env, request, input) {
   };
 
   await env.AUTH.put(key, JSON.stringify(record));
+
+  const current = await readWorkspaceIndex(env, request);
+  const next = current.filter(p => norm(p.lpn) !== norm(lpn));
+  next.unshift(productSummary(record));
+  await writeWorkspaceIndex(env, request, next);
+
   return { record, created: !existing, updated: Boolean(existing) };
 }
 
 async function deleteCloudProduct(env, request, lpn) {
   const cleanLpn = clean(lpn);
   if (!cleanLpn) throw new Error("Brak LPN / SKU");
+
   const key = await cloudProductKey(request, cleanLpn);
   await env.AUTH.delete(key);
+
+  const current = await readWorkspaceIndex(env, request);
+  const next = current.filter(p => norm(p.lpn) !== norm(cleanLpn));
+  await writeWorkspaceIndex(env, request, next);
+}
+
+async function seedRealWorkspaceProducts(env, request) {
+  const eans = ["195949544026", "4548736132580", "6925281994258"];
+  const oldTestLpns = ["TEST-SEED-001","TEST-SEED-002","TEST-SEED-003"];
+
+  for (const lpn of oldTestLpns) {
+    await deleteCloudProduct(env, request, lpn).catch(() => {});
+  }
+
+  const saved = [];
+
+  for (const ean of eans) {
+    const products = await allegroSearch(env, ean);
+    if (!products.length) throw new Error("Nie znaleziono produktu dla EAN " + ean);
+
+    const ranked = products
+      .map(p => ({ ...p, score: scoreProduct(p, ean) }))
+      .sort((a,b) => b.score - a.score);
+
+    const best = ranked[0];
+
+    let categoryMeta = null;
+    try {
+      categoryMeta = await categoryMetadata(env, best.categoryId);
+    } catch (e) {
+      categoryMeta = { error: e.message, categoryId: best.categoryId || "" };
+    }
+
+    const gpsr = summarizeProductSafety(best.productSafety);
+
+    const record = {
+      lpn: "REAL-EAN-" + ean,
+      ean,
+      asin: best.asin || "",
+      productName: best.name || "",
+      brand: best.brand || "",
+      model: best.model || "",
+      category: categoryMeta?.categoryName || best.category || "",
+      parameters: Array.isArray(best.parameters)
+        ? best.parameters.map(p => (p.name || p.key || "") + ": " + (p.value ?? "")).join("\n")
+        : "",
+      condition: "",
+      contents: "TEST katalogowy — bez fizycznej weryfikacji sztuki",
+      flaws: "",
+      loc: "TEST-LIVE",
+      shipping: "",
+      weight: "",
+      confirm: false,
+      identified: true,
+      confidence: Number(best.score || 0),
+      categoryMeta,
+      gpsrData: gpsr,
+      photos: [],
+      status: "catalog-test",
+      source: "Allegro API",
+      testRecord: true
+    };
+
+    const result = await saveCloudProduct(env, request, record);
+    saved.push(result.record);
+  }
+
+  return saved;
 }
 
 async function storeTokens(env, body) {
