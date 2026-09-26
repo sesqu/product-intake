@@ -473,7 +473,7 @@
     if (window.ProductStorage) return window.ProductStorage.getProducts(localStorage, KEYS.products);
     return JSON.parse(localStorage.getItem(KEYS.products) || '[]');
   }
-  function saveReadyProduct() {
+  async function saveReadyProduct() {
     const missing = validateForReady();
     if (missing.length) {
       toast('Brakuje: ' + missing.slice(0,3).join(', ') + (missing.length > 3 ? '…' : ''));
@@ -503,12 +503,27 @@
       result = {record, created: existingIndex < 0, updated: existingIndex >= 0};
     }
 
+    let cloudOk = false;
+    try {
+      const cloudResult = await cloudSaveProduct(result.record);
+      cloudOk = true;
+      result.record = cloudResult.record || result.record;
+      await syncProductsFromCloud(true);
+    } catch (e) {
+      console.warn('Cloud product save failed', e);
+    }
+
     addHistory(
       result.updated ? 'Produkt zaktualizowany' : 'Produkt gotowy',
       d.lpn + (d.productName ? ' • ' + d.productName : '')
     );
     saveDraft();
-    toast(result.updated ? 'Produkt zaktualizowany.' : 'Produkt zapisany jako gotowy.');
+
+    if (cloudOk) {
+      toast(result.updated ? 'Produkt zaktualizowany i zsynchronizowany.' : 'Produkt zapisany i zsynchronizowany.');
+    } else {
+      toast('Produkt zapisany lokalnie — synchronizacja chwilowo niedostępna.');
+    }
     return true;
   }
 
@@ -531,10 +546,29 @@
     m.style.display = 'block';
   }
 
-  function showProducts() {
-    const products = getProducts();
+  async function showProducts() {
+    let products = getProducts();
+    try {
+      products = await syncProductsFromCloud(true);
+    } catch {}
+
     const rows = products.length ? products.map(p => '<tr><td>'+safe(p.lpn)+'</td><td>'+safe(p.productName||'—')+'</td><td>'+safe(p.ean||p.asin||'—')+'</td><td>'+safe(p.loc||'—')+'</td><td>'+new Date(p.savedAt).toLocaleString('pl-PL')+'</td></tr>').join('') : '<tr><td colspan="5" style="color:#919baa;padding:20px">Nie zapisano jeszcze żadnego produktu.</td></tr>';
-    openModal('Produkty gotowe', '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#919baa"><th style="padding:9px">LPN</th><th>Nazwa</th><th>EAN / ASIN</th><th>Lokalizacja</th><th>Zapisano</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+
+    openModal(
+      'Produkty gotowe',
+      '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px">'+
+        '<div style="color:#919baa;font-size:12px">Źródło: wspólna baza online • '+products.length+' produktów</div>'+
+        '<button id="refreshProducts" class="btn">Odśwież</button>'+
+      '</div>'+
+      '<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left;color:#919baa"><th style="padding:9px">LPN</th><th>Nazwa</th><th>EAN / ASIN</th><th>Lokalizacja</th><th>Zapisano</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    );
+
+    if ($('refreshProducts')) $('refreshProducts').onclick = async () => {
+      $('refreshProducts').disabled = true;
+      $('refreshProducts').textContent = 'Synchronizuję…';
+      try { await syncProductsFromCloud(false); }
+      finally { showProducts(); }
+    };
   }
   function showHistory() {
     const h = JSON.parse(localStorage.getItem(KEYS.history) || '[]');
@@ -744,8 +778,9 @@
     if (productsBtn) productsBtn.onclick = showProducts;
   }
 
-  window.finish = function() {
-    if (!saveReadyProduct()) return;
+  window.finish = async function() {
+    const ok = await saveReadyProduct();
+    if (!ok) return;
     showSaveSuccess();
   };
 
@@ -906,7 +941,7 @@
     }
   }
 
-    function boot() {
+    async function boot() {
     ensureIds();
     setupPhotos();
     setupNav();
@@ -915,6 +950,7 @@
     bindAutosave();
     loadDraft();
     seedVisibleTestProducts();
+    await initializeCloudProducts();
     addHistory('Otwarto aplikację','Product Intake');
     handleAllegroCallback();
   }
