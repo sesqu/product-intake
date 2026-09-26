@@ -49,3 +49,18 @@ assert.equal(products[0].lpn, 'TEST-002');
 assert.equal(products[0].loc, 'B-99');
 
 console.log('PASS: zapisano 3 produkty, odczytano je po reloadzie i zablokowano duplikat LPN.');
+
+
+// status test: editor must preserve catalog/test status unless explicitly changed.
+const special = ProductStorage.saveProduct(afterReload, KEY, {
+  lpn: 'TEST-STATUS',
+  productName: 'Produkt statusowy',
+  status: 'catalog-test'
+});
+assert.equal(special.record.status, 'catalog-test');
+const specialUpdate = ProductStorage.saveProduct(afterReload, KEY, {
+  lpn: 'TEST-STATUS',
+  productName: 'Produkt statusowy po edycji'
+});
+assert.equal(specialUpdate.record.status, 'catalog-test', 'Edycja nie może samoczynnie zmienić statusu produktu');
+console.log('PASS status test: status produktu zachowany przy edycji.');
