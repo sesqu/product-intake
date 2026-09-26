@@ -306,15 +306,12 @@
             testRecord:true
           };
 
-          let localResult;
-          if (window.ProductStorage) {
-            localResult = window.ProductStorage.saveProduct(localStorage, keys.products, record, 500);
-          } else {
-            const local = getProducts().filter(p => String(p?.lpn || '').toLowerCase() !== record.lpn.toLowerCase());
-            local.unshift({...record, savedAt:new Date().toISOString()});
-            localStorage.setItem(keys.products, JSON.stringify(local.slice(0,500)));
-            localResult = {record:local[0]};
-          }
+          const localResult = window.ProductStorage.saveProduct(
+            localStorage,
+            keys.products,
+            record,
+            500
+          );
 
           seeded.push(localResult.record || record);
 
