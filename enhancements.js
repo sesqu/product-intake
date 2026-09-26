@@ -247,6 +247,56 @@
     };
   }
 
+  function setupMobileNav() {
+    if (document.getElementById('mobileNav')) return;
+
+    const style = document.createElement('style');
+    style.textContent = \`
+      #mobileNav{display:none}
+      @media(max-width:950px){
+        #mobileNav{
+          position:fixed;left:10px;right:10px;bottom:10px;z-index:999;
+          display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
+          padding:7px;background:rgba(13,16,20,.94);
+          backdrop-filter:blur(14px);border:1px solid #28303a;border-radius:14px;
+          box-shadow:0 16px 45px rgba(0,0,0,.35)
+        }
+        #mobileNav button{
+          border:0;background:transparent;color:#aeb6c1;padding:9px 5px;
+          border-radius:9px;font-size:11px;font-weight:650
+        }
+        #mobileNav button.primaryMobile{background:#172033;color:#fff}
+        body{padding-bottom:76px}
+      }\`;
+    document.head.appendChild(style);
+
+    const nav = document.createElement('div');
+    nav.id = 'mobileNav';
+    nav.innerHTML = \`
+      <button class="primaryMobile" data-act="add">Dodaj</button>
+      <button data-act="products">Produkty</button>
+      <button data-act="integrations">Integracje</button>
+      <button data-act="more">Więcej</button>\`;
+    document.body.appendChild(nav);
+
+    nav.querySelector('[data-act="add"]').onclick = () => {
+      window.scrollTo({top:0,behavior:'smooth'});
+    };
+    nav.querySelector('[data-act="products"]').onclick = showProducts;
+    nav.querySelector('[data-act="integrations"]').onclick = showIntegrations;
+    nav.querySelector('[data-act="more"]').onclick = () => {
+      openModal('Więcej',
+        '<div style="display:grid;gap:8px">'+
+        '<button id="mLocations" class="btn">Lokalizacje</button>'+
+        '<button id="mHistory" class="btn">Historia</button>'+
+        '<button id="mSettings" class="btn">Ustawienia</button>'+
+        '</div>');
+      document.getElementById('mLocations').onclick = showLocations;
+      document.getElementById('mHistory').onclick = showHistory;
+      document.getElementById('mSettings').onclick = () => openModal('Ustawienia','<div style="color:#919baa">Ustawienia aplikacji będziemy rozwijać w kolejnych iteracjach.</div>');
+    };
+  }
+
   function setupNav() {
     const navs = [...document.querySelectorAll('.nav')];
     if (navs[1]) navs[1].onclick = showProducts;
@@ -359,6 +409,7 @@
     ensureIds();
     setupPhotos();
     setupNav();
+    setupMobileNav();
     bindAutosave();
     loadDraft();
     addHistory('Otwarto aplikację','Product Intake');
