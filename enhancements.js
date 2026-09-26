@@ -780,7 +780,7 @@
     m = document.createElement('div');
     m.id = 'piModal';
     m.style.cssText = 'position:fixed;inset:0;z-index:1000;background:rgba(4,6,9,.72);backdrop-filter:blur(8px);display:none;padding:18px;overflow:auto';
-    m.innerHTML = '<div id="piModalCard" style="max-width:1120px;margin:2vh auto;background:#11161c;border:1px solid #2a323c;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #252c35;position:sticky;top:0;background:#11161c;z-index:20"><b id="piModalTitle"></b><button id="piModalClose" class="btn">Zamknij</button></div><div id="piModalBody" style="padding:18px"></div></div>';
+    m.innerHTML = '<div id="piModalCard" style="max-width:1120px;margin:2vh auto;background:#11161c;border:1px solid #2a323c;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.45);overflow:hidden"><div class="pi-modal-header" style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #252c35;position:sticky;top:0;background:#11161c;z-index:20"><b id="piModalTitle"></b><button id="piModalClose" class="btn">Zamknij</button></div><div id="piModalBody" style="padding:18px"></div></div>';
     document.body.appendChild(m);
     $('piModalClose').onclick = () => m.style.display='none';
     m.addEventListener('click', e => { if (e.target === m) m.style.display='none'; });
@@ -802,6 +802,11 @@
     s.id = 'piProductStyles';
     s.textContent = `
       .pi-products-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+      .pi-modal-header{min-height:58px}
+      .pi-modal-header #piModalTitle{font-size:18px;line-height:1.1}
+      .pi-modal-header #piModalClose{padding:9px 12px}
+      .pi-products-toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:14px}
+      .pi-products-toolbar .btn{flex:0 0 auto}
       .pi-product-card{border:1px solid #29313b;border-radius:14px;background:#151b22;padding:14px;cursor:pointer;transition:.16s transform,.16s border-color}
       .pi-product-card:hover{transform:translateY(-1px);border-color:#465363}
       .pi-product-row{display:flex;gap:12px;align-items:center}
@@ -833,17 +838,80 @@
       .pi-photo-remove{position:absolute;top:6px;right:6px}
       .pi-savebar{display:flex;justify-content:space-between;gap:10px;align-items:center;position:sticky;bottom:-18px;background:rgba(17,22,28,.96);backdrop-filter:blur(12px);border-top:1px solid #29313b;margin:18px -18px -18px;padding:12px 18px;z-index:15}
       @media(max-width:700px){
-        #piModal{padding:0!important}
-        #piModalCard{margin:0!important;min-height:100vh;border-radius:0!important;border-left:0!important;border-right:0!important}
-        #piModalBody{padding:14px!important}
-        .pi-products-grid{grid-template-columns:1fr}
-        .pi-editor-hero{grid-template-columns:88px minmax(0,1fr)}
-        .pi-editor-image{width:88px;height:88px;border-radius:12px}
+        #piModal{
+          padding:0!important;
+          background:#0b0d10!important;
+          min-height:100dvh;
+        }
+        #piModalCard{
+          margin:0!important;
+          min-height:100dvh;
+          border-radius:0!important;
+          border:0!important;
+          box-shadow:none!important;
+          padding-bottom:calc(82px + env(safe-area-inset-bottom,0px));
+        }
+        .pi-modal-header{
+          min-height:calc(54px + env(safe-area-inset-top,0px))!important;
+          padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px!important;
+          background:rgba(17,22,28,.97)!important;
+          backdrop-filter:blur(14px);
+        }
+        .pi-modal-header #piModalTitle{
+          font-size:20px!important;
+          letter-spacing:-.02em;
+        }
+        .pi-modal-header #piModalClose{
+          padding:8px 10px!important;
+          font-size:12px;
+          border-radius:9px;
+        }
+        #piModalBody{padding:12px!important}
+        .pi-products-toolbar{
+          margin-bottom:10px;
+          gap:8px;
+        }
+        .pi-products-toolbar .pi-small{
+          font-size:11px;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        }
+        .pi-products-toolbar .btn{
+          padding:8px 10px;
+          font-size:12px;
+        }
+        .pi-products-grid{grid-template-columns:1fr;gap:9px}
+        .pi-product-card{padding:12px;border-radius:13px}
+        .pi-product-row{gap:10px;align-items:flex-start}
+        .pi-product-thumb{width:68px;height:68px;border-radius:11px}
+        .pi-product-card [style*="font-weight:700"]{font-size:16px!important;line-height:1.22!important;margin-top:2px!important}
+        .pi-chip{font-size:10px;padding:4px 7px;margin-top:5px}
+        .pi-editor-hero{grid-template-columns:78px minmax(0,1fr);gap:12px;margin-bottom:12px}
+        .pi-editor-image{width:78px;height:78px;border-radius:11px}
+        .pi-editor-hero h2{font-size:18px!important;line-height:1.18!important;margin-top:3px!important}
         .pi-grid,.pi-grid-3{grid-template-columns:1fr}
-        .pi-tabs{top:57px;margin-left:-14px;margin-right:-14px;padding:8px 14px 12px}
+        .pi-tabs{
+          top:calc(54px + env(safe-area-inset-top,0px));
+          margin-left:-12px;
+          margin-right:-12px;
+          padding:7px 12px 9px;
+          gap:6px;
+          background:rgba(17,22,28,.98);
+          scrollbar-width:none;
+        }
+        .pi-tabs::-webkit-scrollbar{display:none}
+        .pi-tab{padding:8px 9px;font-size:11px;border-radius:8px}
+        .pi-section{padding:12px;border-radius:12px;margin-bottom:10px}
         .pi-param-row{grid-template-columns:1fr}
         .pi-param-row button{justify-self:start}
-        .pi-savebar{margin-left:-14px;margin-right:-14px;margin-bottom:-14px;bottom:-14px}
+        .pi-savebar{
+          margin-left:-12px;
+          margin-right:-12px;
+          margin-bottom:calc(-12px - env(safe-area-inset-bottom,0px));
+          bottom:calc(-12px - env(safe-area-inset-bottom,0px));
+          padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));
+        }
       }
     `;
     document.head.appendChild(s);
@@ -1324,8 +1392,8 @@
 
     openModal(
       'Produkty',
-      '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:14px">'+
-        '<div class="pi-muted pi-small">Master produktów • '+products.length+' • build v17</div>'+
+      '<div class="pi-products-toolbar">'+
+        '<div class="pi-muted pi-small">Master produktów • '+products.length+' • build v18</div>'+
         '<button id="refreshProducts" class="btn">Odśwież</button>'+
       '</div>'+
       '<div class="pi-products-grid">'+cards+'</div>'
@@ -1447,19 +1515,30 @@
             #mobileNav{display:none}
       @media(max-width:1150px){
         #mobileNav{
-          position:fixed;left:10px;right:10px;bottom:10px;z-index:999;
-          display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
-          padding:7px;background:rgba(13,16,20,.94);
-          backdrop-filter:blur(14px);border:1px solid #28303a;border-radius:14px;
+          position:fixed;
+          left:8px;right:8px;
+          bottom:calc(8px + env(safe-area-inset-bottom,0px));
+          z-index:999;
+          display:grid;grid-template-columns:repeat(4,1fr);gap:5px;
+          padding:6px;
+          background:rgba(13,16,20,.94);
+          backdrop-filter:blur(14px);
+          border:1px solid #28303a;
+          border-radius:13px;
           box-shadow:0 16px 45px rgba(0,0,0,.35)
         }
         #mobileNav button{
-          border:0;background:transparent;color:#aeb6c1;padding:9px 5px;
-          border-radius:9px;font-size:11px;font-weight:650
+          border:0;background:transparent;color:#aeb6c1;
+          padding:8px 4px;
+          border-radius:8px;
+          font-size:11px;font-weight:650
         }
         #mobileNav button.primaryMobile{background:#172033;color:#fff}
-        body{padding-bottom:76px}
-        #toast{bottom:82px;left:14px;right:14px;text-align:center}
+        body{padding-bottom:calc(74px + env(safe-area-inset-bottom,0px))}
+        #toast{
+          bottom:calc(80px + env(safe-area-inset-bottom,0px));
+          left:14px;right:14px;text-align:center
+        }
       }`;
     document.head.appendChild(style);
 
