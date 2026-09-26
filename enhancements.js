@@ -419,8 +419,7 @@
   }
 
   function getProducts() {
-    if (window.ProductStorage) return window.ProductStorage.getProducts(localStorage, KEYS.products);
-    return JSON.parse(localStorage.getItem(KEYS.products) || '[]');
+    return window.ProductStorage.getProducts(localStorage, KEYS.products);
   }
   async function saveReadyProduct() {
     const missing = validateForReady();
@@ -430,27 +429,7 @@
     }
 
     const d = readDraft();
-    let result;
-
-    if (window.ProductStorage) {
-      result = window.ProductStorage.saveProduct(localStorage, KEYS.products, d, 500);
-    } else {
-      const products = getProducts();
-      const lpnKey = String(d.lpn || '').trim().toLowerCase();
-      const existingIndex = products.findIndex(p => String(p.lpn || '').trim().toLowerCase() === lpnKey);
-      const existing = existingIndex >= 0 ? products[existingIndex] : null;
-      const record = {
-        ...(existing || {}),
-        ...d,
-        id: existing?.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
-        savedAt: new Date().toISOString(),
-        status:'ready'
-      };
-      if (existingIndex >= 0) products.splice(existingIndex, 1);
-      products.unshift(record);
-      localStorage.setItem(KEYS.products, JSON.stringify(products.slice(0,500)));
-      result = {record, created: existingIndex < 0, updated: existingIndex >= 0};
-    }
+    let result = window.ProductStorage.saveProduct(localStorage, KEYS.products, d, 500);
 
     let cloudOk = false;
     try {
