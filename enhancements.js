@@ -122,50 +122,100 @@
     }
   }
 
-  async function seedRealCatalogProducts() {
-    const key = getWorkspaceKey();
-    const flag = 'productIntake.realCatalogSeed.v3.' + key.slice(0,12);
-    if (localStorage.getItem(flag) === 'done') return;
+  let realSeedPromise = null;
 
-    try {
-      const r = await fetch(apiBase() + '/api/products/seed-real', {
-        method:'POST',
-        headers: cloudHeaders(),
-        body:'{}'
-      });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data.error || 'Nie udało się dodać realnych produktów');
+  async function seedRealCatalogProducts(force = false) {
+    if (realSeedPromise) return realSeedPromise;
 
-      const seeded = Array.isArray(data.products) ? data.products : [];
+    realSeedPromise = (async () => {
+      const key = getWorkspaceKey();
+      const flag = 'productIntake.realCatalogSeed.v4.' + key.slice(0,12);
+      if (!force && localStorage.getItem(flag) === 'done') return getProducts();
 
-      let local = [];
-      try { local = JSON.parse(localStorage.getItem(KEYS.products) || '[]'); } catch {}
-      local = Array.isArray(local) ? local : [];
-      local = local.filter(p => !String(p?.lpn || '').startsWith('TEST-SEED-'));
+      const eans = [
+        '195949544026',
+        '4548736132580',
+        '6925281994258'
+      ];
+      const seeded = [];
 
-      const byLpn = new Map();
-      for (const p of [...local, ...seeded]) {
-        const lpn = String(p?.lpn || '').trim();
-        if (!lpn) continue;
-        byLpn.set(lpn.toLowerCase(), p);
+      for (const ean of eans) {
+        try {
+          const search = await fetch(apiBase() + '/api/search?ean=' + encodeURIComponent(ean));
+          const data = await search.json().catch(() => ({}));
+          if (!search.ok || !data.best?.name) {
+            throw new Error(data.error || 'Brak produktu dla EAN ' + ean);
+          }
+
+          const best = data.best;
+          const record = {
+            lpn: 'REAL-EAN-' + ean,
+            ean,
+            asin: best.asin || '',
+            productName: best.name || '',
+            brand: best.brand || '',
+            model: best.model || '',
+            category: data.categoryMeta?.categoryName || best.category || '',
+            parameters: Array.isArray(best.parameters)
+              ? best.parameters.map(p => (p.name || p.key || '') + ': ' + (p.value ?? '')).join('\n')
+              : '',
+            condition: '',
+            contents: 'TEST katalogowy — bez fizycznej weryfikacji sztuki',
+            flaws: '',
+            loc: 'TEST-LIVE',
+            shipping: '',
+            weight: '',
+            confirm: false,
+            identified: true,
+            confidence: Number(data.confidence ?? 0),
+            categoryMeta: data.categoryMeta || null,
+            gpsrData: data.gpsr || null,
+            photos: [],
+            status: 'catalog-test',
+            source: 'Allegro API',
+            testRecord: true
+          };
+
+          let localResult;
+          if (window.ProductStorage) {
+            localResult = window.ProductStorage.saveProduct(localStorage, KEYS.products, record, 500);
+          } else {
+            const local = getProducts().filter(p => String(p?.lpn || '').toLowerCase() !== record.lpn.toLowerCase());
+            local.unshift({...record, savedAt:new Date().toISOString()});
+            localStorage.setItem(KEYS.products, JSON.stringify(local.slice(0,500)));
+            localResult = {record:local[0]};
+          }
+
+          seeded.push(localResult.record || record);
+
+          try {
+            await cloudSaveProduct(localResult.record || record);
+          } catch (cloudError) {
+            console.warn('Cloud seed save failed for', ean, cloudError);
+          }
+        } catch (e) {
+          console.warn('Real catalog seed failed for', ean, e);
+        }
       }
 
-      const merged = [...byLpn.values()]
-        .sort((a,b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')))
-        .slice(0,500);
-
-      localStorage.setItem(KEYS.products, JSON.stringify(merged));
+      let cleaned = getProducts().filter(p => !String(p?.lpn || '').startsWith('TEST-SEED-'));
+      localStorage.setItem(KEYS.products, JSON.stringify(cleaned.slice(0,500)));
 
       if (seeded.length === 3) {
         localStorage.setItem(flag,'done');
         addHistory('Dodano realne produkty testowe', seeded.map(p => p.ean || p.lpn).join(', '));
-        setTimeout(() => toast('Gotowe • 3 realne produkty z Allegro są w bazie.'), 350);
+        toast('Gotowe • 3 realne produkty z Allegro są na liście.');
       } else {
-        setTimeout(() => toast('Dodano ' + seeded.length + '/3 realnych produktów.'), 350);
+        toast('Dodano ' + seeded.length + '/3 realnych produktów.');
       }
-    } catch (e) {
-      console.warn('Real catalog seed failed', e);
-      setTimeout(() => toast('Nie udało się dodać realnych produktów: ' + (e.message || 'błąd')), 350);
+
+      return cleaned;
+    })();
+
+    try {
+      return await realSeedPromise;
+    } finally {
+      realSeedPromise = null;
     }
   }
 
@@ -612,10 +662,25 @@
   }
 
   async function showProducts() {
-    let products = getProducts();
+    openModal(
+      'Produkty gotowe',
+      '<div style="padding:24px;color:#919baa;text-align:center">Ładuję i synchronizuję produkty…</div>'
+    );
+
+    let products = getProducts().filter(p => !String(p?.lpn || '').startsWith('TEST-SEED-'));
+    const hasRealSeed = ['195949544026','4548736132580','6925281994258']
+      .every(ean => products.some(p => String(p?.ean || '') === ean));
+
+    if (!hasRealSeed) {
+      await seedRealCatalogProducts(true);
+      products = getProducts().filter(p => !String(p?.lpn || '').startsWith('TEST-SEED-'));
+    }
+
     try {
       products = await syncProductsFromCloud(true);
     } catch {}
+
+    products = products.filter(p => !String(p?.lpn || '').startsWith('TEST-SEED-'));
 
     const rows = products.length ? products.map(p => '<tr><td>'+safe(p.lpn)+'</td><td>'+safe(p.productName||'—')+'</td><td>'+safe(p.ean||p.asin||'—')+'</td><td>'+safe(p.loc||'—')+'</td><td>'+new Date(p.savedAt).toLocaleString('pl-PL')+'</td></tr>').join('') : '<tr><td colspan="5" style="color:#919baa;padding:20px">Nie zapisano jeszcze żadnego produktu.</td></tr>';
 
@@ -631,8 +696,12 @@
     if ($('refreshProducts')) $('refreshProducts').onclick = async () => {
       $('refreshProducts').disabled = true;
       $('refreshProducts').textContent = 'Synchronizuję…';
-      try { await syncProductsFromCloud(false); }
-      finally { showProducts(); }
+      try {
+        await seedRealCatalogProducts(true);
+        await syncProductsFromCloud(false);
+      } finally {
+        showProducts();
+      }
     };
   }
   function showHistory() {
