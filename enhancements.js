@@ -10,9 +10,7 @@
   const $ = id => document.getElementById(id);
   const safe = (v='') => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let photoData = [];
-  let latestCategoryMeta = null;
-  let latestGpsr = null;
-  let latestConfidence = null;
+  const CatalogLookup = window.ProductIntakeCatalogLookup;
 
   window.ProductIntakePWA?.setup({build:28,label:'v28'});
 
@@ -93,19 +91,16 @@
     out.identified = typeof identified !== 'undefined' ? identified : false;
     out.step = typeof step !== 'undefined' ? step : 0;
     out.savedAt = new Date().toISOString();
-    out.categoryMeta = latestCategoryMeta;
-    out.gpsrData = latestGpsr;
-    out.confidence = latestConfidence;
+    const catalogState = CatalogLookup.getState();
+    out.categoryMeta = catalogState.categoryMeta;
+    out.gpsrData = catalogState.gpsrData;
+    out.confidence = catalogState.confidence;
     return out;
   }
   function writeDraft(d) {
     if (!d) return;
 
-    latestCategoryMeta = d.categoryMeta || null;
-    latestGpsr = d.gpsrData || null;
-    latestConfidence = Number.isFinite(Number(d.confidence)) ? Number(d.confidence) : null;
-
-    applyCategoryMeta(latestCategoryMeta, false);
+    CatalogLookup.applyCategoryMeta(d.categoryMeta || null, false);
 
     for (const id of fieldIds) {
       const el = $(id);
@@ -120,9 +115,9 @@
       step = Math.max(0, Math.min(4, d.step));
     }
 
-    applyGpsr(latestGpsr);
-    applyConfidence(latestConfidence);
-    updateEanRequirementUi();
+    CatalogLookup.applyGpsr(d.gpsrData || null);
+    CatalogLookup.applyConfidence(d.confidence);
+    CatalogLookup.updateEanRequirementUi();
     drawPhotos();
 
     if (typeof render === 'function') render();
@@ -216,152 +211,10 @@
     });
   }
 
-  function selectedConditionId() {
-    const option = $('condition')?.selectedOptions?.[0];
-    return option?.dataset?.allegroId || '';
-  }
-
-  function eanRequirementState() {
-    const gtin = latestCategoryMeta?.gtin;
-    if (!gtin) return { required:false, pending:false, reason:'not-applicable' };
-    if (gtin.requiredForProduct) return { required:true, pending:false, reason:'category' };
-
-    const withValues = gtin.requiredIf?.parametersWithValue || [];
-    if (!withValues.length) return { required:false, pending:false, reason:'optional' };
-
-    const conditionId = String(latestCategoryMeta?.condition?.id || '');
-    const selectedId = selectedConditionId();
-
-    const conditionRules = withValues.filter(rule => String(rule.id || '') === conditionId);
-    if (!conditionRules.length) return { required:false, pending:false, reason:'optional' };
-    if (!selectedId) return { required:false, pending:true, reason:'condition' };
-
-    const required = conditionRules.some(rule =>
-      Array.isArray(rule.oneOfValueIds) && rule.oneOfValueIds.map(String).includes(String(selectedId))
-    );
-    return { required, pending:false, reason: required ? 'condition' : 'optional' };
-  }
-
-  function updateEanRequirementUi() {
-    const state = eanRequirementState();
-    const label = $('eanLabel');
-    const hint = $('eanRequirement');
-    const status = $('rEan');
-    const hasEan = Boolean($('ean')?.value.trim());
-
-    if (label) label.textContent = 'EAN / GTIN' + (state.required ? ' *' : '');
-
-    if (hint) {
-      if (!latestCategoryMeta) {
-        hint.textContent = 'Wymagalność sprawdzimy po identyfikacji kategorii Allegro.';
-      } else if (!latestCategoryMeta.gtin) {
-        hint.textContent = 'Allegro nie wymaga GTIN dla tego produktu w tej kategorii.';
-      } else if (state.pending) {
-        hint.textContent = 'Wymagalność EAN zależy od wybranego stanu produktu.';
-      } else if (state.required) {
-        hint.textContent = 'EAN / GTIN jest wymagany przez Allegro dla tej konfiguracji produktu.';
-      } else {
-        hint.textContent = 'EAN / GTIN nie jest wymagany przez Allegro dla tej konfiguracji produktu.';
-      }
-    }
-
-    if (status) {
-      if (state.pending) {
-        status.textContent = 'zależnie od stanu';
-        status.className = 'muted';
-      } else if (!state.required) {
-        status.textContent = 'opcjonalny';
-        status.className = 'muted';
-      } else {
-        status.textContent = hasEan ? 'OK' : 'brak';
-        status.className = hasEan ? 'ok' : 'bad';
-      }
-    }
-
-    return state;
-  }
-
-  function applyCategoryMeta(meta, preserveValue = true) {
-    latestCategoryMeta = meta || null;
-
-    if ($('category') && latestCategoryMeta?.categoryName) {
-      const current = $('category').value.trim();
-      if (!current || /^\d+$/.test(current)) $('category').value = latestCategoryMeta.categoryName;
-      $('category').dataset.allegroCategoryId = latestCategoryMeta.categoryId || '';
-    }
-
-    const select = $('condition');
-    const values = latestCategoryMeta?.condition?.values || [];
-    if (select && values.length) {
-      const oldValue = preserveValue ? select.value : '';
-      select.innerHTML = '<option value="">Wybierz</option>' + values.map(v =>
-        '<option value="'+safe(v.value)+'" data-allegro-id="'+safe(v.id)+'">'+safe(v.value)+'</option>'
-      ).join('');
-
-      if (oldValue && [...select.options].some(o => o.value === oldValue)) {
-        select.value = oldValue;
-      }
-    }
-
-    updateEanRequirementUi();
-  }
-
-  function formatGpsrAddress(address) {
-    if (!address) return '';
-    return [address.street, [address.postalCode,address.city].filter(Boolean).join(' '), address.countryCode]
-      .filter(Boolean).join(', ');
-  }
-
-  function applyGpsr(gpsr) {
-    latestGpsr = gpsr || null;
-    const status = $('gpsrStatus');
-    const details = $('gpsrDetails');
-    if (!status || !details) return;
-
-    if (!latestGpsr) {
-      status.textContent = 'Brak identyfikacji produktu.';
-      details.style.display = 'none';
-      details.value = '';
-      return;
-    }
-
-    status.textContent = latestGpsr.status || (latestGpsr.available ? 'Dane GPSR pobrane z Allegro' : 'Brak danych GPSR w katalogu Allegro');
-
-    const lines = [];
-    for (const producer of latestGpsr.producers || []) {
-      const name = producer.tradeName || producer.name || 'Producent';
-      const address = formatGpsrAddress(producer.address);
-      const contact = producer.contact || {};
-      lines.push('Producent: ' + name);
-      if (address) lines.push('Adres: ' + address);
-      if (contact.email) lines.push('E-mail: ' + contact.email);
-      if (contact.phoneNumber) lines.push('Telefon: ' + contact.phoneNumber);
-    }
-
-    const safety = latestGpsr.safetyInformation;
-    if (safety?.type) lines.push('Informacje bezpieczeństwa: ' + safety.type);
-    if (Array.isArray(safety?.attachments) && safety.attachments.length) {
-      lines.push('Załączniki bezpieczeństwa: ' + safety.attachments.length);
-    }
-
-    details.value = lines.join('\n');
-    details.style.display = lines.length ? 'block' : 'none';
-  }
-
-  function applyConfidence(value) {
-    const n = Number(value);
-    latestConfidence = Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : null;
-
-    if ($('confidencePct')) $('confidencePct').textContent = latestConfidence == null ? '—' : latestConfidence + '%';
-    if ($('confidenceBar')) $('confidenceBar').style.width = (latestConfidence == null ? 0 : latestConfidence) + '%';
-    if ($('sumIdentification')) $('sumIdentification').textContent =
-      latestConfidence == null ? '—' : latestConfidence + '% • Allegro';
-  }
-
   function updateQualityPanel() {
     const identifiedOk = typeof identified !== 'undefined' && identified;
     const photoOk = photoData.filter(Boolean).length > 0;
-    const eanState = updateEanRequirementUi();
+    const eanState = CatalogLookup.updateEanRequirementUi();
 
     const rows = [
       ['r1', Boolean($('lpn')?.value.trim())],
@@ -411,7 +264,7 @@
       ['dostawa / gabaryt', $('shipping')?.value]
     ];
 
-    if (eanRequirementState().required) {
+    if (CatalogLookup.eanRequirementState().required) {
       req.push(['EAN / GTIN wymagany przez Allegro', $('ean')?.value.trim()]);
     }
 
@@ -482,6 +335,21 @@
     m.style.display = 'block';
   }
 
+  function setupCatalogLookup() {
+    CatalogLookup?.setup({
+      keys:KEYS,
+      defaultApiBase:DEFAULT_API_BASE,
+      safe,
+      toast,
+      saveDraft,
+      addHistory,
+      setIdentified:value => {
+        if (typeof identified !== 'undefined') identified = Boolean(value);
+      },
+      quality:() => updateQualityPanel()
+    });
+  }
+
   const ProductEditor = window.ProductIntakeProductEditor;
 
   function setupProductEditor() {
@@ -549,64 +417,6 @@
       openModal
     });
   }
-
-  function normalizeRemote(data) {
-    if (!data) return null;
-    return data.best || data.product || null;
-  }
-  function renderRemote(data) {
-    const best = normalizeRemote(data);
-    if (!best) { toast('Nie znaleziono jednoznacznego produktu.'); return false; }
-    if (typeof identified !== 'undefined') identified = true;
-    const confidence = Number(data.confidence ?? 0);
-    const conflicts = Array.isArray(data.hardConflicts) ? data.hardConflicts : [];
-    const sourceCards = Object.entries(data.sources || {}).map(([k,v]) => '<div class="source"><b>'+safe(k[0].toUpperCase()+k.slice(1))+'</b><small>'+safe(v?.status || (v ? 'znaleziono' : 'brak'))+'</small><div style="margin-top:8px">'+safe(v?.name || '—')+'</div></div>').join('');
-    const checks = Array.isArray(data.checks) ? data.checks.map(c => '<div class="check"><span>'+safe(c.label)+'</span><span>'+safe(c.value||'—')+'</span><span class="'+(c.status==='ok'?'ok':c.status==='warn'?'warn':'bad')+'">'+safe(c.text||c.status)+'</span></div>').join('') : '';
-    $('lookup').style.display='block';
-    $('lookup').innerHTML = '<div class="lookupTop"><div><b>Wynik identyfikacji</b><div class="muted">Dane z podłączonych źródeł API.</div></div><div><span class="score">'+confidence+'%</span> <span class="badge '+(conflicts.length?'':'ok')+'">'+(conflicts.length?'konflikt':'wynik')+'</span></div></div><div class="sources">'+sourceCards+'</div><div style="margin-top:12px">'+checks+'</div>'+(conflicts.length?'<div class="note" style="border-color:rgba(234,119,123,.3);color:#f0b2b4">Blokada: '+safe(conflicts.join(', '))+'</div>':'');
-    if ($('productName')) $('productName').value = best.name || '';
-    if ($('brand')) $('brand').value = best.brand || '';
-    if ($('model')) $('model').value = best.model || '';
-    if ($('category')) $('category').value = data.categoryMeta?.categoryName || best.category || '';
-    if ($('parameters') && best.parameters) $('parameters').value = Array.isArray(best.parameters) ? best.parameters.map(p => (p.name||p.key)+': '+(p.value??'')).join('\n') : String(best.parameters);
-    if (best.asin && !$('asin').value) $('asin').value = best.asin;
-    if (best.ean && !$('ean').value) $('ean').value = best.ean;
-
-    applyCategoryMeta(data.categoryMeta || null);
-    applyGpsr(data.gpsr || null);
-    applyConfidence(confidence);
-    quality();
-    saveDraft();
-    addHistory('Identyfikacja API', ($('lpn').value||'')+' • '+(best.name||''));
-    return true;
-  }
-  window.lookup = async function() {
-    const base = (localStorage.getItem(KEYS.apiBase)||DEFAULT_API_BASE).replace(/\/$/,'');
-    if (!$('ean').value.trim() && !$('asin').value.trim()) return toast('Podaj EAN lub ASIN');
-    toast('Sprawdzam produkt…');
-    const lookupBtn = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Sprawdź produkt');
-    const oldLookupText = lookupBtn?.textContent;
-    if (lookupBtn) {
-      lookupBtn.disabled = true;
-      lookupBtn.textContent = 'Sprawdzam…';
-    }
-    try {
-      const q = new URLSearchParams();
-      if ($('ean').value.trim()) q.set('ean',$('ean').value.trim());
-      if ($('asin').value.trim()) q.set('asin',$('asin').value.trim());
-      const r = await fetch(base+'/api/search?'+q.toString());
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || 'Błąd API');
-      renderRemote(j);
-    } catch (e) {
-      toast('Błąd integracji: '+(e.message||'brak połączenia'));
-    } finally {
-      if (lookupBtn) {
-        lookupBtn.disabled = false;
-        lookupBtn.textContent = oldLookupText || 'Sprawdź produkt';
-      }
-    }
-  };
 
   function showSaveSuccess() {
     const lpnValue = $('lpn')?.value.trim() || '—';
@@ -691,7 +501,7 @@
     });
     document.addEventListener('change', e => {
       if (e.target.matches('input,select,textarea')) {
-        if (e.target.id === 'condition') updateEanRequirementUi();
+        if (e.target.id === 'condition') CatalogLookup.updateEanRequirementUi();
         if (typeof quality === 'function') quality();
         saveDraft();
       }
@@ -724,6 +534,7 @@
     async function boot() {
     ensureIds();
     setupPhotos();
+    setupCatalogLookup();
     setupProductEditor();
     setupSecondaryViews();
     setupNavigation();
