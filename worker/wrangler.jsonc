@@ -7,7 +7,8 @@
     "ALLOWED_ORIGIN": "https://sesqu.github.io",
     "ALLEGRO_CLIENT_ID": "3e39ca5bf6c64c91abf11983a8e1ea48",
     "ALLEGRO_REDIRECT_URI": "https://product-intake.sesquu.workers.dev/api/allegro/callback",
-    "ALLEGRO_USER_AGENT": "Product-Intake/1.1 (+https://github.com/sesqu/product-intake)"
+    "ALLEGRO_USER_AGENT": "Product-Intake/1.1 (+https://github.com/sesqu/product-intake)",
+    "APP_VERSION": "1.1"
   },
   "kv_namespaces": [
     {
