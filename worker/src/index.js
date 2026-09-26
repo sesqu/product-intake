@@ -153,19 +153,23 @@ async function categoryMetadata(env, categoryId) {
   if (!categoryId) return null;
 
   const token = await userToken(env);
-  const url = new URL(AAPI + "/sale/categories/" + encodeURIComponent(categoryId) + "/parameters");
-  const r = await fetch(url, {
-    headers: {
-      authorization: "Bearer " + token,
-      accept: "application/vnd.allegro.public.v1+json",
-      "accept-language": "pl-PL",
-      "user-agent": env.ALLEGRO_USER_AGENT || "Product-Intake/1.1 (+https://github.com/sesqu/product-intake)"
-    }
-  });
+  const headers = {
+    authorization: "Bearer " + token,
+    accept: "application/vnd.allegro.public.v1+json",
+    "accept-language": "pl-PL",
+    "user-agent": env.ALLEGRO_USER_AGENT || "Product-Intake/1.1 (+https://github.com/sesqu/product-intake)"
+  };
 
-  const body = await r.json().catch(() => ({}));
-  if (!r.ok) {
-    throw new Error(body?.errors?.[0]?.message || ("Allegro category parameters HTTP " + r.status));
+  const [paramsResponse, categoryResponse] = await Promise.all([
+    fetch(new URL(AAPI + "/sale/categories/" + encodeURIComponent(categoryId) + "/parameters"), { headers }),
+    fetch(new URL(AAPI + "/sale/categories/" + encodeURIComponent(categoryId)), { headers })
+  ]);
+
+  const body = await paramsResponse.json().catch(() => ({}));
+  const categoryBody = await categoryResponse.json().catch(() => ({}));
+
+  if (!paramsResponse.ok) {
+    throw new Error(body?.errors?.[0]?.message || ("Allegro category parameters HTTP " + paramsResponse.status));
   }
 
   const parameters = Array.isArray(body.parameters) ? body.parameters : [];
@@ -175,6 +179,7 @@ async function categoryMetadata(env, categoryId) {
 
   return {
     categoryId: String(categoryId),
+    categoryName: categoryResponse.ok ? (categoryBody.name || "") : "",
     gtin: gtin ? {
       id: String(gtin.id || ""),
       name: gtin.name || "GTIN",
