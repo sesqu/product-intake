@@ -160,6 +160,7 @@
           try {
             photoData[idx] = await compressImage(f);
             drawPhotos();
+            if (typeof quality === 'function') quality();
             saveDraft();
             addHistory('Dodano zdjęcie', $('lpn')?.value || 'wersja robocza');
           } catch { toast('Nie udało się dodać zdjęcia.'); }
@@ -373,6 +374,11 @@
       ['lokalizacja', $('loc')?.value.trim()],
       ['dostawa / gabaryt', $('shipping')?.value]
     ];
+
+    if (eanRequirementState().required) {
+      req.push(['EAN / GTIN wymagany przez Allegro', $('ean')?.value.trim()]);
+    }
+
     return req.filter(([,ok]) => !ok).map(([name]) => name);
   }
 
@@ -552,10 +558,14 @@
     if ($('productName')) $('productName').value = best.name || '';
     if ($('brand')) $('brand').value = best.brand || '';
     if ($('model')) $('model').value = best.model || '';
-    if ($('category')) $('category').value = best.category || '';
+    if ($('category')) $('category').value = data.categoryMeta?.categoryName || best.category || '';
     if ($('parameters') && best.parameters) $('parameters').value = Array.isArray(best.parameters) ? best.parameters.map(p => (p.name||p.key)+': '+(p.value??'')).join('\n') : String(best.parameters);
     if (best.asin && !$('asin').value) $('asin').value = best.asin;
     if (best.ean && !$('ean').value) $('ean').value = best.ean;
+
+    applyCategoryMeta(data.categoryMeta || null);
+    applyGpsr(data.gpsr || null);
+    applyConfidence(confidence);
     quality();
     saveDraft();
     addHistory('Identyfikacja API', ($('lpn').value||'')+' • '+(best.name||''));
@@ -675,7 +685,11 @@
       if (e.target.matches('input,select,textarea')) saveDraft();
     });
     document.addEventListener('change', e => {
-      if (e.target.matches('input,select,textarea')) saveDraft();
+      if (e.target.matches('input,select,textarea')) {
+        if (e.target.id === 'condition') updateEanRequirementUi();
+        if (typeof quality === 'function') quality();
+        saveDraft();
+      }
     });
 
     window.addEventListener('pagehide', saveDraft);
