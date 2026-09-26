@@ -374,38 +374,23 @@
 
   async function handleAllegroCallback() {
     const params = new URLSearchParams(location.search);
-    const code = params.get('code');
-    const state = params.get('state');
-    const error = params.get('error');
-    if (error) {
-      toast('Allegro: '+error);
-      history.replaceState({},'',location.pathname);
-      return;
-    }
-    if (!code) return;
-    const b = (localStorage.getItem(KEYS.apiBase)||DEFAULT_API_BASE).replace(/\/$/,'');
-    if (!b) {
-      toast('Otrzymano kod Allegro, ale nie ustawiono adresu backendu.');
-      return;
-    }
-    toast('Łączę konto Allegro…');
-    try {
-      const r = await fetch(b+'/api/allegro/exchange',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({code,state})
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || 'Błąd autoryzacji');
+    const allegro = params.get('allegro');
+    const reason = params.get('reason');
+
+    if (allegro === 'connected') {
       addHistory('Połączono Allegro','OAuth');
       toast('Konto Allegro połączone.');
       history.replaceState({},'',location.pathname);
-    } catch (e) {
-      toast('Allegro: '+(e.message||'błąd połączenia'));
+      return;
+    }
+
+    if (allegro === 'error') {
+      toast('Allegro: błąd autoryzacji' + (reason ? ' ('+reason+')' : ''));
+      history.replaceState({},'',location.pathname);
     }
   }
 
-  function boot() {
+    function boot() {
     ensureIds();
     setupPhotos();
     setupNav();
