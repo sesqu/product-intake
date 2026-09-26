@@ -727,6 +727,80 @@
     });
   }
 
+  function seedVisibleTestProducts() {
+    const flag = 'productIntake.visibleSeed.v1';
+    if (localStorage.getItem(flag) === 'done') return;
+
+    const fixtures = [
+      {
+        lpn:'TEST-SEED-001',
+        productName:'Test zapisu 1',
+        ean:'5900000000011',
+        loc:'TEST-A1',
+        shipping:'Kurier standard',
+        condition:'Nowy',
+        contents:'Produkt testowy',
+        identified:true,
+        confirm:true,
+        status:'ready',
+        photos:[]
+      },
+      {
+        lpn:'TEST-SEED-002',
+        productName:'Test zapisu 2',
+        ean:'5900000000028',
+        loc:'TEST-A2',
+        shipping:'Paczkomat A',
+        condition:'Nowy',
+        contents:'Produkt testowy',
+        identified:true,
+        confirm:true,
+        status:'ready',
+        photos:[]
+      },
+      {
+        lpn:'TEST-SEED-003',
+        productName:'Test zapisu 3',
+        ean:'5900000000035',
+        loc:'TEST-A3',
+        shipping:'Paczkomat B',
+        condition:'Nowy',
+        contents:'Produkt testowy',
+        identified:true,
+        confirm:true,
+        status:'ready',
+        photos:[]
+      }
+    ];
+
+    try {
+      for (const product of fixtures) {
+        if (window.ProductStorage) {
+          window.ProductStorage.saveProduct(localStorage, KEYS.products, product, 500);
+        } else {
+          const products = getProducts();
+          const key = String(product.lpn).toLowerCase();
+          const i = products.findIndex(p => String(p.lpn || '').toLowerCase() === key);
+          const record = {
+            ...(i >= 0 ? products[i] : {}),
+            ...product,
+            id: i >= 0 ? products[i].id : (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
+            savedAt:new Date().toISOString()
+          };
+          if (i >= 0) products.splice(i,1);
+          products.unshift(record);
+          localStorage.setItem(KEYS.products, JSON.stringify(products.slice(0,500)));
+        }
+      }
+
+      localStorage.setItem(flag,'done');
+      addHistory('Dodano produkty testowe','TEST-SEED-001, TEST-SEED-002, TEST-SEED-003');
+      setTimeout(() => toast('Dodano 3 produkty testowe do listy Produkty.'), 300);
+    } catch (e) {
+      console.error('Seed products failed', e);
+    }
+  }
+
   async function handleAllegroCallback() {
     const params = new URLSearchParams(location.search);
     const allegro = params.get('allegro');
@@ -753,6 +827,7 @@
     setupFinalStep();
     bindAutosave();
     loadDraft();
+    seedVisibleTestProducts();
     addHistory('Otwarto aplikację','Product Intake');
     handleAllegroCallback();
   }
