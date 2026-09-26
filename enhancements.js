@@ -179,6 +179,189 @@
     });
   }
 
+  function selectedConditionId() {
+    const option = $('condition')?.selectedOptions?.[0];
+    return option?.dataset?.allegroId || '';
+  }
+
+  function eanRequirementState() {
+    const gtin = latestCategoryMeta?.gtin;
+    if (!gtin) return { required:false, pending:false, reason:'not-applicable' };
+    if (gtin.requiredForProduct) return { required:true, pending:false, reason:'category' };
+
+    const withValues = gtin.requiredIf?.parametersWithValue || [];
+    if (!withValues.length) return { required:false, pending:false, reason:'optional' };
+
+    const conditionId = String(latestCategoryMeta?.condition?.id || '');
+    const selectedId = selectedConditionId();
+
+    const conditionRules = withValues.filter(rule => String(rule.id || '') === conditionId);
+    if (!conditionRules.length) return { required:false, pending:false, reason:'optional' };
+    if (!selectedId) return { required:false, pending:true, reason:'condition' };
+
+    const required = conditionRules.some(rule =>
+      Array.isArray(rule.oneOfValueIds) && rule.oneOfValueIds.map(String).includes(String(selectedId))
+    );
+    return { required, pending:false, reason: required ? 'condition' : 'optional' };
+  }
+
+  function updateEanRequirementUi() {
+    const state = eanRequirementState();
+    const label = $('eanLabel');
+    const hint = $('eanRequirement');
+    const status = $('rEan');
+    const hasEan = Boolean($('ean')?.value.trim());
+
+    if (label) label.textContent = 'EAN / GTIN' + (state.required ? ' *' : '');
+
+    if (hint) {
+      if (!latestCategoryMeta) {
+        hint.textContent = 'Wymagalność sprawdzimy po identyfikacji kategorii Allegro.';
+      } else if (!latestCategoryMeta.gtin) {
+        hint.textContent = 'Allegro nie wymaga GTIN dla tego produktu w tej kategorii.';
+      } else if (state.pending) {
+        hint.textContent = 'Wymagalność EAN zależy od wybranego stanu produktu.';
+      } else if (state.required) {
+        hint.textContent = 'EAN / GTIN jest wymagany przez Allegro dla tej konfiguracji produktu.';
+      } else {
+        hint.textContent = 'EAN / GTIN nie jest wymagany przez Allegro dla tej konfiguracji produktu.';
+      }
+    }
+
+    if (status) {
+      if (state.pending) {
+        status.textContent = 'zależnie od stanu';
+        status.className = 'muted';
+      } else if (!state.required) {
+        status.textContent = 'opcjonalny';
+        status.className = 'muted';
+      } else {
+        status.textContent = hasEan ? 'OK' : 'brak';
+        status.className = hasEan ? 'ok' : 'bad';
+      }
+    }
+
+    return state;
+  }
+
+  function applyCategoryMeta(meta, preserveValue = true) {
+    latestCategoryMeta = meta || null;
+
+    if ($('category') && latestCategoryMeta?.categoryName) {
+      const current = $('category').value.trim();
+      if (!current || /^\d+$/.test(current)) $('category').value = latestCategoryMeta.categoryName;
+      $('category').dataset.allegroCategoryId = latestCategoryMeta.categoryId || '';
+    }
+
+    const select = $('condition');
+    const values = latestCategoryMeta?.condition?.values || [];
+    if (select && values.length) {
+      const oldValue = preserveValue ? select.value : '';
+      select.innerHTML = '<option value="">Wybierz</option>' + values.map(v =>
+        '<option value="'+safe(v.value)+'" data-allegro-id="'+safe(v.id)+'">'+safe(v.value)+'</option>'
+      ).join('');
+
+      if (oldValue && [...select.options].some(o => o.value === oldValue)) {
+        select.value = oldValue;
+      }
+    }
+
+    updateEanRequirementUi();
+  }
+
+  function formatGpsrAddress(address) {
+    if (!address) return '';
+    return [address.street, [address.postalCode,address.city].filter(Boolean).join(' '), address.countryCode]
+      .filter(Boolean).join(', ');
+  }
+
+  function applyGpsr(gpsr) {
+    latestGpsr = gpsr || null;
+    const status = $('gpsrStatus');
+    const details = $('gpsrDetails');
+    if (!status || !details) return;
+
+    if (!latestGpsr) {
+      status.textContent = 'Brak identyfikacji produktu.';
+      details.style.display = 'none';
+      details.value = '';
+      return;
+    }
+
+    status.textContent = latestGpsr.status || (latestGpsr.available ? 'Dane GPSR pobrane z Allegro' : 'Brak danych GPSR w katalogu Allegro');
+
+    const lines = [];
+    for (const producer of latestGpsr.producers || []) {
+      const name = producer.tradeName || producer.name || 'Producent';
+      const address = formatGpsrAddress(producer.address);
+      const contact = producer.contact || {};
+      lines.push('Producent: ' + name);
+      if (address) lines.push('Adres: ' + address);
+      if (contact.email) lines.push('E-mail: ' + contact.email);
+      if (contact.phoneNumber) lines.push('Telefon: ' + contact.phoneNumber);
+    }
+
+    const safety = latestGpsr.safetyInformation;
+    if (safety?.type) lines.push('Informacje bezpieczeństwa: ' + safety.type);
+    if (Array.isArray(safety?.attachments) && safety.attachments.length) {
+      lines.push('Załączniki bezpieczeństwa: ' + safety.attachments.length);
+    }
+
+    details.value = lines.join('\n');
+    details.style.display = lines.length ? 'block' : 'none';
+  }
+
+  function applyConfidence(value) {
+    const n = Number(value);
+    latestConfidence = Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : null;
+
+    if ($('confidencePct')) $('confidencePct').textContent = latestConfidence == null ? '—' : latestConfidence + '%';
+    if ($('confidenceBar')) $('confidenceBar').style.width = (latestConfidence == null ? 0 : latestConfidence) + '%';
+    if ($('sumIdentification')) $('sumIdentification').textContent =
+      latestConfidence == null ? '—' : latestConfidence + '% • Allegro';
+  }
+
+  function updateQualityPanel() {
+    const identifiedOk = typeof identified !== 'undefined' && identified;
+    const photoOk = photoData.filter(Boolean).length > 0;
+    const eanState = updateEanRequirementUi();
+
+    const rows = [
+      ['r1', Boolean($('lpn')?.value.trim())],
+      ['r2', identifiedOk],
+      ['r3', Boolean($('confirm')?.checked)],
+      ['r4', Boolean($('condition')?.value)],
+      ['r5', Boolean($('contents')?.value.trim())],
+      ['rPhoto', photoOk],
+      ['r6', Boolean($('loc')?.value.trim())],
+      ['r7', Boolean($('shipping')?.value)]
+    ];
+
+    for (const [id, ok] of rows) {
+      const el = $(id);
+      if (!el) continue;
+      el.textContent = ok ? 'OK' : 'brak';
+      el.className = ok ? 'ok' : 'bad';
+    }
+
+    const requiredChecks = rows.map(([,ok]) => ok);
+    if (eanState.required) requiredChecks.push(Boolean($('ean')?.value.trim()));
+
+    const pctValue = requiredChecks.length
+      ? Math.round(requiredChecks.filter(Boolean).length / requiredChecks.length * 100)
+      : 0;
+
+    if ($('pct')) $('pct').textContent = pctValue + '%';
+    if ($('pbar')) $('pbar').style.width = pctValue + '%';
+    if ($('lpnTag')) $('lpnTag').textContent = $('lpn')?.value || '—';
+    if ($('sumLpn')) $('sumLpn').textContent = $('lpn')?.value || '—';
+    if ($('sumStatus')) $('sumStatus').textContent = pctValue === 100 ? 'Kompletne' : 'Wymaga uzupełnienia';
+
+    return pctValue;
+  }
+
+  window.quality = updateQualityPanel;
+
   function validateForReady() {
     const req = [
       ['LPN / SKU', $('lpn')?.value.trim()],
