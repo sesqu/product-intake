@@ -27,15 +27,21 @@ try {
     if (!r.ok) throw new Error('POST ' + product.lpn + ': ' + r.status + ' ' + await r.text());
   }
 
-  const read = await fetch(base + '/api/products', {
-    headers:{'x-workspace-key':workspace}
-  });
-  if (!read.ok) throw new Error('GET: ' + read.status + ' ' + await read.text());
-  const body = await read.json();
+  let body = null;
+  for (let attempt = 0; attempt < 15; attempt++) {
+    const read = await fetch(base + '/api/products', {
+      headers:{'x-workspace-key':workspace}
+    });
+    if (!read.ok) throw new Error('GET: ' + read.status + ' ' + await read.text());
+    body = await read.json();
 
-  const lpns = new Set((body.products || []).map(p => p.lpn));
-  for (const p of fixtures) {
-    if (!lpns.has(p.lpn)) throw new Error('Brak po odczycie: ' + p.lpn);
+    const lpns = new Set((body.products || []).map(p => p.lpn));
+    if (fixtures.every(p => lpns.has(p.lpn))) break;
+
+    if (attempt === 14) {
+      throw new Error('Po oczekiwaniu nadal brakuje produktów: ' + fixtures.filter(p => !lpns.has(p.lpn)).map(p => p.lpn).join(', '));
+    }
+    await new Promise(r => setTimeout(r, 5000));
   }
 
   console.log('PASS LIVE:', fixtures.map(x=>x.lpn).join(', '), 'count=', body.count);
