@@ -702,8 +702,12 @@ async function handle(request, env) {
         confidenceMethod: analysis.confidenceMethod,
         confidenceEvidence: analysis.evidence,
         checks,
-        conflicts: analysis.conflicts,
+        conflicts: [
+          ...(analysis.conflicts || []),
+          ...(analysis.hardConflicts || [])
+        ],
         hardConflicts: analysis.hardConflicts.map(conflictLabel),
+        hardConflictDetails: analysis.hardConflicts,
         requiresTesterChoice: analysis.requiresTesterChoice,
         selectedBy: analysis.selectedBy,
         candidates: analysis.ranked.slice(0, 5),
