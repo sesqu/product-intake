@@ -296,6 +296,62 @@ async function handle(request, env) {
     return out({ url: auth.toString() }, 200, origin);
   }
 
+  if (url.pathname === "/api/allegro/callback" && request.method === "GET") {
+    const code = clean(url.searchParams.get("code"));
+    const state = clean(url.searchParams.get("state"));
+    const error = clean(url.searchParams.get("error"));
+    const frontend = "https://sesqu.github.io/product-intake/";
+
+    if (error) {
+      const target = new URL(frontend);
+      target.searchParams.set("allegro", "error");
+      target.searchParams.set("reason", error);
+      return Response.redirect(target.toString(), 302);
+    }
+
+    if (!code || !state) {
+      const target = new URL(frontend);
+      target.searchParams.set("allegro", "error");
+      target.searchParams.set("reason", "missing_code_or_state");
+      return Response.redirect(target.toString(), 302);
+    }
+
+    const stateKey = "allegro:oauth_state:" + state;
+    const saved = await env.AUTH.get(stateKey);
+    if (!saved) {
+      const target = new URL(frontend);
+      target.searchParams.set("allegro", "error");
+      target.searchParams.set("reason", "invalid_or_expired_state");
+      return Response.redirect(target.toString(), 302);
+    }
+
+    let codeVerifier = "";
+    try {
+      codeVerifier = JSON.parse(saved).codeVerifier || "";
+    } catch {}
+
+    await env.AUTH.delete(stateKey);
+
+    if (!codeVerifier) {
+      const target = new URL(frontend);
+      target.searchParams.set("allegro", "error");
+      target.searchParams.set("reason", "missing_code_verifier");
+      return Response.redirect(target.toString(), 302);
+    }
+
+    try {
+      await exchangeAuthorizationCode(env, code, codeVerifier);
+      const target = new URL(frontend);
+      target.searchParams.set("allegro", "connected");
+      return Response.redirect(target.toString(), 302);
+    } catch (e) {
+      const target = new URL(frontend);
+      target.searchParams.set("allegro", "error");
+      target.searchParams.set("reason", "token_exchange_failed");
+      return Response.redirect(target.toString(), 302);
+    }
+  }
+
   if (url.pathname === "/api/allegro/exchange" && request.method === "POST") {
     try {
       const body = await request.json();
