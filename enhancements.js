@@ -252,7 +252,8 @@
 
     const style = document.createElement('style');
     style.textContent = `
-      #mobileNav{display:none}
+      #toast{z-index:1200}
+            #mobileNav{display:none}
       @media(max-width:1150px){
         #mobileNav{
           position:fixed;left:10px;right:10px;bottom:10px;z-index:999;
@@ -267,6 +268,7 @@
         }
         #mobileNav button.primaryMobile{background:#172033;color:#fff}
         body{padding-bottom:76px}
+        #toast{bottom:82px;left:14px;right:14px;text-align:center}
       }`;
     document.head.appendChild(style);
 
@@ -342,9 +344,14 @@
   window.lookup = async function() {
     const base = (localStorage.getItem(KEYS.apiBase)||DEFAULT_API_BASE).replace(/\/$/,'');
     if (!base) return demoLookup();
-    if (!$('lpn').value.trim()) return toast('Najpierw wpisz lub zeskanuj LPN');
     if (!$('ean').value.trim() && !$('asin').value.trim()) return toast('Podaj EAN lub ASIN');
-    toast('Sprawdzam Allegro i Amazon…');
+    toast('Sprawdzam produkt…');
+    const lookupBtn = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Sprawdź produkt');
+    const oldLookupText = lookupBtn?.textContent;
+    if (lookupBtn) {
+      lookupBtn.disabled = true;
+      lookupBtn.textContent = 'Sprawdzam…';
+    }
     try {
       const q = new URLSearchParams();
       if ($('ean').value.trim()) q.set('ean',$('ean').value.trim());
@@ -353,7 +360,14 @@
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || 'Błąd API');
       renderRemote(j);
-    } catch (e) { toast('Błąd integracji: '+(e.message||'brak połączenia')); }
+    } catch (e) {
+      toast('Błąd integracji: '+(e.message||'brak połączenia'));
+    } finally {
+      if (lookupBtn) {
+        lookupBtn.disabled = false;
+        lookupBtn.textContent = oldLookupText || 'Sprawdź produkt';
+      }
+    }
   };
 
   const oldFinish = window.finish;
