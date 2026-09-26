@@ -9,8 +9,7 @@ const scripts = [
   'navigation.js',
   'cloud-products.js',
   'catalog-lookup.js',
-  'modal.js',
-  'secondary-views.js',
+    'secondary-views.js',
   'product-editor.js',
   'enhancements.js',
   'sw.js'
@@ -36,8 +35,7 @@ for (const file of [
   'navigation.js',
   'cloud-products.js',
   'catalog-lookup.js',
-  'modal.js',
-  'secondary-views.js',
+    'secondary-views.js',
   'product-editor.js',
   'enhancements.js'
 ]) {
