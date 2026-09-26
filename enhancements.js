@@ -18,10 +18,11 @@
   const IntakeSession = window.ProductIntakeSession;
   const Modal = window.ProductIntakeModal;
   const ProductEditor = window.ProductIntakeProductEditor;
+  const ProductList = window.ProductIntakeProductList;
   const SecondaryViews = window.ProductIntakeSecondaryViews;
   const Navigation = window.ProductIntakeNavigation;
 
-  window.ProductIntakePWA?.setup({build:32,label:'v32'});
+  window.ProductIntakePWA?.setup({build:33,label:'v33'});
 
   function getProducts() {
     return IntakeSession.getProducts();
@@ -92,7 +93,7 @@
   }
 
   function showProducts() {
-    return ProductEditor.showProducts();
+    return ProductList.showProducts();
   }
 
   function showHistory() {
@@ -153,14 +154,24 @@
       apiBase,
       cloudGetProduct,
       cloudSaveProduct,
-      syncProductsFromCloud,
-      ensureVerifiedRealProductsLocal,
-      seedRealCatalogProducts,
       openModal,
       setMobileNavActive,
       addHistory,
       toast,
       compressImage
+    });
+  }
+
+  function setupProductList() {
+    ProductList?.setup({
+      safe,
+      getProducts,
+      ensureVerifiedRealProductsLocal,
+      seedRealCatalogProducts,
+      syncProductsFromCloud,
+      openModal,
+      setMobileNavActive,
+      openProductEditor:lpn => ProductEditor.openProductEditor(lpn)
     });
   }
 
@@ -210,6 +221,7 @@
     setupCloudProducts();
     setupCatalogLookup();
     setupProductEditor();
+    setupProductList();
     setupSecondaryViews();
     setupNavigation();
 
