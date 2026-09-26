@@ -1,10 +1,15 @@
-const CACHE='product-intake-v34';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./version.json','./styles.css?v=34','./intake-core.js?v=34','./product-storage.js?v=2','./pwa-updates.js?v=34','./modal-ui.js?v=34','./navigation.js?v=34','./cloud-products.js?v=34','./catalog-lookup.js?v=34','./intake-session.js?v=34','./secondary-views.js?v=34','./product-list.js?v=34','./product-editor.js?v=34','./enhancements.js?v=34'];
+const CACHE='product-intake-v35';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./version.json','./styles.css?v=35','./intake-core.js?v=35','./product-storage.js?v=2','./pwa-updates.js?v=35','./modal-ui.js?v=35','./navigation.js?v=35','./cloud-products.js?v=35','./catalog-lookup.js?v=35','./intake-session.js?v=35','./secondary-views.js?v=35','./product-list.js?v=35','./product-editor.js?v=35','./enhancements.js?v=35'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE)
-      .then(cache => cache.addAll(ASSETS))
+      .then(cache => Promise.all(
+        ASSETS.map(async asset => {
+          const hit = await cache.match(asset);
+          if (!hit) await cache.add(asset);
+        })
+      ))
       .then(() => self.skipWaiting())
   );
 });
