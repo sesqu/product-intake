@@ -1,0 +1,21 @@
+name: Product storage tests
+
+on:
+  push:
+    paths:
+      - 'product-storage.js'
+      - 'tests/storage.test.cjs'
+      - '.github/workflows/storage-test.yml'
+      - 'enhancements.js'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test product storage
+        run: node tests/storage.test.cjs
