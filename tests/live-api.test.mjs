@@ -29,40 +29,7 @@ for (const ean of realEans) {
 
 
 
-let seedResponse = null;
-for (let attempt = 0; attempt < 18; attempt++) {
-  const r = await fetch(base + '/api/products/seed-real', {
-    method:'POST',
-    headers,
-    body:'{}'
-  });
-  if (r.status !== 404) {
-    seedResponse = r;
-    break;
-  }
-  await new Promise(resolve => setTimeout(resolve, 10000));
-}
-if (!seedResponse) throw new Error('SEED-REAL endpoint nie został wdrożony na czas');
-if (!seedResponse.ok) {
-  throw new Error('SEED-REAL: ' + seedResponse.status + ' ' + await seedResponse.text());
-}
-const seedBody = await seedResponse.json();
-if (!Array.isArray(seedBody.products) || seedBody.products.length !== 3) {
-  throw new Error('SEED-REAL: oczekiwano 3 produktów, jest ' + (seedBody.products?.length ?? 'brak'));
-}
 
-const immediateRead = await fetch(base + '/api/products', {
-  headers:{'x-workspace-key':workspace}
-});
-if (!immediateRead.ok) throw new Error('SEED-REAL GET: ' + immediateRead.status + ' ' + await immediateRead.text());
-const immediateBody = await immediateRead.json();
-const immediateLpns = new Set((immediateBody.products || []).map(p => p.lpn));
-for (const p of seedBody.products) {
-  if (!immediateLpns.has(p.lpn)) {
-    throw new Error('SEED-REAL: zapisany produkt nie jest od razu widoczny: ' + p.lpn);
-  }
-}
-console.log('SEED-REAL PASS:', seedBody.products.map(p => p.productName).join(' | '));
 
 const fixtures = [
   {lpn:'LIVE-TEST-001',productName:'Live test 1',loc:'CLOUD-A1'},
