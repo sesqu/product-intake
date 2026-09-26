@@ -27,49 +27,93 @@
       const style = document.createElement('style');
       style.id = 'piUpdateStyles';
       style.textContent = `
-        #piUpdateButton{
+        #piUpdateBell{
           position:fixed;
-          top:calc(env(safe-area-inset-top,0px) + 10px);
-          right:10px;
+          top:calc(env(safe-area-inset-top,0px) + 8px);
+          right:9px;
           z-index:2500;
           display:none;
+          width:36px;
+          height:36px;
+          padding:0;
           align-items:center;
-          gap:6px;
-          min-height:36px;
-          border:1px solid rgba(127,156,255,.42);
-          background:rgba(25,34,52,.97);
-          color:#eef3ff;
-          padding:7px 10px;
-          border-radius:10px;
+          justify-content:center;
+          border:1px solid rgba(127,156,255,.28);
+          border-radius:11px;
+          background:rgba(20,27,37,.94);
+          color:#dfe6ef;
           box-shadow:0 10px 28px rgba(0,0,0,.28);
           backdrop-filter:blur(14px);
           -webkit-backdrop-filter:blur(14px);
-          font-size:11px;
-          line-height:1;
-          font-weight:750;
           cursor:pointer
         }
-        #piUpdateButton::before{
-          content:'';
-          width:7px;height:7px;flex:0 0 7px;
+        #piUpdateBell svg{
+          width:18px;
+          height:18px;
+          display:block
+        }
+        #piUpdateBellDot{
+          position:absolute;
+          top:5px;
+          right:5px;
+          width:7px;
+          height:7px;
           border-radius:999px;
           background:#7f9cff;
-          box-shadow:0 0 0 3px rgba(127,156,255,.12)
+          box-shadow:0 0 0 3px rgba(127,156,255,.14)
         }
+        #piUpdatePrompt,
         #piUpdatePanel{
           position:fixed;
-          top:calc(env(safe-area-inset-top,0px) + 9px);
+          top:calc(env(safe-area-inset-top,0px) + 50px);
           right:9px;
           z-index:2600;
           display:none;
-          width:min(238px,calc(100vw - 18px));
-          padding:11px 12px 12px;
+          width:min(268px,calc(100vw - 18px));
+          padding:12px;
           border:1px solid #303b49;
-          border-radius:12px;
+          border-radius:13px;
           background:rgba(17,23,31,.98);
-          box-shadow:0 14px 38px rgba(0,0,0,.38);
+          box-shadow:0 16px 42px rgba(0,0,0,.42);
           backdrop-filter:blur(16px);
           -webkit-backdrop-filter:blur(16px)
+        }
+        #piUpdatePromptTitle{
+          color:#f3f6fa;
+          font-size:13px;
+          font-weight:780;
+          line-height:1.2
+        }
+        #piUpdatePromptText{
+          margin-top:5px;
+          color:#919baa;
+          font-size:11px;
+          line-height:1.4
+        }
+        #piUpdatePromptActions{
+          display:grid;
+          grid-template-columns:1fr auto;
+          gap:8px;
+          margin-top:11px
+        }
+        #piUpdateNow,
+        #piUpdateLater{
+          min-height:36px;
+          border-radius:9px;
+          font-size:11px;
+          font-weight:720;
+          cursor:pointer
+        }
+        #piUpdateNow{
+          border:1px solid rgba(127,156,255,.45);
+          background:#24365b;
+          color:#fff
+        }
+        #piUpdateLater{
+          border:1px solid #303944;
+          background:#171d25;
+          color:#aeb7c2;
+          padding:0 11px
         }
         #piUpdateStage{
           display:flex;
@@ -119,17 +163,16 @@
           user-select:none
         }
         @media(max-width:620px){
-          #piUpdateButton{
+          #piUpdateBell{
             top:calc(env(safe-area-inset-top,0px) + 7px);
             right:8px;
-            max-width:52vw;
-            min-height:32px;
-            padding:6px 8px;
-            font-size:10px;
-            border-radius:9px
+            width:34px;
+            height:34px;
+            border-radius:10px
           }
+          #piUpdatePrompt,
           #piUpdatePanel{
-            top:calc(env(safe-area-inset-top,0px) + 7px);
+            top:calc(env(safe-area-inset-top,0px) + 48px);
             right:8px
           }
         }
@@ -140,12 +183,43 @@
       document.head.appendChild(style);
     }
 
-    if (!$('piUpdateButton')) {
-      const button = document.createElement('button');
-      button.id = 'piUpdateButton';
-      button.type = 'button';
-      button.onclick = applyUpdate;
-      document.body.appendChild(button);
+    if (!$('piUpdateBell')) {
+      const bell = document.createElement('button');
+      bell.id = 'piUpdateBell';
+      bell.type = 'button';
+      bell.setAttribute('aria-label','Dostępna aktualizacja');
+      bell.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">'+
+          '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>'+
+          '<path d="M10 21h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>'+
+        '</svg>'+
+        '<span id="piUpdateBellDot"></span>';
+      bell.onclick = event => {
+        event.stopPropagation();
+        const prompt = $('piUpdatePrompt');
+        const visible = prompt.style.display === 'block';
+        prompt.style.display = visible ? 'none' : 'block';
+      };
+      document.body.appendChild(bell);
+    }
+
+    if (!$('piUpdatePrompt')) {
+      const prompt = document.createElement('div');
+      prompt.id = 'piUpdatePrompt';
+      prompt.innerHTML =
+        '<div id="piUpdatePromptTitle">Dostępna aktualizacja</div>'+
+        '<div id="piUpdatePromptText">Nowa wersja aplikacji jest gotowa do pobrania.</div>'+
+        '<div id="piUpdatePromptActions">'+
+          '<button id="piUpdateNow" type="button">Aktualizuj</button>'+
+          '<button id="piUpdateLater" type="button">Później</button>'+
+        '</div>';
+      prompt.onclick = event => event.stopPropagation();
+      document.body.appendChild(prompt);
+
+      $('piUpdateNow').onclick = applyUpdate;
+      $('piUpdateLater').onclick = () => {
+        $('piUpdatePrompt').style.display = 'none';
+      };
     }
 
     if (!$('piUpdatePanel')) {
@@ -164,20 +238,34 @@
       document.body.appendChild(badge);
     }
 
+    if (!document.documentElement.dataset.piUpdateOutsideBound) {
+      document.documentElement.dataset.piUpdateOutsideBound = '1';
+      document.addEventListener('click', () => {
+        const prompt = $('piUpdatePrompt');
+        if (prompt) prompt.style.display = 'none';
+      });
+    }
+
     $('piVersionBadge').textContent =
       currentLabel || (currentBuild ? 'v' + currentBuild : '');
   }
 
   function setProgress(target, stage, message='') {
     ensureUi();
-    progressTarget = Math.max(progressTarget, Math.min(100, Number(target) || 0));
+    progressTarget = Math.max(
+      progressTarget,
+      Math.min(100, Number(target) || 0)
+    );
 
     if (stage) $('piUpdateStageText').textContent = stage;
+
     const messageEl = $('piUpdateMessage');
     messageEl.textContent = message;
     messageEl.style.display = message ? 'block' : 'none';
 
-    if (!progressFrame) progressFrame = requestAnimationFrame(animateProgress);
+    if (!progressFrame) {
+      progressFrame = requestAnimationFrame(animateProgress);
+    }
   }
 
   function animateProgress() {
@@ -185,7 +273,9 @@
 
     if (delta > 0.05) {
       progressValue += Math.max(0.18, delta * 0.09);
-      if (progressValue > progressTarget) progressValue = progressTarget;
+      if (progressValue > progressTarget) {
+        progressValue = progressTarget;
+      }
     } else {
       progressValue = progressTarget;
     }
@@ -204,38 +294,49 @@
   function resetProgress() {
     progressValue = 0;
     progressTarget = 0;
+
     if (progressFrame) cancelAnimationFrame(progressFrame);
     progressFrame = 0;
+
     if ($('piUpdateBar')) $('piUpdateBar').style.width = '0%';
     if ($('piUpdatePercent')) $('piUpdatePercent').textContent = '0%';
   }
 
   function hideUpdate() {
     availableRelease = null;
-    const button = $('piUpdateButton');
-    if (button) button.style.display = 'none';
+    if ($('piUpdateBell')) $('piUpdateBell').style.display = 'none';
+    if ($('piUpdatePrompt')) $('piUpdatePrompt').style.display = 'none';
   }
 
   function showUpdate(release) {
     ensureUi();
     availableRelease = release;
-    const button = $('piUpdateButton');
-    button.dataset.version = String(release.version);
-    button.textContent = 'Aktualizacja v' + release.version;
-    button.disabled = false;
-    button.style.display = 'inline-flex';
+
+    $('piUpdateBell').dataset.version = String(release.version);
+    $('piUpdateBell').setAttribute(
+      'aria-label',
+      'Dostępna aktualizacja v' + release.version
+    );
+    $('piUpdatePromptTitle').textContent =
+      'Dostępna aktualizacja v' + release.version;
+    $('piUpdatePromptText').textContent =
+      'Nowa wersja jest gotowa. Możesz zaktualizować ją teraz.';
+    $('piUpdateBell').style.display = 'inline-flex';
   }
 
   function showRestartRequired(expectedBuild) {
     ensureUi();
-    $('piUpdateButton').style.display = 'none';
+    hideUpdate();
     $('piUpdatePanel').style.display = 'block';
+
     resetProgress();
     progressValue = 100;
     progressTarget = 100;
+
     $('piUpdateBar').style.width = '100%';
     $('piUpdatePercent').textContent = '100%';
     $('piUpdateStageText').textContent = 'Aktualizacja pobrana';
+
     const message = $('piUpdateMessage');
     message.textContent =
       'iOS nadal używa starej wersji. Zamknij Product Intake i otwórz ponownie, aby uruchomić v' +
@@ -249,10 +350,12 @@
         cache:'no-store',
         headers:{'cache-control':'no-cache'}
       });
+
       if (!response.ok) return null;
 
       const data = await response.json();
       const version = Number(data?.version);
+
       if (!Number.isInteger(version)) return null;
 
       return {
@@ -275,7 +378,10 @@
       headers:{'cache-control':'no-cache'}
     });
 
-    if (!response.ok) throw new Error('Brak pliku ' + asset.url);
+    if (!response.ok) {
+      throw new Error('Brak pliku ' + asset.url);
+    }
+
     const text = await response.text();
 
     if (
@@ -285,7 +391,10 @@
       throw new Error('Niepełny plik ' + asset.url);
     }
 
-    if (asset.fnv32 && fnv32(text) !== String(asset.fnv32)) {
+    if (
+      asset.fnv32 &&
+      fnv32(text) !== String(asset.fnv32)
+    ) {
       throw new Error('Nieaktualny plik ' + asset.url);
     }
 
@@ -297,7 +406,9 @@
 
     try {
       await Promise.all(
-        release.assets.map(asset => fetchVerifiedAsset(asset,'verify'))
+        release.assets.map(asset =>
+          fetchVerifiedAsset(asset,'verify')
+        )
       );
       return true;
     } catch {
@@ -306,7 +417,9 @@
   }
 
   async function check() {
-    const expectedBuild = Number(localStorage.getItem(EXPECTED_BUILD_KEY) || 0);
+    const expectedBuild = Number(
+      localStorage.getItem(EXPECTED_BUILD_KEY) || 0
+    );
 
     if (expectedBuild > currentBuild) {
       showRestartRequired(expectedBuild);
@@ -315,20 +428,27 @@
 
     if (expectedBuild && currentBuild >= expectedBuild) {
       localStorage.removeItem(EXPECTED_BUILD_KEY);
+
       const cleanUrl = new URL(location.href);
       if (cleanUrl.searchParams.has('app_update')) {
         cleanUrl.searchParams.delete('app_update');
-        history.replaceState({},'',cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+        history.replaceState(
+          {},
+          '',
+          cleanUrl.pathname + cleanUrl.search + cleanUrl.hash
+        );
       }
     }
 
     const release = await fetchRemoteManifest();
+
     if (!release || release.version <= currentBuild) {
       hideUpdate();
       return false;
     }
 
     const ready = await verifyReleaseReady(release);
+
     if (!ready) {
       hideUpdate();
       return false;
@@ -349,36 +469,56 @@
   function concatChunks(chunks, total) {
     const out = new Uint8Array(total);
     let offset = 0;
+
     for (const chunk of chunks) {
       out.set(chunk, offset);
       offset += chunk.length;
     }
+
     return out;
   }
 
   async function downloadRelease(release) {
     const cacheName = 'product-intake-v' + release.version;
-    if ('caches' in window) await caches.delete(cacheName);
-    const cache = 'caches' in window ? await caches.open(cacheName) : null;
+
+    if ('caches' in window) {
+      await caches.delete(cacheName);
+    }
+
+    const cache =
+      'caches' in window
+        ? await caches.open(cacheName)
+        : null;
 
     const totalBytes = release.assets.reduce(
-      (sum, asset) => sum + Math.max(1, Number(asset.bytes) || 1),
+      (sum, asset) =>
+        sum + Math.max(1, Number(asset.bytes) || 1),
       0
     );
+
     let downloadedBytes = 0;
 
     for (const asset of release.assets) {
       const url = new URL(asset.url, location.href);
-      url.searchParams.set('download', release.version + '-' + Date.now());
+      url.searchParams.set(
+        'download',
+        release.version + '-' + Date.now()
+      );
 
       const response = await fetch(url.toString(), {
         cache:'no-store',
         headers:{'cache-control':'no-cache'}
       });
 
-      if (!response.ok) throw new Error('Nie udało się pobrać ' + asset.url);
+      if (!response.ok) {
+        throw new Error(
+          'Nie udało się pobrać ' + asset.url
+        );
+      }
 
-      const expectedBytes = Math.max(1, Number(asset.bytes) || 1);
+      const expectedBytes =
+        Math.max(1, Number(asset.bytes) || 1);
+
       const chunks = [];
       let assetBytes = 0;
 
@@ -392,15 +532,20 @@
 
           chunks.push(value);
           assetBytes += value.byteLength;
+
           const effective =
-            downloadedBytes + Math.min(assetBytes, expectedBytes);
+            downloadedBytes +
+            Math.min(assetBytes, expectedBytes);
+
           setProgress(
             4 + (effective / totalBytes) * 76,
             'Pobieranie v' + release.version
           );
         }
       } else {
-        const buffer = new Uint8Array(await response.arrayBuffer());
+        const buffer =
+          new Uint8Array(await response.arrayBuffer());
+
         chunks.push(buffer);
         assetBytes = buffer.byteLength;
       }
@@ -412,26 +557,38 @@
         Number.isInteger(asset.chars) &&
         text.length !== asset.chars
       ) {
-        throw new Error('Pobrano niepełny plik ' + asset.url);
+        throw new Error(
+          'Pobrano niepełny plik ' + asset.url
+        );
       }
 
-      if (asset.fnv32 && fnv32(text) !== String(asset.fnv32)) {
-        throw new Error('Pobrano złą wersję ' + asset.url);
+      if (
+        asset.fnv32 &&
+        fnv32(text) !== String(asset.fnv32)
+      ) {
+        throw new Error(
+          'Pobrano złą wersję ' + asset.url
+        );
       }
 
       if (cache) {
         await cache.put(
-          new Request(new URL(asset.url, location.href).toString()),
+          new Request(
+            new URL(asset.url, location.href).toString()
+          ),
           new Response(bytes, {
             status:200,
             headers:{
-              'content-type':response.headers.get('content-type') || 'text/plain;charset=utf-8'
+              'content-type':
+                response.headers.get('content-type') ||
+                'text/plain;charset=utf-8'
             }
           })
         );
       }
 
       downloadedBytes += expectedBytes;
+
       setProgress(
         4 + (downloadedBytes / totalBytes) * 76,
         'Pobieranie v' + release.version
@@ -447,16 +604,20 @@
       await navigator.serviceWorker.getRegistration();
 
     if (!registration) {
-      registration = await navigator.serviceWorker.register(
-        './sw.js',
-        {updateViaCache:'none'}
-      );
+      registration =
+        await navigator.serviceWorker.register(
+          './sw.js',
+          {updateViaCache:'none'}
+        );
     }
 
     await registration.update();
 
-    const waiting = registration.waiting;
-    if (waiting) waiting.postMessage({type:'SKIP_WAITING'});
+    if (registration.waiting) {
+      registration.waiting.postMessage({
+        type:'SKIP_WAITING'
+      });
+    }
 
     await new Promise(resolve => {
       let settled = false;
@@ -473,19 +634,26 @@
         {once:true}
       );
 
-      const worker = registration.installing || registration.waiting;
+      const worker =
+        registration.installing ||
+        registration.waiting;
+
       if (worker) {
-        worker.addEventListener('statechange', () => {
-          if (worker.state === 'activated') finish();
-        });
+        worker.addEventListener(
+          'statechange',
+          () => {
+            if (worker.state === 'activated') finish();
+          }
+        );
       }
 
-      setTimeout(finish, 4500);
+      setTimeout(finish,4500);
     });
   }
 
   async function applyUpdate() {
     if (updateInProgress) return;
+
     updateInProgress = true;
     ensureUi();
 
@@ -503,23 +671,48 @@
       return;
     }
 
-    $('piUpdateButton').style.display = 'none';
+    $('piUpdateBell').style.display = 'none';
+    $('piUpdatePrompt').style.display = 'none';
     $('piUpdatePanel').style.display = 'block';
+
     resetProgress();
-    setProgress(3,'Pobieranie v' + release.version);
+    setProgress(
+      3,
+      'Pobieranie v' + release.version
+    );
 
     try {
       await downloadRelease(release);
 
-      setProgress(84,'Instalowanie v' + release.version);
+      setProgress(
+        84,
+        'Instalowanie v' + release.version
+      );
+
       await activateLatestWorker();
 
-      setProgress(96,'Uruchamianie v' + release.version);
-      localStorage.setItem(EXPECTED_BUILD_KEY, String(release.version));
+      setProgress(
+        96,
+        'Uruchamianie v' + release.version
+      );
 
-      await new Promise(resolve => setTimeout(resolve, 420));
-      setProgress(100,'Uruchamianie v' + release.version);
-      await new Promise(resolve => setTimeout(resolve, 280));
+      localStorage.setItem(
+        EXPECTED_BUILD_KEY,
+        String(release.version)
+      );
+
+      await new Promise(resolve =>
+        setTimeout(resolve,420)
+      );
+
+      setProgress(
+        100,
+        'Uruchamianie v' + release.version
+      );
+
+      await new Promise(resolve =>
+        setTimeout(resolve,280)
+      );
 
       const url = new URL(location.href);
       url.searchParams.set(
@@ -529,53 +722,79 @@
       location.replace(url.toString());
     } catch (error) {
       updateInProgress = false;
+
       const message = $('piUpdateMessage');
-      $('piUpdateStageText').textContent = 'Nie udało się zaktualizować';
-      message.textContent = 'Spróbuj ponownie za chwilę.';
+      $('piUpdateStageText').textContent =
+        'Nie udało się zaktualizować';
+      message.textContent =
+        'Spróbuj ponownie za chwilę.';
       message.style.display = 'block';
+
       console.warn('PWA update failed', error);
 
       setTimeout(() => {
         $('piUpdatePanel').style.display = 'none';
         showUpdate(release);
-      }, 2600);
+      },2600);
     }
   }
 
   function setup({build,label} = {}) {
     currentBuild = Number(build) || 0;
-    currentLabel = String(label || (currentBuild ? 'v' + currentBuild : ''));
+    currentLabel = String(
+      label ||
+      (currentBuild ? 'v' + currentBuild : '')
+    );
+
     ensureUi();
 
     if (started) {
       check();
       return;
     }
+
     started = true;
 
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', async () => {
-        try {
-          registration = await navigator.serviceWorker.register(
-            './sw.js',
-            {updateViaCache:'none'}
-          );
-          await registration.update();
-        } catch {}
-        check();
-      });
+      window.addEventListener(
+        'load',
+        async () => {
+          try {
+            registration =
+              await navigator.serviceWorker.register(
+                './sw.js',
+                {updateViaCache:'none'}
+              );
+
+            await registration.update();
+          } catch {}
+
+          check();
+        }
+      );
     } else {
-      window.addEventListener('load', check);
+      window.addEventListener('load',check);
     }
 
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') check();
-    });
-    window.addEventListener('pageshow', check);
-    setInterval(check, 3 * 60 * 1000);
+    document.addEventListener(
+      'visibilitychange',
+      () => {
+        if (document.visibilityState === 'visible') {
+          check();
+        }
+      }
+    );
+
+    window.addEventListener('pageshow',check);
+    setInterval(check,3 * 60 * 1000);
   }
 
-  const api = {setup,check,applyUpdate};
+  const api = {
+    setup,
+    check,
+    applyUpdate
+  };
+
   window.ProductIntakePWA = api;
   window.ProductIntakeUpdates = api;
 })();
