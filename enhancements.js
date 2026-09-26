@@ -370,12 +370,51 @@
     }
   };
 
-  const oldFinish = window.finish;
+  function showSaveSuccess() {
+    const lpnValue = $('lpn')?.value.trim() || '—';
+    const nameValue = $('productName')?.value.trim() || 'Produkt';
+    openModal(
+      'Produkt zapisany',
+      '<div style="display:grid;gap:16px">'+
+        '<div style="padding:16px;border:1px solid #2a323c;border-radius:12px;background:#10161c">'+
+          '<div style="font-size:13px;color:#919baa">Gotowy produkt</div>'+
+          '<div style="font-size:20px;font-weight:750;margin-top:5px">'+safe(nameValue)+'</div>'+
+          '<div style="font-size:13px;color:#919baa;margin-top:5px">LPN: '+safe(lpnValue)+'</div>'+
+        '</div>'+
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+
+          '<button id="successNextProduct" class="btn primary">Dodaj kolejny produkt</button>'+
+          '<button id="successProducts" class="btn">Przejdź do produktów</button>'+
+        '</div>'+
+      '</div>'
+    );
+
+    const nextBtn = $('successNextProduct');
+    const productsBtn = $('successProducts');
+
+    if (nextBtn) nextBtn.onclick = () => {
+      localStorage.removeItem(KEYS.draft);
+      location.href = location.pathname;
+    };
+    if (productsBtn) productsBtn.onclick = showProducts;
+  }
+
   window.finish = function() {
-    if (saveReadyProduct()) {
-      if (typeof oldFinish === 'function') oldFinish();
-    }
+    if (!saveReadyProduct()) return;
+    showSaveSuccess();
   };
+
+  function setupFinalStep() {
+    const allSections = sections();
+    const finalSection = allSections[4];
+    if (!finalSection) return;
+
+    const finalCard = finalSection.closest('.body') || document;
+    const foot = finalCard.querySelector('.foot');
+    if (!foot) return;
+
+    const nextButton = [...foot.querySelectorAll('button')].find(b => b.textContent.includes('Dalej'));
+    if (nextButton) nextButton.style.display = 'none';
+  }
 
   window.next = function() {
     const confirmed = !!document.querySelector('#confirm:checked');
@@ -423,6 +462,7 @@
     setupPhotos();
     setupNav();
     setupMobileNav();
+    setupFinalStep();
     bindAutosave();
     loadDraft();
     addHistory('Otwarto aplikację','Product Intake');
