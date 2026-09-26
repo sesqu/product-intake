@@ -93,6 +93,14 @@ async function refreshAccessToken(env, refreshToken) {
   return storeTokens(env, body);
 }
 
+async function clearAllegroTokens(env) {
+  await Promise.all([
+    env.AUTH.delete("allegro:access_token"),
+    env.AUTH.delete("allegro:expires_at"),
+    env.AUTH.delete("allegro:refresh_token")
+  ]);
+}
+
 async function userToken(env) {
   const [access, expiresRaw] = await Promise.all([
     env.AUTH.get("allegro:access_token"),
@@ -179,20 +187,46 @@ function checks(p, queryEan) {
 }
 
 async function allegroSearch(env, ean) {
-  const token = await userToken(env);
-  const u = new URL(AAPI + "/sale/products");
-  u.searchParams.set("phrase", ean);
-  u.searchParams.set("mode", "GTIN");
-  u.searchParams.set("language", "pl-PL");
+  const makeRequest = async token => {
+    const u = new URL(AAPI + "/sale/products");
+    u.searchParams.set("phrase", ean);
+    u.searchParams.set("mode", "GTIN");
+    u.searchParams.set("language", "pl-PL");
 
-  const r = await fetch(u, {
-    headers: {
-      authorization: "Bearer " + token,
-      accept: "application/vnd.allegro.public.v1+json",
-      "accept-language": "pl-PL",
-      "user-agent": env.ALLEGRO_USER_AGENT || "test-dodawanie/1 (+https://github.com/sesqu/product-intake)"
+    return fetch(u, {
+      headers: {
+        authorization: "Bearer " + token,
+        accept: "application/vnd.allegro.public.v1+json",
+        "accept-language": "pl-PL",
+        "user-agent": env.ALLEGRO_USER_AGENT || "test-dodawanie/1 (+https://github.com/sesqu/product-intake)"
+      }
+    });
+  };
+
+  let token = await userToken(env);
+  let r = await makeRequest(token);
+
+  if (r.status === 401) {
+    await Promise.all([
+      env.AUTH.delete("allegro:access_token"),
+      env.AUTH.delete("allegro:expires_at")
+    ]);
+
+    const refresh = await env.AUTH.get("allegro:refresh_token");
+    if (!refresh) {
+      await clearAllegroTokens(env);
+      throw new Error("Autoryzacja Allegro wygasła. Połącz konto ponownie.");
     }
-  });
+
+    try {
+      const refreshed = await refreshAccessToken(env, refresh);
+      token = refreshed.accessToken;
+      r = await makeRequest(token);
+    } catch {
+      await clearAllegroTokens(env);
+      throw new Error("Autoryzacja Allegro wygasła. Połącz konto ponownie.");
+    }
+  }
 
   const body = await r.json().catch(() => ({}));
   if (!r.ok) {
@@ -279,8 +313,8 @@ async function handle(request, env) {
       } catch {}
       if (!codeVerifier) return out({ error: "Brak code_verifier dla PKCE" }, 400, origin);
 
-      const t = await exchangeAuthorizationCode(env, code, codeVerifier);
       await env.AUTH.delete(stateKey);
+      const t = await exchangeAuthorizationCode(env, code, codeVerifier);
 
       return out({ ok: true, connected: true, expiresAt: t.expiresAt }, 200, origin);
     } catch (e) {
