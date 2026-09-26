@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - 'worker/src/index.js'
+      - 'worker/src/confidence.js'
+      - 'tests/confidence.test.mjs'
       - 'tests/live-api.test.mjs'
       - '.github/workflows/live-api-test.yml'
   workflow_dispatch:
@@ -16,5 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Test confidence v2
+        run: node tests/confidence.test.mjs
       - name: Wait for Cloudflare deploy and test 3 cloud products
         run: node tests/live-api.test.mjs
