@@ -11,7 +11,7 @@ on:
       - 'navigation.js'
       - 'cloud-products.js'
       - 'catalog-lookup.js'
-      - 'modal.js'
+      - 'modal-ui.js'
       - 'secondary-views.js'
       - 'product-editor.js'
       - 'enhancements.js'
