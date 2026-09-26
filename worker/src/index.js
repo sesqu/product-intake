@@ -139,11 +139,85 @@ function mapProduct(p, ean) {
     brand: pvalue(p, ["Marka", "Brand"]),
     model: pvalue(p, ["Model", "Kod producenta", "Manufacturer code", "MPN"]),
     category: p.category?.name || p.category?.id || "",
+    categoryId: p.category?.id || "",
     image: first(p.images)?.url || "",
+    productSafety: p.productSafety || null,
     parameters: (p.parameters || []).slice(0, 40).map(x => ({
       name: x.name || x.id || "",
       value: first(x.valuesLabels) || first(x.values) || ""
     }))
+  };
+}
+
+async function categoryMetadata(env, categoryId) {
+  if (!categoryId) return null;
+
+  const token = await userToken(env);
+  const url = new URL(AAPI + "/sale/categories/" + encodeURIComponent(categoryId) + "/parameters");
+  const r = await fetch(url, {
+    headers: {
+      authorization: "Bearer " + token,
+      accept: "application/vnd.allegro.public.v1+json",
+      "accept-language": "pl-PL",
+      "user-agent": env.ALLEGRO_USER_AGENT || "Product-Intake/1.1 (+https://github.com/sesqu/product-intake)"
+    }
+  });
+
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    throw new Error(body?.errors?.[0]?.message || ("Allegro category parameters HTTP " + r.status));
+  }
+
+  const parameters = Array.isArray(body.parameters) ? body.parameters : [];
+  const gtinIds = new Set(["225693", "245669", "245673"]);
+  const gtin = parameters.find(p => gtinIds.has(String(p.id)) || ["ean","isbn","issn","gtin"].includes(norm(p.name)));
+  const condition = parameters.find(p => String(p.id) === "11323" || norm(p.name) === "stan");
+
+  return {
+    categoryId: String(categoryId),
+    gtin: gtin ? {
+      id: String(gtin.id || ""),
+      name: gtin.name || "GTIN",
+      requiredForProduct: Boolean(gtin.requiredForProduct),
+      requiredIf: gtin.requiredIf || null
+    } : null,
+    condition: condition ? {
+      id: String(condition.id || "11323"),
+      name: condition.name || "Stan",
+      required: Boolean(condition.required),
+      values: (condition.dictionary || []).map(v => ({
+        id: String(v.id || ""),
+        value: clean(v.value)
+      })).filter(v => v.value)
+    } : null
+  };
+}
+
+function summarizeProductSafety(productSafety) {
+  if (!productSafety) {
+    return {
+      available: false,
+      status: "Brak danych GPSR w katalogu Allegro",
+      producers: [],
+      safetyInformation: null
+    };
+  }
+
+  const producers = (productSafety.responsibleProducers || []).map(p => ({
+    id: p.id || "",
+    name: p.name || "",
+    tradeName: p.producerData?.tradeName || "",
+    address: p.producerData?.address || null,
+    contact: p.producerData?.contact || null
+  }));
+
+  return {
+    available: Boolean(producers.length || productSafety.safetyInformation),
+    status: (producers.length || productSafety.safetyInformation)
+      ? "Dane GPSR pobrane z Allegro"
+      : "Brak danych GPSR w katalogu Allegro",
+    producers,
+    safetyInformation: productSafety.safetyInformation || null
   };
 }
 
@@ -415,14 +489,26 @@ async function handle(request, env) {
       const best = ranked[0];
       const hardConflicts = best.ean && norm(best.ean) !== norm(ean) ? ["EAN"] : [];
 
+      let categoryMeta = null;
+      try {
+        categoryMeta = await categoryMetadata(env, best.categoryId);
+      } catch (e) {
+        categoryMeta = { error: e.message, categoryId: best.categoryId || "" };
+      }
+
+      const gpsr = summarizeProductSafety(best.productSafety);
+
       return out({
         query: { ean, asin },
         sources: { allegro: best, amazon: null },
         best,
         confidence: best.score,
+        confidenceMethod: "allegro-catalog-v1",
         checks: checks(best, ean),
         hardConflicts,
-        candidates: ranked.slice(0, 5)
+        candidates: ranked.slice(0, 5),
+        categoryMeta,
+        gpsr
       }, 200, origin);
     } catch (e) {
       return out({ error: e.message }, 502, origin);
