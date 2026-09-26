@@ -28,9 +28,47 @@ function basic(clientId, secret) {
   return "Basic " + btoa(clientId + ":" + secret);
 }
 
-async function exchange(env, params) {
+async function storeTokens(env, body) {
+  if (!body?.access_token) throw new Error("Brak access_token w odpowiedzi Allegro");
+
+  const expiresAt = Date.now() + Math.max(60, Number(body.expires_in || 43199)) * 1000;
+  await env.AUTH.put("allegro:access_token", body.access_token);
+  await env.AUTH.put("allegro:expires_at", String(expiresAt));
+  if (body.refresh_token) {
+    await env.AUTH.put("allegro:refresh_token", body.refresh_token);
+  }
+
+  return { accessToken: body.access_token, expiresAt };
+}
+
+async function exchangeAuthorizationCode(env, code, codeVerifier) {
+  if (!env.ALLEGRO_CLIENT_ID) throw new Error("Brak ALLEGRO_CLIENT_ID");
+
+  const r = await fetch(AOAUTH + "/token", {
+    method: "POST",
+    headers: {
+      "content-type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: env.ALLEGRO_REDIRECT_URI,
+      client_id: env.ALLEGRO_CLIENT_ID,
+      code_verifier: codeVerifier
+    })
+  });
+
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok || !body.access_token) {
+    throw new Error(body.error_description || body.error || ("OAuth HTTP " + r.status));
+  }
+
+  return storeTokens(env, body);
+}
+
+async function refreshAccessToken(env, refreshToken) {
   if (!env.ALLEGRO_CLIENT_ID || !env.ALLEGRO_CLIENT_SECRET) {
-    throw new Error("Brak konfiguracji Allegro");
+    throw new Error("Brak konfiguracji Client ID/Secret Allegro");
   }
 
   const r = await fetch(AOAUTH + "/token", {
@@ -39,7 +77,10 @@ async function exchange(env, params) {
       authorization: basic(env.ALLEGRO_CLIENT_ID, env.ALLEGRO_CLIENT_SECRET),
       "content-type": "application/x-www-form-urlencoded"
     },
-    body: new URLSearchParams(params)
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: refreshToken
+    })
   });
 
   const body = await r.json().catch(() => ({}));
@@ -47,12 +88,7 @@ async function exchange(env, params) {
     throw new Error(body.error_description || body.error || ("OAuth HTTP " + r.status));
   }
 
-  const expiresAt = Date.now() + Math.max(60, Number(body.expires_in || 43199)) * 1000;
-  await env.AUTH.put("allegro:access_token", body.access_token);
-  await env.AUTH.put("allegro:expires_at", String(expiresAt));
-  if (body.refresh_token) await env.AUTH.put("allegro:refresh_token", body.refresh_token);
-
-  return { accessToken: body.access_token, expiresAt };
+  return storeTokens(env, body);
 }
 
 async function userToken(env) {
@@ -67,10 +103,7 @@ async function userToken(env) {
   const refresh = await env.AUTH.get("allegro:refresh_token");
   if (!refresh) throw new Error("Konto Allegro nie jest połączone");
 
-  const t = await exchange(env, {
-    grant_type: "refresh_token",
-    refresh_token: refresh
-  });
+  const t = await refreshAccessToken(env, refresh);
   return t.accessToken;
 }
 
@@ -167,11 +200,31 @@ async function allegroSearch(env, ean) {
   return (body.products || []).map(p => mapProduct(p, ean));
 }
 
-async function randomState(env) {
-  const bytes = crypto.getRandomValues(new Uint8Array(24));
-  const state = [...bytes].map(b => b.toString(16).padStart(2, "0")).join("");
-  await env.AUTH.put("allegro:oauth_state:" + state, "1", { expirationTtl: 600 });
-  return state;
+function base64Url(bytes) {
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function createOAuthState(env) {
+  const stateBytes = crypto.getRandomValues(new Uint8Array(24));
+  const verifierBytes = crypto.getRandomValues(new Uint8Array(64));
+
+  const state = base64Url(stateBytes);
+  const codeVerifier = base64Url(verifierBytes);
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(codeVerifier)
+  );
+  const codeChallenge = base64Url(new Uint8Array(digest));
+
+  await env.AUTH.put(
+    "allegro:oauth_state:" + state,
+    JSON.stringify({ codeVerifier }),
+    { expirationTtl: 600 }
+  );
+
+  return { state, codeChallenge };
 }
 
 async function handle(request, env) {
@@ -195,12 +248,14 @@ async function handle(request, env) {
     if (!env.ALLEGRO_CLIENT_ID || !env.ALLEGRO_REDIRECT_URI) {
       return out({ error: "Brak konfiguracji Allegro" }, 500, origin);
     }
-    const state = await randomState(env);
+    const { state, codeChallenge } = await createOAuthState(env);
     const auth = new URL(AOAUTH + "/authorize");
     auth.searchParams.set("response_type", "code");
     auth.searchParams.set("client_id", env.ALLEGRO_CLIENT_ID);
     auth.searchParams.set("redirect_uri", env.ALLEGRO_REDIRECT_URI);
     auth.searchParams.set("state", state);
+    auth.searchParams.set("code_challenge_method", "S256");
+    auth.searchParams.set("code_challenge", codeChallenge);
     return out({ url: auth.toString() }, 200, origin);
   }
 
@@ -212,15 +267,17 @@ async function handle(request, env) {
       if (!code || !state) return out({ error: "Brak code lub state" }, 400, origin);
 
       const stateKey = "allegro:oauth_state:" + state;
-      const valid = await env.AUTH.get(stateKey);
-      if (!valid) return out({ error: "Nieprawidłowy lub wygasły state OAuth" }, 400, origin);
-      await env.AUTH.delete(stateKey);
+      const saved = await env.AUTH.get(stateKey);
+      if (!saved) return out({ error: "Nieprawidłowy lub wygasły state OAuth" }, 400, origin);
 
-      const t = await exchange(env, {
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: env.ALLEGRO_REDIRECT_URI
-      });
+      let codeVerifier = "";
+      try {
+        codeVerifier = JSON.parse(saved).codeVerifier || "";
+      } catch {}
+      if (!codeVerifier) return out({ error: "Brak code_verifier dla PKCE" }, 400, origin);
+
+      const t = await exchangeAuthorizationCode(env, code, codeVerifier);
+      await env.AUTH.delete(stateKey);
 
       return out({ ok: true, connected: true, expiresAt: t.expiresAt }, 200, origin);
     } catch (e) {
