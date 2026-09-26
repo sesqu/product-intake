@@ -1,5 +1,5 @@
-const CACHE='product-intake-v9';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./product-storage.js?v=1','./enhancements.js?v=9'];
+const CACHE='product-intake-v10';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./product-storage.js?v=1','./enhancements.js?v=10'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
