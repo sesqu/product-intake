@@ -253,7 +253,7 @@
     const style = document.createElement('style');
     style.textContent = `
       #mobileNav{display:none}
-      @media(max-width:950px){
+      @media(max-width:1150px){
         #mobileNav{
           position:fixed;left:10px;right:10px;bottom:10px;z-index:999;
           display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
