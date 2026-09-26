@@ -175,71 +175,6 @@ async function deleteCloudProduct(env, request, lpn) {
   const next = current.filter(p => norm(p.lpn) !== norm(cleanLpn));
   await writeWorkspaceIndex(env, request, next);
 }
-
-async function seedRealWorkspaceProducts(env, request) {
-  const eans = ["195949544026", "4548736132580", "6925281994258"];
-  const oldTestLpns = ["TEST-SEED-001","TEST-SEED-002","TEST-SEED-003"];
-
-  for (const lpn of oldTestLpns) {
-    await deleteCloudProduct(env, request, lpn).catch(() => {});
-  }
-
-  const saved = [];
-
-  for (const ean of eans) {
-    const products = await allegroSearch(env, ean);
-    if (!products.length) throw new Error("Nie znaleziono produktu dla EAN " + ean);
-
-    const ranked = products
-      .map(p => ({ ...p, score: scoreProduct(p, ean) }))
-      .sort((a,b) => b.score - a.score);
-
-    const best = ranked[0];
-
-    let categoryMeta = null;
-    try {
-      categoryMeta = await categoryMetadata(env, best.categoryId);
-    } catch (e) {
-      categoryMeta = { error: e.message, categoryId: best.categoryId || "" };
-    }
-
-    const gpsr = summarizeProductSafety(best.productSafety);
-
-    const record = {
-      lpn: "REAL-EAN-" + ean,
-      ean,
-      asin: best.asin || "",
-      productName: best.name || "",
-      brand: best.brand || "",
-      model: best.model || "",
-      category: categoryMeta?.categoryName || best.category || "",
-      parameters: Array.isArray(best.parameters)
-        ? best.parameters.map(p => (p.name || p.key || "") + ": " + (p.value ?? "")).join("\n")
-        : "",
-      condition: "",
-      contents: "TEST katalogowy — bez fizycznej weryfikacji sztuki",
-      flaws: "",
-      loc: "TEST-LIVE",
-      shipping: "",
-      weight: "",
-      confirm: false,
-      identified: true,
-      confidence: Number(best.score || 0),
-      categoryMeta,
-      gpsrData: gpsr,
-      photos: [],
-      status: "catalog-test",
-      source: "Allegro API",
-      testRecord: true
-    };
-
-    const result = await saveCloudProduct(env, request, record);
-    saved.push(result.record);
-  }
-
-  return saved;
-}
-
 async function storeTokens(env, body) {
   if (!body?.access_token) throw new Error("Brak access_token w odpowiedzi Allegro");
 
@@ -632,15 +567,6 @@ async function handle(request, env) {
       return out({ ok: true }, 200, origin);
     } catch (e) {
       return out({ error: e.message }, 400, origin);
-    }
-  }
-
-  if (url.pathname === "/api/products/seed-real" && request.method === "POST") {
-    try {
-      const products = await seedRealWorkspaceProducts(env, request);
-      return out({ ok: true, products, count: products.length }, 200, origin);
-    } catch (e) {
-      return out({ error: e.message }, 502, origin);
     }
   }
 
