@@ -13,6 +13,21 @@ async function waitForApi() {
 
 await waitForApi();
 
+const realEans = [
+  '195949544026',
+  '4548736132580',
+  '6925281994258'
+];
+
+for (const ean of realEans) {
+  const r = await fetch(base + '/api/search?ean=' + encodeURIComponent(ean));
+  if (!r.ok) throw new Error('SEARCH ' + ean + ': ' + r.status + ' ' + await r.text());
+  const body = await r.json();
+  if (!body.best?.name) throw new Error('SEARCH ' + ean + ': brak rozpoznanego produktu');
+  console.log('CATALOG', ean, '=>', body.best.name, '| brand=', body.best.brand || '', '| model=', body.best.model || '', '| category=', body.categoryMeta?.categoryName || body.best.category || '', '| confidence=', body.confidence);
+}
+
+
 const fixtures = [
   {lpn:'LIVE-TEST-001',productName:'Live test 1',loc:'CLOUD-A1'},
   {lpn:'LIVE-TEST-002',productName:'Live test 2',loc:'CLOUD-A2'},
