@@ -85,7 +85,7 @@ async function saveCloudProduct(env, request, input) {
     ...product,
     id: existing?.id || clean(product.id) || crypto.randomUUID(),
     lpn,
-    status: "ready",
+    status: clean(product.status) || "ready",
     savedAt: now,
     cloudUpdatedAt: now
   };
