@@ -1,12 +1,23 @@
-name: Product storage tests
+name: Frontend tests
 
 on:
   push:
     paths:
+      - 'index.html'
+      - 'styles.css'
+      - 'intake-core.js'
       - 'product-storage.js'
-      - 'tests/storage.test.cjs'
-      - '.github/workflows/storage-test.yml'
+      - 'pwa-updates.js'
+      - 'navigation.js'
+      - 'cloud-products.js'
+      - 'secondary-views.js'
+      - 'product-editor.js'
       - 'enhancements.js'
+      - 'sw.js'
+      - 'version.json'
+      - 'tests/storage.test.cjs'
+      - 'tests/frontend-syntax.test.cjs'
+      - '.github/workflows/storage-test.yml'
   workflow_dispatch:
 
 jobs:
@@ -19,3 +30,5 @@ jobs:
           node-version: '22'
       - name: Test product storage
         run: node tests/storage.test.cjs
+      - name: Test frontend modules and PWA consistency
+        run: node tests/frontend-syntax.test.cjs
