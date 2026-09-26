@@ -682,7 +682,10 @@
 
   function bindAutosave() {
     document.addEventListener('input', e => {
-      if (e.target.matches('input,select,textarea')) saveDraft();
+      if (e.target.matches('input,select,textarea')) {
+        if (typeof quality === 'function') quality();
+        saveDraft();
+      }
     });
     document.addEventListener('change', e => {
       if (e.target.matches('input,select,textarea')) {
