@@ -1,3 +1,5 @@
+import { analyzeIdentification, conflictLabel } from './confidence.js';
+
 const AAPI = "https://api.allegro.pl";
 const AOAUTH = "https://allegro.pl/auth/oauth";
 
@@ -303,12 +305,14 @@ function flattenDescription(description) {
 
 function mapProduct(p, ean) {
   if (!p) return null;
+  const catalogEan = pvalue(p, ["EAN", "GTIN"]);
   return {
     source: "allegro",
     status: "znaleziono",
     id: p.id || "",
     name: p.name || "",
-    ean: pvalue(p, ["EAN", "GTIN"]) || ean || "",
+    ean: catalogEan || ean || "",
+    catalogEan,
     asin: "",
     brand: pvalue(p, ["Marka", "Brand"]),
     model: pvalue(p, ["Model", "Kod producenta", "Manufacturer code", "MPN"]),
@@ -399,45 +403,6 @@ function summarizeProductSafety(productSafety) {
     producers,
     safetyInformation: productSafety.safetyInformation || null
   };
-}
-
-function scoreProduct(p, queryEan) {
-  let score = 0;
-  if (p.ean && norm(p.ean) === norm(queryEan)) score += 60;
-  if (p.brand) score += 10;
-  if (p.model) score += 15;
-  if (p.name) score += 10;
-  if (p.category) score += 5;
-  return Math.min(100, score);
-}
-
-function checks(p, queryEan) {
-  return [
-    {
-      label: "EAN",
-      value: p.ean || queryEan || "brak",
-      status: p.ean && norm(p.ean) === norm(queryEan) ? "ok" : "warn",
-      text: p.ean && norm(p.ean) === norm(queryEan) ? "zgodny" : "sprawdź"
-    },
-    {
-      label: "Marka",
-      value: p.brand || "brak",
-      status: p.brand ? "ok" : "warn",
-      text: p.brand ? "znaleziona" : "brak"
-    },
-    {
-      label: "Model",
-      value: p.model || "brak",
-      status: p.model ? "ok" : "warn",
-      text: p.model ? "znaleziony" : "brak"
-    },
-    {
-      label: "Kategoria",
-      value: p.category || "brak",
-      status: p.category ? "ok" : "warn",
-      text: p.category ? "znaleziona" : "brak"
-    }
-  ];
 }
 
 async function allegroSearch(env, ean) {
@@ -698,31 +663,50 @@ async function handle(request, env) {
         }, 200, origin);
       }
 
-      const ranked = products
-        .map(p => ({ ...p, score: scoreProduct(p, ean) }))
-        .sort((a, b) => b.score - a.score);
-
-      const best = ranked[0];
-      const hardConflicts = best.ean && norm(best.ean) !== norm(ean) ? ["EAN"] : [];
+      const candidateId = clean(url.searchParams.get("candidateId"));
+      const analysis = analyzeIdentification(products, ean, candidateId);
+      const best = analysis.selected;
 
       let categoryMeta = null;
       try {
-        categoryMeta = await categoryMetadata(env, best.categoryId);
+        categoryMeta = await categoryMetadata(env, best?.categoryId);
       } catch (e) {
-        categoryMeta = { error: e.message, categoryId: best.categoryId || "" };
+        categoryMeta = { error: e.message, categoryId: best?.categoryId || "" };
       }
 
-      const gpsr = summarizeProductSafety(best.productSafety);
+      const gpsr = summarizeProductSafety(best?.productSafety);
+
+      const checks = (analysis.evidence || []).map(item => ({
+        label: item.label,
+        value:
+          item.key === "ean" ? (best?.ean || ean || "brak") :
+          item.key === "model" ? (best?.model || "brak") :
+          item.key === "brand" ? (best?.brand || "brak") :
+          item.key === "category" ? (best?.category || "brak") :
+          item.key === "name" ? (best?.name || "brak") :
+          item.key === "consensus" ? ((analysis.requiresTesterChoice || analysis.conflicts?.length) ? "wymaga sprawdzenia" : "jednoznaczny") :
+          "—",
+        status:
+          item.status === "conflict" ? "bad" :
+          item.status === "missing" ? "warn" :
+          "ok",
+        text: item.text
+      }));
 
       return out({
-        query: { ean, asin },
+        query: { ean, asin, candidateId },
         sources: { allegro: best, amazon: null },
         best,
-        confidence: best.score,
-        confidenceMethod: "allegro-catalog-v1",
-        checks: checks(best, ean),
-        hardConflicts,
-        candidates: ranked.slice(0, 5),
+        confidence: analysis.confidence,
+        completeness: analysis.completeness,
+        confidenceMethod: analysis.confidenceMethod,
+        confidenceEvidence: analysis.evidence,
+        checks,
+        conflicts: analysis.conflicts,
+        hardConflicts: analysis.hardConflicts.map(conflictLabel),
+        requiresTesterChoice: analysis.requiresTesterChoice,
+        selectedBy: analysis.selectedBy,
+        candidates: analysis.ranked.slice(0, 5),
         categoryMeta,
         gpsr
       }, 200, origin);
