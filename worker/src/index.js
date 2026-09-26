@@ -154,7 +154,8 @@ async function allegroSearch(env, ean) {
     headers: {
       authorization: "Bearer " + token,
       accept: "application/vnd.allegro.public.v1+json",
-      "accept-language": "pl-PL"
+      "accept-language": "pl-PL",
+      "user-agent": env.ALLEGRO_USER_AGENT || "test-dodawanie/1 (+https://github.com/sesqu/product-intake)"
     }
   });
 
