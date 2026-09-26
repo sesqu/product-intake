@@ -35,7 +35,7 @@
       ...(draft || {}),
       id: existing?.id || makeId(),
       savedAt: new Date().toISOString(),
-      status: 'ready'
+      status: draft?.status || existing?.status || 'ready'
     };
 
     if (existingIndex >= 0) products.splice(existingIndex, 1);
