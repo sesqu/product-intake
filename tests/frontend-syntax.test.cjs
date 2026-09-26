@@ -7,6 +7,7 @@ const scripts = [
   'pwa-updates.js',
   'navigation.js',
   'cloud-products.js',
+  'catalog-lookup.js',
   'secondary-views.js',
   'product-editor.js',
   'enhancements.js',
@@ -31,6 +32,7 @@ for (const file of [
   'pwa-updates.js',
   'navigation.js',
   'cloud-products.js',
+  'catalog-lookup.js',
   'secondary-views.js',
   'product-editor.js',
   'enhancements.js'
