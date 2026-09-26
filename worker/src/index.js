@@ -126,6 +126,13 @@ async function listCloudProducts(env, request) {
   return backfillWorkspaceIndex(env, request);
 }
 
+async function getCloudProduct(env, request, lpn) {
+  const cleanLpn = clean(lpn);
+  if (!cleanLpn) throw new Error("Brak LPN / SKU");
+  const key = await cloudProductKey(request, cleanLpn);
+  return env.AUTH.get(key, "json").catch(() => null);
+}
+
 async function saveCloudProduct(env, request, input) {
   const product = input && typeof input === "object" ? input : {};
   const lpn = clean(product.lpn);
@@ -592,6 +599,13 @@ async function handle(request, env) {
 
   if (url.pathname === "/api/products" && request.method === "GET") {
     try {
+      const lpn = clean(url.searchParams.get("lpn"));
+      if (lpn) {
+        const product = await getCloudProduct(env, request, lpn);
+        if (!product) return out({ error: "Produkt nie istnieje" }, 404, origin);
+        return out({ ok: true, product }, 200, origin);
+      }
+
       const products = await listCloudProducts(env, request);
       return out({ ok: true, products, count: products.length }, 200, origin);
     } catch (e) {
