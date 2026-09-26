@@ -404,16 +404,18 @@
   };
 
   function setupFinalStep() {
-    const allSections = sections();
-    const finalSection = allSections[4];
-    if (!finalSection) return;
-
-    const finalCard = finalSection.closest('.body') || document;
-    const foot = finalCard.querySelector('.foot');
+    const foot = document.querySelector('.foot');
     if (!foot) return;
-
     const nextButton = [...foot.querySelectorAll('button')].find(b => b.textContent.includes('Dalej'));
-    if (nextButton) nextButton.style.display = 'none';
+    if (!nextButton) return;
+
+    const baseRender = window.render;
+    window.render = function() {
+      if (typeof baseRender === 'function') baseRender();
+      nextButton.style.display = (typeof step !== 'undefined' && step === 4) ? 'none' : '';
+    };
+
+    window.render();
   }
 
   window.next = function() {
