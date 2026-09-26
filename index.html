@@ -42,5 +42,5 @@ function prev(){if(step>0){step--;render()}}function setReq(id,v){const e=docume
 function quality(){const vals=[!!lpn.value.trim(),identified,document.getElementById('confirm').checked,!!condition.value,!!contents.value.trim(),!!loc.value.trim(),!!shipping.value];['r1','r2','r3','r4','r5','r6','r7'].forEach((id,i)=>setReq(id,vals[i]));const p=Math.round(vals.filter(Boolean).length/7*100);pct.textContent=p+'%';pbar.style.width=p+'%';lpnTag.textContent=lpn.value||'—';sumLpn.textContent=lpn.value||'—';sumStatus.textContent=p===100?'Kompletne':'Wymaga uzupełnienia'}
 function finish(){quality();const vals=[lpn.value.trim(),identified,document.getElementById('confirm').checked,condition.value,contents.value.trim(),loc.value.trim(),shipping.value];if(vals.some(v=>!v))return toast('Brakuje wymaganych danych');toast('Produkt oznaczony jako gotowy')}
 ['lpn','confirm','condition','contents','loc','shipping'].forEach(id=>document.getElementById(id).addEventListener('input',quality));render();
-</script><script src="./enhancements.js?v=4"></script></body></html>
+</script><script src="./enhancements.js?v=5"></script></body></html>
 <!-- trigger-pages-build -->
