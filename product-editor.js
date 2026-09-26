@@ -671,7 +671,7 @@ async function showProducts() {
   openModal(
     'Produkty',
     '<div class="pi-products-toolbar">'+
-      '<div class="pi-muted pi-small">Master produktów • '+products.length+' • build v18</div>'+
+      '<div class="pi-muted pi-small">Master produktów • '+products.length</div>'+
       '<button id="refreshProducts" class="btn">Odśwież</button>'+
     '</div>'+
     '<div class="pi-products-grid">'+cards+'</div>'
