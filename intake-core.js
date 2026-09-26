@@ -1,0 +1,10 @@
+let step=0,identified=false;const sections=()=>[...document.querySelectorAll('.section')],steps=()=>[...document.querySelectorAll('.step')];
+function render(){sections().forEach((x,i)=>x.classList.toggle('on',i===step));steps().forEach((x,i)=>{x.classList.toggle('on',i===step);x.classList.toggle('done',i<step)});quality()}
+function toast(s){const t=document.getElementById('toast');t.textContent=s;t.style.display='block';clearTimeout(window.tt);window.tt=setTimeout(()=>t.style.display='none',2200)}
+function scan(id){if(id==='lpn')document.getElementById(id).value='LPN-2026-000184';if(id==='ean')document.getElementById(id).value='4242005307027';if(id==='loc')document.getElementById(id).value='R03-P12-A';quality();toast('Wartość zeskanowana')}
+function lookup(){toast('Ładuję integrację API…')}
+function next(){if(step===0&&!identified)return toast('Najpierw sprawdź produkt');if(step===1&&!document.getElementById('confirm').checked)return toast('Tester musi potwierdzić identyfikację');if(step<4){step++;render()}}
+function prev(){if(step>0){step--;render()}}function setReq(id,v){const e=document.getElementById(id);e.textContent=v?'OK':'brak';e.className=v?'ok':'bad'}
+function quality(){const vals=[!!lpn.value.trim(),identified,document.getElementById('confirm').checked,!!condition.value,!!contents.value.trim(),!!loc.value.trim(),!!shipping.value];['r1','r2','r3','r4','r5','r6','r7'].forEach((id,i)=>setReq(id,vals[i]));const p=Math.round(vals.filter(Boolean).length/7*100);pct.textContent=p+'%';pbar.style.width=p+'%';lpnTag.textContent=lpn.value||'—';sumLpn.textContent=lpn.value||'—';sumStatus.textContent=p===100?'Kompletne':'Wymaga uzupełnienia'}
+function finish(){quality();const vals=[lpn.value.trim(),identified,document.getElementById('confirm').checked,condition.value,contents.value.trim(),loc.value.trim(),shipping.value];if(vals.some(v=>!v))return toast('Brakuje wymaganych danych');toast('Produkt oznaczony jako gotowy')}
+['lpn','confirm','condition','contents','loc','shipping'].forEach(id=>document.getElementById(id).addEventListener('input',quality));render();
