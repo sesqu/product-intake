@@ -1,5 +1,103 @@
 {
-  "version": 34,
-  "label": "v34",
-  "publishedAt": "2026-09-26T21:15:00+02:00"
+  "version": 35,
+  "label": "v35",
+  "publishedAt": "2026-09-26T21:31:00+02:00",
+  "assets": [
+    {
+      "url": "./index.html",
+      "chars": 8090,
+      "bytes": 8154,
+      "fnv32": "f4c081c9"
+    },
+    {
+      "url": "./styles.css?v=35",
+      "chars": 16051,
+      "bytes": 16051,
+      "fnv32": "533d6260"
+    },
+    {
+      "url": "./intake-core.js?v=35",
+      "chars": 1494,
+      "bytes": 1501,
+      "fnv32": "b68e7c33"
+    },
+    {
+      "url": "./product-storage.js?v=2",
+      "chars": 1737,
+      "bytes": 1737,
+      "fnv32": "61a7532b"
+    },
+    {
+      "url": "./pwa-updates.js?v=35",
+      "chars": 16363,
+      "bytes": 16379,
+      "fnv32": "bf36dfaa"
+    },
+    {
+      "url": "./modal-ui.js?v=35",
+      "chars": 1762,
+      "bytes": 1762,
+      "fnv32": "e259e28a"
+    },
+    {
+      "url": "./navigation.js?v=35",
+      "chars": 4935,
+      "bytes": 4943,
+      "fnv32": "56933a65"
+    },
+    {
+      "url": "./cloud-products.js?v=35",
+      "chars": 11871,
+      "bytes": 11915,
+      "fnv32": "8ad3f4cf"
+    },
+    {
+      "url": "./catalog-lookup.js?v=35",
+      "chars": 10774,
+      "bytes": 10813,
+      "fnv32": "0c2a50ad"
+    },
+    {
+      "url": "./intake-session.js?v=35",
+      "chars": 13363,
+      "bytes": 13393,
+      "fnv32": "61b57281"
+    },
+    {
+      "url": "./secondary-views.js?v=35",
+      "chars": 8739,
+      "bytes": 8829,
+      "fnv32": "361c744b"
+    },
+    {
+      "url": "./product-list.js?v=35",
+      "chars": 4374,
+      "bytes": 4398,
+      "fnv32": "e39944e6"
+    },
+    {
+      "url": "./product-editor.js?v=35",
+      "chars": 22280,
+      "bytes": 22423,
+      "fnv32": "0cdb7c08"
+    },
+    {
+      "url": "./enhancements.js?v=35",
+      "chars": 5701,
+      "bytes": 5708,
+      "fnv32": "7f76df92"
+    },
+    {
+      "url": "./sw.js",
+      "chars": 2133,
+      "bytes": 2133,
+      "fnv32": "39d116bb"
+    },
+    {
+      "url": "./manifest.webmanifest",
+      "chars": 330,
+      "bytes": 332,
+      "fnv32": "57df3c36"
+    }
+  ]
 }
