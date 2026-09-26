@@ -382,21 +382,46 @@
     return req.filter(([,ok]) => !ok).map(([name]) => name);
   }
 
-  function getProducts() { return JSON.parse(localStorage.getItem(KEYS.products) || '[]'); }
+  function getProducts() {
+    if (window.ProductStorage) return window.ProductStorage.getProducts(localStorage, KEYS.products);
+    return JSON.parse(localStorage.getItem(KEYS.products) || '[]');
+  }
   function saveReadyProduct() {
     const missing = validateForReady();
     if (missing.length) {
       toast('Brakuje: ' + missing.slice(0,3).join(', ') + (missing.length > 3 ? '…' : ''));
       return false;
     }
+
     const d = readDraft();
-    const products = getProducts();
-    const record = {...d, id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), savedAt:new Date().toISOString(), status:'ready'};
-    products.unshift(record);
-    localStorage.setItem(KEYS.products, JSON.stringify(products.slice(0,500)));
-    addHistory('Produkt gotowy', d.lpn + (d.productName ? ' • ' + d.productName : ''));
+    let result;
+
+    if (window.ProductStorage) {
+      result = window.ProductStorage.saveProduct(localStorage, KEYS.products, d, 500);
+    } else {
+      const products = getProducts();
+      const lpnKey = String(d.lpn || '').trim().toLowerCase();
+      const existingIndex = products.findIndex(p => String(p.lpn || '').trim().toLowerCase() === lpnKey);
+      const existing = existingIndex >= 0 ? products[existingIndex] : null;
+      const record = {
+        ...(existing || {}),
+        ...d,
+        id: existing?.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+        savedAt: new Date().toISOString(),
+        status:'ready'
+      };
+      if (existingIndex >= 0) products.splice(existingIndex, 1);
+      products.unshift(record);
+      localStorage.setItem(KEYS.products, JSON.stringify(products.slice(0,500)));
+      result = {record, created: existingIndex < 0, updated: existingIndex >= 0};
+    }
+
+    addHistory(
+      result.updated ? 'Produkt zaktualizowany' : 'Produkt gotowy',
+      d.lpn + (d.productName ? ' • ' + d.productName : '')
+    );
     saveDraft();
-    toast('Produkt zapisany jako gotowy.');
+    toast(result.updated ? 'Produkt zaktualizowany.' : 'Produkt zapisany jako gotowy.');
     return true;
   }
 
