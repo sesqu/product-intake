@@ -53,6 +53,8 @@
     }
     out.photos = photoData;
     out.identified = typeof identified !== 'undefined' ? identified : false;
+    out.step = typeof step !== 'undefined' ? step : 0;
+    out.savedAt = new Date().toISOString();
     return out;
   }
   function writeDraft(d) {
@@ -64,9 +66,13 @@
       else el.value = d[id];
     }
     photoData = Array.isArray(d.photos) ? d.photos : [];
-    if (d.identified && typeof identified !== 'undefined') identified = true;
+    if (typeof identified !== 'undefined') identified = !!d.identified;
+    if (typeof step !== 'undefined' && Number.isInteger(d.step)) {
+      step = Math.max(0, Math.min(4, d.step));
+    }
     drawPhotos();
-    if (typeof quality === 'function') quality();
+    if (typeof render === 'function') render();
+    else if (typeof quality === 'function') quality();
   }
   function saveDraft() {
     try { localStorage.setItem(KEYS.draft, JSON.stringify(readDraft())); } catch {}
@@ -432,12 +438,32 @@
     }
   };
 
+  const originalNext = window.next;
+  window.next = function() {
+    const result = originalNext?.();
+    saveDraft();
+    return result;
+  };
+
+  const originalPrev = window.prev;
+  window.prev = function() {
+    const result = originalPrev?.();
+    saveDraft();
+    return result;
+  };
+
   function bindAutosave() {
     document.addEventListener('input', e => {
       if (e.target.matches('input,select,textarea')) saveDraft();
     });
     document.addEventListener('change', e => {
       if (e.target.matches('input,select,textarea')) saveDraft();
+    });
+
+    window.addEventListener('pagehide', saveDraft);
+    window.addEventListener('beforeunload', saveDraft);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') saveDraft();
     });
   }
 
