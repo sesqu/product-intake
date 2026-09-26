@@ -1,5 +1,5 @@
-const CACHE='product-intake-v31';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./version.json','./styles.css?v=31','./intake-core.js?v=31','./product-storage.js?v=2','./pwa-updates.js?v=31','./modal-ui.js?v=31','./navigation.js?v=31','./cloud-products.js?v=31','./catalog-lookup.js?v=31','./secondary-views.js?v=31','./product-editor.js?v=31','./enhancements.js?v=31'];
+const CACHE='product-intake-v32';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./version.json','./styles.css?v=32','./intake-core.js?v=32','./product-storage.js?v=2','./pwa-updates.js?v=32','./modal-ui.js?v=32','./navigation.js?v=32','./cloud-products.js?v=32','./catalog-lookup.js?v=32','./intake-session.js?v=32','./secondary-views.js?v=32','./product-editor.js?v=32','./enhancements.js?v=32'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
