@@ -22,7 +22,7 @@
   const SecondaryViews = window.ProductIntakeSecondaryViews;
   const Navigation = window.ProductIntakeNavigation;
 
-  window.ProductIntakePWA?.setup({build:33,label:'v33'});
+  window.ProductIntakePWA?.setup({build:34,label:'v34'});
 
   function getProducts() {
     return IntakeSession.getProducts();
