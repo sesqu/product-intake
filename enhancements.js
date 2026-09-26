@@ -955,11 +955,13 @@
   function closePiModal() {
     const m = $('piModal');
     if (m) m.style.display = 'none';
+    $('piModalCard')?.classList.remove('pi-editor-card');
     document.body.classList.remove('pi-editor-open');
   }
   function openModal(title, html) {
     document.body.classList.remove('pi-editor-open');
     const m = makeModal();
+    $('piModalCard')?.classList.remove('pi-editor-card');
     $('piModalTitle').textContent = title;
     $('piModalBody').innerHTML = html;
     m.style.display = 'block';
@@ -1352,6 +1354,7 @@
   function renderProductEditor(product) {
     ensureProductEditorStyles();
     document.body.classList.add('pi-editor-open');
+    $('piModalCard')?.classList.add('pi-editor-card');
     setMobileNavActive('products');
     editorProduct = product;
     editorPhotos = Array.isArray(product.photos) ? [...product.photos] : [];
