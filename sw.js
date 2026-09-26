@@ -1,5 +1,5 @@
-const CACHE='product-intake-v24';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./version.json','./product-storage.js?v=2','./pwa-updates.js?v=24','./navigation.js?v=24','./cloud-products.js?v=24','./secondary-views.js?v=24','./enhancements.js?v=24'];
+const CACHE='product-intake-v25';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./version.json','./product-storage.js?v=2','./pwa-updates.js?v=25','./navigation.js?v=25','./cloud-products.js?v=25','./secondary-views.js?v=25','./product-editor.js?v=25','./enhancements.js?v=25'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
