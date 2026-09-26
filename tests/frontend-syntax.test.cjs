@@ -9,7 +9,8 @@ const scripts = [
   'navigation.js',
   'cloud-products.js',
   'catalog-lookup.js',
-    'secondary-views.js',
+  'intake-session.js',
+  'secondary-views.js',
   'product-editor.js',
   'enhancements.js',
   'sw.js'
@@ -35,7 +36,7 @@ for (const file of [
   'navigation.js',
   'cloud-products.js',
   'catalog-lookup.js',
-    'secondary-views.js',
+  'secondary-views.js',
   'product-editor.js',
   'enhancements.js'
 ]) {
@@ -57,3 +58,12 @@ assert.equal(Number(runtimeMatch[1]), version.version, 'Runtime build != version
 assert.equal(Number(runtimeMatch[2]), version.version, 'Runtime label != version.json');
 
 console.log('PASS: składnia modułów, wersja, index.html i cache PWA są spójne.');
+
+
+for (const id of ['productName','brand','model','category','parameters','serial','flaws','weight']) {
+  assert(
+    html.includes('id="' + id + '"'),
+    'Brak stałego id pola: ' + id
+  );
+}
+console.log('PASS stable intake field ids.');
