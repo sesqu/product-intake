@@ -64,6 +64,8 @@ function productSummary(record) {
     brand: record.brand || "",
     model: record.model || "",
     category: record.category || "",
+    catalogImage: record.catalogImage || "",
+    confidence: Number(record.confidence || 0),
     loc: record.loc || "",
     status: record.status || "",
     savedAt: record.savedAt || "",
