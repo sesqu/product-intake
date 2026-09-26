@@ -6,7 +6,8 @@
   "vars": {
     "ALLOWED_ORIGIN": "https://sesqu.github.io",
     "ALLEGRO_CLIENT_ID": "83274784",
-    "ALLEGRO_REDIRECT_URI": "https://sesqu.github.io/product-intake/"
+    "ALLEGRO_REDIRECT_URI": "https://sesqu.github.io/product-intake/",
+    "ALLEGRO_USER_AGENT": "test-dodawanie/1 (+https://github.com/sesqu/product-intake)"
   },
   "kv_namespaces": [
     {
