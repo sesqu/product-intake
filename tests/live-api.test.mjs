@@ -24,7 +24,16 @@ for (const ean of realEans) {
   if (!r.ok) throw new Error('SEARCH ' + ean + ': ' + r.status + ' ' + await r.text());
   const body = await r.json();
   if (!body.best?.name) throw new Error('SEARCH ' + ean + ': brak rozpoznanego produktu');
-  console.log('CATALOG', ean, '=>', body.best.name, '| brand=', body.best.brand || '', '| model=', body.best.model || '', '| category=', body.categoryMeta?.categoryName || body.best.category || '', '| confidence=', body.confidence);
+  if (body.confidenceMethod !== 'weighted-identification-v2') {
+    throw new Error('SEARCH ' + ean + ': Worker nie używa confidence v2');
+  }
+  if (!Array.isArray(body.confidenceEvidence) || !body.confidenceEvidence.length) {
+    throw new Error('SEARCH ' + ean + ': brak evidence dla confidence v2');
+  }
+  if (body.requiresTesterChoice && (!Array.isArray(body.candidates) || body.candidates.length < 2)) {
+    throw new Error('SEARCH ' + ean + ': wybór testera bez kandydatów');
+  }
+  console.log('CATALOG', ean, '=>', body.best.name, '| brand=', body.best.brand || '', '| model=', body.best.model || '', '| category=', body.categoryMeta?.categoryName || body.best.category || '', '| confidence=', body.confidence, '| method=', body.confidenceMethod);
 }
 
 
