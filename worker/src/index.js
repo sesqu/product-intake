@@ -591,6 +591,15 @@ async function handle(request, env) {
     }
   }
 
+  if (url.pathname === "/api/products/seed-real" && request.method === "POST") {
+    try {
+      const products = await seedRealWorkspaceProducts(env, request);
+      return out({ ok: true, products, count: products.length }, 200, origin);
+    } catch (e) {
+      return out({ error: e.message }, 502, origin);
+    }
+  }
+
   if (url.pathname === "/api/allegro/auth-url" && request.method === "GET") {
     if (!env.ALLEGRO_CLIENT_ID || !env.ALLEGRO_CLIENT_SECRET || !env.ALLEGRO_REDIRECT_URI) {
       return out({ error: "Brak pełnej konfiguracji Allegro (Client ID / Client Secret / redirect URI)" }, 500, origin);
