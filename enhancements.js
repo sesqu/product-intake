@@ -77,8 +77,9 @@
 
       const byLpn = new Map();
       for (const p of [...local, ...cloud]) {
-        const key = String(p?.lpn || '').trim().toLowerCase();
-        if (!key) continue;
+        const rawLpn = String(p?.lpn || '').trim();
+        if (!rawLpn || rawLpn.startsWith('TEST-SEED-')) continue;
+        const key = rawLpn.toLowerCase();
         const prev = byLpn.get(key);
         if (!prev || String(p.savedAt || '') >= String(prev.savedAt || '')) byLpn.set(key, p);
       }
@@ -123,7 +124,7 @@
 
   async function seedRealCatalogProducts() {
     const key = getWorkspaceKey();
-    const flag = 'productIntake.realCatalogSeed.v1.' + key.slice(0,12);
+    const flag = 'productIntake.realCatalogSeed.v2.' + key.slice(0,12);
     if (localStorage.getItem(flag) === 'done') return;
 
     const eans = [
@@ -196,15 +197,36 @@
       }
     }
 
-    if (saved === eans.length) {
-      localStorage.setItem(flag, 'done');
-      addHistory('Dodano realne produkty testowe', eans.join(', '));
-      setTimeout(() => toast('Dodano 3 realne produkty z Allegro API.'), 350);
-    } else if (saved > 0) {
-      setTimeout(() => toast('Dodano ' + saved + '/3 realnych produktów testowych.'), 350);
+    const expectedLpns = new Set(eans.map(ean => 'REAL-EAN-' + ean));
+    let visibleProducts = [];
+
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        visibleProducts = await syncProductsFromCloud(true);
+      } catch {
+        visibleProducts = getProducts();
+      }
+
+      const visibleLpns = new Set(visibleProducts.map(p => String(p?.lpn || '')));
+      if ([...expectedLpns].every(lpn => visibleLpns.has(lpn))) break;
+      await new Promise(resolve => setTimeout(resolve, 1500));
     }
 
-    try { await syncProductsFromCloud(true); } catch {}
+    visibleProducts = (visibleProducts.length ? visibleProducts : getProducts())
+      .filter(p => !String(p?.lpn || '').startsWith('TEST-SEED-'));
+
+    localStorage.setItem(KEYS.products, JSON.stringify(visibleProducts.slice(0,500)));
+
+    const visibleLpns = new Set(visibleProducts.map(p => String(p?.lpn || '')));
+    const verifiedCount = [...expectedLpns].filter(lpn => visibleLpns.has(lpn)).length;
+
+    if (saved === eans.length && verifiedCount === eans.length) {
+      localStorage.setItem(flag, 'done');
+      addHistory('Dodano realne produkty testowe', eans.join(', '));
+      setTimeout(() => toast('Gotowe • 3 realne produkty z Allegro są w bazie.'), 350);
+    } else {
+      setTimeout(() => toast('Test produktów: widoczne ' + verifiedCount + '/3. Odśwież Produkty za chwilę.'), 350);
+    }
   }
 
   function ensureIds() {
