@@ -9,6 +9,9 @@
   const $ = id => document.getElementById(id);
   const safe = (v='') => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let photoData = [];
+  let latestCategoryMeta = null;
+  let latestGpsr = null;
+  let latestConfidence = null;
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
@@ -38,11 +41,10 @@
       const inputs = warehouse.querySelectorAll('input');
       const selects = warehouse.querySelectorAll('select');
       if (inputs[1]) inputs[1].id = 'weight';
-      if (selects[1]) selects[1].id = 'gpsr';
     }
   }
 
-  const fieldIds = ['lpn','ean','asin','productName','brand','model','category','parameters','confirm','condition','serial','contents','flaws','loc','shipping','weight','gpsr'];
+  const fieldIds = ['lpn','ean','asin','productName','brand','model','category','parameters','confirm','condition','serial','contents','flaws','loc','shipping','weight'];
 
   function readDraft() {
     const out = {};
@@ -55,22 +57,38 @@
     out.identified = typeof identified !== 'undefined' ? identified : false;
     out.step = typeof step !== 'undefined' ? step : 0;
     out.savedAt = new Date().toISOString();
+    out.categoryMeta = latestCategoryMeta;
+    out.gpsrData = latestGpsr;
+    out.confidence = latestConfidence;
     return out;
   }
   function writeDraft(d) {
     if (!d) return;
+
+    latestCategoryMeta = d.categoryMeta || null;
+    latestGpsr = d.gpsrData || null;
+    latestConfidence = Number.isFinite(Number(d.confidence)) ? Number(d.confidence) : null;
+
+    applyCategoryMeta(latestCategoryMeta, false);
+
     for (const id of fieldIds) {
       const el = $(id);
       if (!el || d[id] == null) continue;
       if (el.type === 'checkbox') el.checked = !!d[id];
       else el.value = d[id];
     }
+
     photoData = Array.isArray(d.photos) ? d.photos : [];
     if (typeof identified !== 'undefined') identified = !!d.identified;
     if (typeof step !== 'undefined' && Number.isInteger(d.step)) {
       step = Math.max(0, Math.min(4, d.step));
     }
+
+    applyGpsr(latestGpsr);
+    applyConfidence(latestConfidence);
+    updateEanRequirementUi();
     drawPhotos();
+
     if (typeof render === 'function') render();
     else if (typeof quality === 'function') quality();
   }
