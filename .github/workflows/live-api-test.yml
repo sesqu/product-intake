@@ -1,0 +1,20 @@
+name: Live cloud product test
+
+on:
+  push:
+    paths:
+      - 'worker/src/index.js'
+      - 'tests/live-api.test.mjs'
+      - '.github/workflows/live-api-test.yml'
+  workflow_dispatch:
+
+jobs:
+  live-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for Cloudflare deploy and test 3 cloud products
+        run: node tests/live-api.test.mjs
