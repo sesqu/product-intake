@@ -4,7 +4,8 @@
     draft: 'productIntake.draft.v2',
     products: 'productIntake.products.v2',
     history: 'productIntake.history.v2',
-    apiBase: 'productIntake.apiBase'
+    apiBase: 'productIntake.apiBase',
+    workspaceKey: 'productIntake.workspaceKey.v1'
   };
   const $ = id => document.getElementById(id);
   const safe = (v='') => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -15,6 +16,92 @@
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+  }
+
+  function randomWorkspaceKey() {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    return btoa(String.fromCharCode(...bytes))
+      .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+
+  function getWorkspaceKey() {
+    let key = localStorage.getItem(KEYS.workspaceKey) || '';
+    if (!/^[A-Za-z0-9_-]{32,128}$/.test(key)) {
+      key = randomWorkspaceKey();
+      localStorage.setItem(KEYS.workspaceKey, key);
+    }
+    return key;
+  }
+
+  function apiBase() {
+    return (localStorage.getItem(KEYS.apiBase) || DEFAULT_API_BASE).replace(/\/$/,'');
+  }
+
+  function cloudHeaders(extra = {}) {
+    return {
+      'content-type':'application/json',
+      'x-workspace-key': getWorkspaceKey(),
+      ...extra
+    };
+  }
+
+  async function cloudGetProducts() {
+    const r = await fetch(apiBase() + '/api/products', {
+      method:'GET',
+      headers: { 'x-workspace-key': getWorkspaceKey() }
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Nie udało się pobrać produktów');
+    return Array.isArray(j.products) ? j.products : [];
+  }
+
+  async function cloudSaveProduct(product) {
+    const r = await fetch(apiBase() + '/api/products', {
+      method:'POST',
+      headers: cloudHeaders(),
+      body: JSON.stringify({ product })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Nie udało się zapisać produktu');
+    return j;
+  }
+
+  async function syncProductsFromCloud(quiet = false) {
+    try {
+      const products = await cloudGetProducts();
+      localStorage.setItem(KEYS.products, JSON.stringify(products.slice(0,500)));
+      if (!quiet) toast('Synchronizacja zakończona • ' + products.length + ' produktów');
+      return products;
+    } catch (e) {
+      if (!quiet) toast('Błąd synchronizacji: ' + (e.message || 'brak połączenia'));
+      throw e;
+    }
+  }
+
+  async function migrateLocalProductsToCloud() {
+    const key = getWorkspaceKey();
+    const markerKey = 'productIntake.cloudMigrated.' + key.slice(0,12);
+    if (localStorage.getItem(markerKey) === 'done') return;
+
+    let local = [];
+    try { local = JSON.parse(localStorage.getItem(KEYS.products) || '[]'); } catch {}
+    local = Array.isArray(local) ? local : [];
+
+    for (const product of local) {
+      try { await cloudSaveProduct(product); } catch {}
+    }
+
+    localStorage.setItem(markerKey, 'done');
+  }
+
+  async function initializeCloudProducts() {
+    try {
+      await migrateLocalProductsToCloud();
+      await syncProductsFromCloud(true);
+    } catch (e) {
+      console.warn('Cloud sync unavailable', e);
+    }
   }
 
   function ensureIds() {
