@@ -68,6 +68,7 @@ async function listCloudProducts(env, request) {
 
   return products
     .filter(Boolean)
+    .filter(p => !String(p?.lpn || "").startsWith("TEST-SEED-"))
     .sort((a, b) => String(b.savedAt || "").localeCompare(String(a.savedAt || "")));
 }
 
