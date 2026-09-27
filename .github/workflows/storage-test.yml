@@ -11,6 +11,7 @@ on:
       - 'navigation.js'
       - 'cloud-products.js'
       - 'catalog-lookup.js'
+      - 'intake-session.js'
       - 'modal-ui.js'
       - 'secondary-views.js'
       - 'product-list.js'
