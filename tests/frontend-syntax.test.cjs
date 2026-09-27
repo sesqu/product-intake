@@ -37,6 +37,7 @@ for (const file of [
   'navigation.js',
   'cloud-products.js',
   'catalog-lookup.js',
+  'intake-session.js',
   'secondary-views.js',
   'product-editor.js',
   'enhancements.js'
@@ -68,3 +69,19 @@ for (const id of ['productName','brand','model','category','parameters','serial'
   );
 }
 console.log('PASS stable intake field ids.');
+
+
+const sessionSource = fs.readFileSync('intake-session.js', 'utf8');
+assert(
+  sessionSource.includes('identificationBlockingState'),
+  'Brak bezpośredniej walidacji stanu konfliktów identyfikacji'
+);
+assert(
+  sessionSource.includes('rozstrzygnięcie krytycznych konfliktów'),
+  'Krytyczne konflikty nie blokują finalnego zapisu'
+);
+assert(
+  sessionSource.includes('Konflikt do rozstrzygnięcia'),
+  'UI kontroli końcowej nie sygnalizuje nierozstrzygniętego konfliktu'
+);
+console.log('PASS critical conflict ready-state guard.');
