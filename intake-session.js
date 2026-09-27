@@ -214,6 +214,31 @@
     });
   }
 
+  function identificationBlockingState() {
+    const state = catalog().getState();
+    const identification =
+      state?.identification && typeof state.identification === 'object'
+        ? state.identification
+        : null;
+    const resolutions =
+      state?.conflictResolutions && typeof state.conflictResolutions === 'object'
+        ? state.conflictResolutions
+        : {};
+
+    const hardConflicts = Array.isArray(identification?.hardConflicts)
+      ? identification.hardConflicts
+      : [];
+
+    const unresolvedHard = hardConflicts.filter(conflict =>
+      !resolutions[conflict?.key]
+    );
+
+    return {
+      requiresTesterChoice:Boolean(identification?.requiresTesterChoice),
+      unresolvedHard
+    };
+  }
+
   function updateQualityPanel() {
     const identifiedOk = typeof identified !== 'undefined' && identified;
     const photoOk = photoData.filter(Boolean).length > 0;
@@ -248,17 +273,28 @@
     if ($('pbar')) $('pbar').style.width = pctValue + '%';
     if ($('lpnTag')) $('lpnTag').textContent = $('lpn')?.value || '—';
     if ($('sumLpn')) $('sumLpn').textContent = $('lpn')?.value || '—';
+    const blocking = identificationBlockingState();
+
     if ($('sumStatus')) {
-      $('sumStatus').textContent = pctValue === 100 ? 'Kompletne' : 'Wymaga uzupełnienia';
+      if (blocking.requiresTesterChoice || blocking.unresolvedHard.length) {
+        $('sumStatus').textContent = 'Konflikt do rozstrzygnięcia';
+      } else {
+        $('sumStatus').textContent =
+          pctValue === 100 ? 'Kompletne' : 'Wymaga uzupełnienia';
+      }
     }
 
     return pctValue;
   }
 
   function validateForReady() {
+    const blocking = identificationBlockingState();
+
     const required = [
       ['LPN / SKU', $('lpn')?.value.trim()],
       ['identyfikacja produktu', typeof identified !== 'undefined' && identified],
+      ['wybór właściwego wariantu przez testera', !blocking.requiresTesterChoice],
+      ['rozstrzygnięcie krytycznych konfliktów', blocking.unresolvedHard.length === 0],
       ['potwierdzenie testera', $('confirm')?.checked],
       ['stan', $('condition')?.value],
       ['zawartość zestawu', $('contents')?.value.trim()],
