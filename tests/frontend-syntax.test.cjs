@@ -85,3 +85,29 @@ assert(
   'UI kontroli końcowej nie sygnalizuje nierozstrzygniętego konfliktu'
 );
 console.log('PASS critical conflict ready-state guard.');
+
+
+const catalogSource = fs.readFileSync('catalog-lookup.js', 'utf8');
+const productEditorSource = fs.readFileSync('product-editor.js', 'utf8');
+
+assert(
+  catalogSource.includes('sourceSnapshot: latestSourceSnapshot'),
+  'Stan katalogu nie udostępnia snapshotu źródła'
+);
+assert(
+  sessionSource.includes('out.sourceSnapshot = catalogState.sourceSnapshot || null'),
+  'Draft nie zapisuje snapshotu źródła'
+);
+assert(
+  sessionSource.includes('draft.sourceSnapshot || null'),
+  'Draft nie odtwarza snapshotu źródła'
+);
+assert(
+  productEditorSource.includes('data-tab="identification"'),
+  'Edytor produktu nie ma zakładki audytu identyfikacji'
+);
+assert(
+  productEditorSource.includes('confidenceMethodLabel'),
+  'Edytor produktu nie pokazuje wersji/metody scoringu'
+);
+console.log('PASS source snapshot and identification audit trail.');

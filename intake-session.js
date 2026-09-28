@@ -46,6 +46,7 @@
     out.confidence = catalogState.confidence;
     out.identification = catalogState.identification || null;
     out.conflictResolutions = catalogState.conflictResolutions || {};
+    out.sourceSnapshot = catalogState.sourceSnapshot || null;
 
     return out;
   }
@@ -73,7 +74,8 @@
     catalog().applyConfidence(draft.confidence);
     catalog().applyIdentificationState(
       draft.identification || null,
-      draft.conflictResolutions || {}
+      draft.conflictResolutions || {},
+      draft.sourceSnapshot || null
     );
     catalog().updateEanRequirementUi();
     drawPhotos();

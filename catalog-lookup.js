@@ -5,6 +5,7 @@
   let latestConfidence = null;
   let latestIdentification = null;
   let latestConflictResolutions = {};
+  let latestSourceSnapshot = null;
 
   const $ = id => document.getElementById(id);
 
@@ -28,11 +29,12 @@
       gpsrData: latestGpsr,
       confidence: latestConfidence,
       identification: latestIdentification,
-      conflictResolutions: {...latestConflictResolutions}
+      conflictResolutions: {...latestConflictResolutions},
+      sourceSnapshot: latestSourceSnapshot
     };
   }
 
-  function applyIdentificationState(identification, resolutions = {}) {
+  function applyIdentificationState(identification, resolutions = {}, sourceSnapshot = null) {
     latestIdentification = identification && typeof identification === 'object'
       ? identification
       : null;
@@ -40,6 +42,10 @@
       resolutions && typeof resolutions === 'object'
         ? {...resolutions}
         : {};
+    latestSourceSnapshot =
+      sourceSnapshot && typeof sourceSnapshot === 'object'
+        ? sourceSnapshot
+        : null;
   }
 
   function selectedConditionId() {
@@ -239,6 +245,36 @@
     };
   }
 
+  function buildSourceSnapshot(data) {
+    const best = data?.best || data?.sources?.allegro || null;
+    if (!best) return null;
+
+    return {
+      allegro: {
+        fetchedAt: new Date().toISOString(),
+        query: data?.query && typeof data.query === 'object' ? {...data.query} : {},
+        ean: best.ean || data?.query?.ean || '',
+        name: best.name || '',
+        brand: best.brand || '',
+        model: best.model || '',
+        category: data?.categoryMeta?.categoryName || best.category || '',
+        categoryId: best.categoryId || data?.categoryMeta?.categoryId || '',
+        image: best.image || '',
+        description: best.description || '',
+        parameters: Array.isArray(best.parameters) ? best.parameters : [],
+        gpsr: data?.gpsr || null,
+        categoryMeta: data?.categoryMeta || null,
+        confidence: Number(data?.confidence ?? 0),
+        completeness: Number(data?.completeness ?? 0),
+        confidenceMethod: data?.confidenceMethod || '',
+        confidenceEvidence: Array.isArray(data?.confidenceEvidence) ? data.confidenceEvidence : [],
+        selectedBy: data?.selectedBy || '',
+        selectedCandidateId: best.id || data?.selectedCandidateId || ''
+      },
+      amazon: data?.sources?.amazon || null
+    };
+  }
+
   function renderConflictSummary(data) {
     const conflicts = Array.isArray(data?.conflicts) ? data.conflicts : [];
     if (!conflicts.length) return '';
@@ -261,6 +297,7 @@
     setIdentified(false);
     latestIdentification = identificationSnapshot(data);
     latestConflictResolutions = {};
+    latestSourceSnapshot = null;
     applyConfidence(data.confidence);
 
     const candidates = Array.isArray(data.candidates)
@@ -488,6 +525,7 @@
 
     latestIdentification = identificationSnapshot(data);
     latestConflictResolutions = {};
+    latestSourceSnapshot = buildSourceSnapshot(data);
     populateMaster(best,data);
 
     const unresolved = unresolvedHardConflicts(data);
@@ -578,6 +616,7 @@
 
     try {
       latestConflictResolutions = {};
+      latestSourceSnapshot = null;
       const data = await fetchLookup();
       renderRemote(data);
     } catch (error) {

@@ -126,7 +126,12 @@ function buildAllegroSnapshot(ean, data) {
     parameters: Array.isArray(best.parameters) ? best.parameters : [],
     gpsr: data?.gpsr || null,
     categoryMeta: data?.categoryMeta || null,
-    confidence: Number(data?.confidence ?? 0)
+    confidence: Number(data?.confidence ?? 0),
+    completeness: Number(data?.completeness ?? 0),
+    confidenceMethod: data?.confidenceMethod || '',
+    confidenceEvidence: Array.isArray(data?.confidenceEvidence) ? data.confidenceEvidence : [],
+    selectedBy: data?.selectedBy || '',
+    selectedCandidateId: best.id || data?.selectedCandidateId || ''
   };
 }
 
@@ -310,6 +315,83 @@ async function saveEditorProduct() {
   if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Zapisz zmiany'; }
 }
 
+function confidenceMethodLabel(value) {
+  if (value === 'weighted-identification-v2') return 'scoring v2';
+  return value || 'brak danych';
+}
+
+function selectionLabel(value) {
+  if (value === 'tester') return 'wybór testera';
+  if (value === 'ranking') return 'ranking automatyczny';
+  return value || 'brak danych';
+}
+
+function identificationAuditHtml(product) {
+  const identification = product?.identification || {};
+  const source = product?.sourceSnapshot?.allegro || {};
+  const resolutions = product?.conflictResolutions && typeof product.conflictResolutions === 'object'
+    ? product.conflictResolutions
+    : {};
+
+  const confidence = product?.confidence ?? source?.confidence;
+  const completeness = identification?.completeness ?? source?.completeness;
+  const method = identification?.confidenceMethod || source?.confidenceMethod || '';
+  const selectedBy = identification?.selectedBy || source?.selectedBy || '';
+  const candidateId = identification?.selectedCandidateId || source?.selectedCandidateId || '';
+
+  const conflicts = [
+    ...(Array.isArray(identification?.conflicts) ? identification.conflicts : []),
+    ...(Array.isArray(identification?.hardConflicts) ? identification.hardConflicts : [])
+  ];
+
+  const byKey = new Map();
+  conflicts.forEach((item, index) => {
+    const key = String(item?.key || ('conflict-' + index));
+    if (!byKey.has(key)) byKey.set(key, item);
+  });
+
+  const conflictHtml = byKey.size
+    ? '<div class="pi-conflict-list">' + [...byKey.entries()].map(([key, conflict]) => {
+        const resolution = resolutions[key];
+        const choice = resolution?.choice === 'catalog'
+          ? 'Wybrano wartość Allegro'
+          : resolution?.choice === 'query'
+            ? 'Zostawiono wartość zeskanowaną / master'
+            : 'Brak zapisanego rozstrzygnięcia';
+        const values = Array.isArray(conflict?.values)
+          ? conflict.values
+          : [conflict?.expected, conflict?.actual].filter(v => v != null && v !== '');
+
+        return '<div class="pi-conflict-item '+(conflict?.severity === 'critical' ? 'critical' : '')+'">' +
+          '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">' +
+            '<b>'+safe(conflict?.label || key)+'</b>' +
+            '<span class="pi-chip">'+safe(choice)+'</span>' +
+          '</div>' +
+          (conflict?.message ? '<div class="pi-muted pi-small" style="margin-top:5px">'+safe(conflict.message)+'</div>' : '') +
+          (values.length ? '<div class="pi-conflict-values">'+values.map(v => '<span>'+safe(v)+'</span>').join('')+'</div>' : '') +
+          (resolution?.value != null
+            ? '<div class="pi-small" style="margin-top:8px"><b>Wartość końcowa:</b> '+safe(resolution.value)+
+              (resolution?.resolvedAt ? ' <span class="pi-muted">• '+safe(new Date(resolution.resolvedAt).toLocaleString('pl-PL'))+'</span>' : '')+
+              '</div>'
+            : '') +
+        '</div>';
+      }).join('') + '</div>'
+    : '<div class="pi-source-box"><b>Brak konfliktów identyfikacji</b><div class="pi-muted pi-small" style="margin-top:6px">W zapisanym wyniku nie ma konfliktów wymagających decyzji testera.</div></div>';
+
+  return '<div class="pi-section"><h3>Ślad identyfikacji</h3>' +
+    '<div class="pi-grid">' +
+      '<div class="pi-source-box"><div class="pi-muted pi-small">Wynik identyfikacji</div><div style="font-size:20px;font-weight:800;margin-top:4px">'+safe(confidence == null ? '—' : confidence + '%')+'</div></div>' +
+      '<div class="pi-source-box"><div class="pi-muted pi-small">Kompletność danych katalogowych</div><div style="font-size:20px;font-weight:800;margin-top:4px">'+safe(completeness == null ? '—' : completeness + '%')+'</div></div>' +
+      '<div class="pi-source-box"><div class="pi-muted pi-small">Metoda</div><div style="margin-top:4px"><b>'+safe(confidenceMethodLabel(method))+'</b></div></div>' +
+      '<div class="pi-source-box"><div class="pi-muted pi-small">Wybór produktu</div><div style="margin-top:4px"><b>'+safe(selectionLabel(selectedBy))+'</b></div>' +
+        (candidateId ? '<div class="pi-muted pi-small" style="margin-top:4px">ID: '+safe(candidateId)+'</div>' : '') +
+      '</div>' +
+    '</div>' +
+    '<div class="pi-muted pi-small" style="margin-top:10px">To jest zapis decyzji z chwili identyfikacji. Późniejsza ręczna edycja mastera nie zmienia tego śladu ani snapshotu źródła.</div>' +
+  '</div>' +
+  '<div class="pi-section"><h3>Konflikty i decyzje testera</h3>'+conflictHtml+'</div>';
+}
+
 function activateEditorTab(name) {
   document.querySelectorAll('.pi-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.pi-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
@@ -338,12 +420,15 @@ function renderProductEditor(product) {
       '</select></div>'
     : editorField('Stan','peCondition',product.condition || '');
 
+  const sourceMethod = source?.confidenceMethod || product?.identification?.confidenceMethod || '';
+  const sourceCompleteness = source?.completeness ?? product?.identification?.completeness;
   const sourceHtml = source
     ? '<div class="pi-source-box">'+
-        '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>Allegro</b><span class="pi-chip">'+safe(source.confidence)+'% • wynik v1</span></div>'+
+        '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>Allegro</b><span class="pi-chip">'+safe(source.confidence)+'% • '+safe(confidenceMethodLabel(sourceMethod))+'</span></div>'+
         '<div class="pi-small pi-muted" style="margin-top:8px">Pobrano: '+safe(source.fetchedAt ? new Date(source.fetchedAt).toLocaleString('pl-PL') : '—')+'</div>'+
         '<div style="margin-top:10px"><b>'+safe(source.name || '—')+'</b></div>'+
         '<div class="pi-small pi-muted" style="margin-top:5px">EAN '+safe(source.ean || '—')+' • '+safe(source.brand || '—')+' • '+safe(source.model || '—')+' • '+safe(source.category || '—')+'</div>'+
+        (sourceCompleteness != null ? '<div class="pi-small pi-muted" style="margin-top:5px">Kompletność danych katalogowych: '+safe(sourceCompleteness)+'%</div>' : '')+
         '<div class="pi-small" style="margin-top:10px">Snapshot źródłowy jest zachowany osobno. Ręczna edycja mastera go nie nadpisuje.</div>'+
       '</div>'
     : '<div class="pi-source-box"><b>Allegro</b><div class="pi-muted pi-small" style="margin-top:6px">Brak zapisanego snapshotu źródłowego.</div></div>';
@@ -356,6 +441,7 @@ function renderProductEditor(product) {
     '</div></div></div>'+
     '<div class="pi-tabs">'+
       '<button class="pi-tab active" data-tab="basic">Podstawowe</button>'+
+      '<button class="pi-tab" data-tab="identification">Identyfikacja</button>'+
       '<button class="pi-tab" data-tab="params">Parametry</button>'+
       '<button class="pi-tab" data-tab="condition">Stan i zawartość</button>'+
       '<button class="pi-tab" data-tab="warehouse">Magazyn</button>'+
@@ -378,6 +464,8 @@ function renderProductEditor(product) {
         editorTextarea('Opis produktu','peDescription',product.description || '')+
       '</div></div>'+
     '</div>'+
+
+    '<div class="pi-panel" data-panel="identification">'+identificationAuditHtml(product)+'</div>'+
 
     '<div class="pi-panel" data-panel="params">'+
       '<div class="pi-section"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px"><h3 style="margin:0">Parametry mastera</h3><button type="button" id="peAddParam" class="btn">+ Dodaj parametr</button></div>'+
