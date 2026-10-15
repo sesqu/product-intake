@@ -5,9 +5,9 @@
   "assets": [
     {
       "url": "./index.html",
-      "chars": 8179,
-      "bytes": 8243,
-      "fnv32": "7fb294b9"
+      "chars": 8167,
+      "bytes": 8231,
+      "fnv32": "56cf5d05"
     },
     {
       "url": "./styles.css?v=40",
@@ -89,9 +89,9 @@
     },
     {
       "url": "./sw.js",
-      "chars": 2145,
-      "bytes": 2145,
-      "fnv32": "a5e031ad"
+      "chars": 2133,
+      "bytes": 2133,
+      "fnv32": "e1ed8ccb"
     },
     {
       "url": "./manifest.webmanifest",
