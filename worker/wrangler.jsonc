@@ -8,7 +8,9 @@
     "ALLEGRO_CLIENT_ID": "3e39ca5bf6c64c91abf11983a8e1ea48",
     "ALLEGRO_REDIRECT_URI": "https://product-intake.sesquu.workers.dev/api/allegro/callback",
     "ALLEGRO_USER_AGENT": "Product-Intake/1.1 (+https://github.com/sesqu/product-intake)",
-    "APP_VERSION": "1.1"
+    "APP_VERSION": "1.2",
+    "AMAZON_SP_API_BASE": "https://sellingpartnerapi-eu.amazon.com",
+    "AMAZON_USER_AGENT": "Product-Intake/1.2 (Language=JavaScript)"
   },
   "kv_namespaces": [
     {
