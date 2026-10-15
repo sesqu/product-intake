@@ -708,7 +708,9 @@ async function handle(request, env) {
     if (!allegroProducts.length && !amazonProducts.length) {
       if (sourceErrors.length) {
         return out({
-          error:"Żadne wybrane źródło nie odpowiedziało poprawnie",
+          error:sourceErrors.length === 1
+            ? sourceErrors[0].message
+            : "Żadne wybrane źródło nie odpowiedziało poprawnie",
           query:{ ean, asin, source:sourceMode },
           sourceErrors
         }, 502, origin);
