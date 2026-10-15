@@ -1,5 +1,5 @@
-const CACHE='product-intake-v39';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./version.json','./styles.css?v=38','./intake-core.js?v=38','./product-storage.js?v=2','./pwa-updates.js?v=38','./modal-ui.js?v=38','./navigation.js?v=38','./cloud-products.js?v=38','./catalog-lookup.js?v=38','./intake-session.js?v=38','./secondary-views.js?v=38','./product-list.js?v=38','./product-editor.js?v=38','./enhancements.js?v=38'];
+const CACHE='product-intake-v40';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./version.json','./styles.css??v=40','./intake-core.js??v=40','./product-storage.js?v=2','./pwa-updates.js??v=40','./modal-ui.js??v=40','./navigation.js??v=40','./cloud-products.js??v=40','./catalog-lookup.js??v=40','./intake-session.js??v=40','./secondary-views.js??v=40','./product-list.js??v=40','./product-editor.js??v=40','./enhancements.js??v=40'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
