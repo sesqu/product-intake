@@ -317,12 +317,14 @@ async function saveEditorProduct() {
 
 function confidenceMethodLabel(value) {
   if (value === 'weighted-identification-v2') return 'scoring v2';
+  if (value === 'amazon-catalog-identification-v1') return 'Amazon Catalog v1';
   return value || 'brak danych';
 }
 
 function selectionLabel(value) {
   if (value === 'tester') return 'wybór testera';
   if (value === 'ranking') return 'ranking automatyczny';
+  if (value === 'amazon-direct') return 'Amazon po ASIN';
   return value || 'brak danych';
 }
 
@@ -353,11 +355,16 @@ function identificationAuditHtml(product) {
   const conflictHtml = byKey.size
     ? '<div class="pi-conflict-list">' + [...byKey.entries()].map(([key, conflict]) => {
         const resolution = resolutions[key];
-        const choice = resolution?.choice === 'catalog'
-          ? 'Wybrano wartość Allegro'
-          : resolution?.choice === 'query'
-            ? 'Zostawiono wartość zeskanowaną / master'
-            : 'Brak zapisanego rozstrzygnięcia';
+        const choice =
+          resolution?.choice === 'catalog' || resolution?.choice === 'allegro'
+            ? 'Wybrano wartość Allegro'
+            : resolution?.choice === 'amazon'
+              ? 'Wybrano wartość Amazon'
+              : resolution?.choice === 'query'
+                ? 'Zostawiono wartość zeskanowaną / master'
+                : resolution?.label
+                  ? String(resolution.label)
+                  : 'Brak zapisanego rozstrzygnięcia';
         const values = Array.isArray(conflict?.values)
           ? conflict.values
           : [conflict?.expected, conflict?.actual].filter(v => v != null && v !== '');
@@ -406,9 +413,10 @@ function renderProductEditor(product) {
   const params = normalizeParameterItems(product);
   const gpsr = initialGpsrMaster(product);
   const source = product?.sourceSnapshot?.allegro || null;
+  const amazonSource = product?.sourceSnapshot?.amazon || null;
   const condValues = product?.categoryMeta?.condition?.values || product?.sourceSnapshot?.allegro?.categoryMeta?.condition?.values || [];
   const dims = product?.dimensions || {};
-  const image = product.catalogImage || source?.image || '';
+  const image = product.catalogImage || source?.image || amazonSource?.image || '';
 
   const imageHtml = image
     ? '<img class="pi-editor-image" src="'+safe(image)+'" alt="Zdjęcie katalogowe">'
@@ -422,16 +430,30 @@ function renderProductEditor(product) {
 
   const sourceMethod = source?.confidenceMethod || product?.identification?.confidenceMethod || '';
   const sourceCompleteness = source?.completeness ?? product?.identification?.completeness;
-  const sourceHtml = source
+
+  const allegroHtml = source
     ? '<div class="pi-source-box">'+
         '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>Allegro</b><span class="pi-chip">'+safe(source.confidence)+'% • '+safe(confidenceMethodLabel(sourceMethod))+'</span></div>'+
         '<div class="pi-small pi-muted" style="margin-top:8px">Pobrano: '+safe(source.fetchedAt ? new Date(source.fetchedAt).toLocaleString('pl-PL') : '—')+'</div>'+
         '<div style="margin-top:10px"><b>'+safe(source.name || '—')+'</b></div>'+
         '<div class="pi-small pi-muted" style="margin-top:5px">EAN '+safe(source.ean || '—')+' • '+safe(source.brand || '—')+' • '+safe(source.model || '—')+' • '+safe(source.category || '—')+'</div>'+
         (sourceCompleteness != null ? '<div class="pi-small pi-muted" style="margin-top:5px">Kompletność danych katalogowych: '+safe(sourceCompleteness)+'%</div>' : '')+
-        '<div class="pi-small" style="margin-top:10px">Snapshot źródłowy jest zachowany osobno. Ręczna edycja mastera go nie nadpisuje.</div>'+
+        '<div class="pi-small" style="margin-top:10px">Snapshot Allegro jest zachowany osobno. Ręczna edycja mastera go nie nadpisuje.</div>'+
       '</div>'
     : '<div class="pi-source-box"><b>Allegro</b><div class="pi-muted pi-small" style="margin-top:6px">Brak zapisanego snapshotu źródłowego.</div></div>';
+
+  const amazonHtml = amazonSource
+    ? '<div class="pi-source-box">'+
+        '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>Amazon</b><span class="pi-chip">ASIN '+safe(amazonSource.asin || '—')+'</span></div>'+
+        '<div class="pi-small pi-muted" style="margin-top:8px">Pobrano: '+safe(amazonSource.fetchedAt ? new Date(amazonSource.fetchedAt).toLocaleString('pl-PL') : '—')+'</div>'+
+        '<div style="margin-top:10px"><b>'+safe(amazonSource.name || '—')+'</b></div>'+
+        '<div class="pi-small pi-muted" style="margin-top:5px">EAN '+safe(amazonSource.ean || '—')+' • '+safe(amazonSource.brand || '—')+' • '+safe(amazonSource.model || '—')+' • '+safe(amazonSource.category || '—')+'</div>'+
+        (amazonSource.marketplaceId ? '<div class="pi-small pi-muted" style="margin-top:5px">Marketplace: '+safe(amazonSource.marketplaceId)+'</div>' : '')+
+        '<div class="pi-small" style="margin-top:10px">Snapshot Amazon jest niezależny od mastera i od danych Allegro.</div>'+
+      '</div>'
+    : '<div class="pi-source-box"><b>Amazon</b><div class="pi-muted pi-small" style="margin-top:6px">Brak zapisanego snapshotu Amazon.</div></div>';
+
+  const sourceHtml = allegroHtml + amazonHtml;
 
   openModal('Produkt • ' + (product.lpn || ''), 
     '<div class="pi-editor-hero">'+imageHtml+'<div><div class="pi-muted pi-small">'+safe(product.lpn || '')+'</div><h2 style="font-size:20px;margin:5px 0 7px">'+safe(product.productName || 'Bez nazwy')+'</h2><div>'+

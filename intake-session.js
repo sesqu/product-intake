@@ -4,7 +4,7 @@
 
   const $ = id => document.getElementById(id);
   const fieldIds = [
-    'lpn','ean','asin','productName','brand','model','category','parameters',
+    'lpn','ean','asin','sourceMode','productName','brand','model','category','parameters',
     'confirm','condition','serial','contents','flaws','loc','shipping','weight'
   ];
 

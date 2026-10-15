@@ -1,4 +1,14 @@
 import { analyzeIdentification, conflictLabel } from './confidence.js';
+import {
+  amazonConfigured,
+  amazonStatus,
+  searchAmazonCatalog,
+  analyzeAmazonCandidate
+} from './amazon.js';
+import {
+  compareCatalogSources,
+  sourceConsensusSummary
+} from './catalog-sources.js';
 
 const AAPI = "https://api.allegro.pl";
 const AOAUTH = "https://allegro.pl/auth/oauth";
@@ -495,7 +505,8 @@ async function handle(request, env) {
       allegro: {
         configured: Boolean(env.ALLEGRO_CLIENT_ID && env.ALLEGRO_CLIENT_SECRET && env.ALLEGRO_REDIRECT_URI),
         connected: Boolean(await env.AUTH.get("allegro:refresh_token"))
-      }
+      },
+      amazon: amazonStatus(env)
     }, 200, origin);
   }
 
@@ -640,83 +651,194 @@ async function handle(request, env) {
     }, 200, origin);
   }
 
+  if (url.pathname === "/api/amazon/status" && request.method === "GET") {
+    return out(amazonStatus(env), 200, origin);
+  }
+
   if (url.pathname === "/api/search" && request.method === "GET") {
     const ean = clean(url.searchParams.get("ean"));
     const asin = clean(url.searchParams.get("asin")).toUpperCase();
+    const requestedSource = clean(url.searchParams.get("source")).toLowerCase();
+    const sourceMode = ["allegro","amazon","both"].includes(requestedSource)
+      ? requestedSource
+      : "both";
 
-    if (!ean && asin) {
-      return out({ error: "Amazon nie jest jeszcze podłączony. Na razie wyszukujemy EAN w Allegro." }, 501, origin);
+    if (!ean && !asin) return out({ error: "Podaj EAN lub ASIN" }, 400, origin);
+    if (sourceMode === "allegro" && !ean) {
+      return out({ error: "Wyszukiwanie Allegro wymaga EAN / GTIN" }, 400, origin);
     }
-    if (!ean) return out({ error: "Podaj EAN" }, 400, origin);
+    if (sourceMode === "amazon" && !asin) {
+      return out({ error: "Wyszukiwanie Amazon w tej wersji wymaga ASIN" }, 400, origin);
+    }
+    if (sourceMode === "amazon" && !amazonConfigured(env)) {
+      return out({
+        error: "Amazon SP-API nie jest jeszcze skonfigurowane",
+        amazon: amazonStatus(env)
+      }, 503, origin);
+    }
 
-    try {
-      const products = await allegroSearch(env, ean);
-      if (!products.length) {
-        return out({
-          query: { ean, asin },
-          sources: { allegro: null, amazon: null },
-          best: null,
-          confidence: 0,
-          checks: [],
-          hardConflicts: [],
-          candidates: []
-        }, 200, origin);
-      }
+    const sourceErrors = [];
+    let allegroProducts = [];
+    let amazonProducts = [];
 
-      const candidateId = clean(url.searchParams.get("candidateId"));
-      const analysis = analyzeIdentification(products, ean, candidateId);
-      const best = analysis.selected;
-
-      let categoryMeta = null;
+    if (sourceMode !== "amazon" && ean) {
       try {
-        categoryMeta = await categoryMetadata(env, best?.categoryId);
-      } catch (e) {
-        categoryMeta = { error: e.message, categoryId: best?.categoryId || "" };
+        allegroProducts = await allegroSearch(env, ean);
+      } catch (error) {
+        sourceErrors.push({ source:"allegro", message:error.message });
       }
+    }
 
-      const gpsr = summarizeProductSafety(best?.productSafety);
+    if (sourceMode !== "allegro" && asin) {
+      if (!amazonConfigured(env)) {
+        sourceErrors.push({
+          source:"amazon",
+          message:"Amazon SP-API nie jest jeszcze skonfigurowane"
+        });
+      } else {
+        try {
+          const amazonResult = await searchAmazonCatalog(env,{ asin, ean });
+          amazonProducts = amazonResult.products || [];
+        } catch (error) {
+          sourceErrors.push({ source:"amazon", message:error.message });
+        }
+      }
+    }
 
-      const checks = (analysis.evidence || []).map(item => ({
-        label: item.label,
-        value:
-          item.key === "ean" ? (best?.ean || ean || "brak") :
-          item.key === "model" ? (best?.model || "brak") :
-          item.key === "brand" ? (best?.brand || "brak") :
-          item.key === "category" ? (best?.category || "brak") :
-          item.key === "name" ? (best?.name || "brak") :
-          item.key === "consensus" ? ((analysis.requiresTesterChoice || analysis.conflicts?.length) ? "wymaga sprawdzenia" : "jednoznaczny") :
-          "—",
-        status:
-          item.status === "conflict" ? "bad" :
-          item.status === "missing" ? "warn" :
-          "ok",
-        text: item.text
-      }));
+    if (!allegroProducts.length && !amazonProducts.length) {
+      if (sourceErrors.length) {
+        return out({
+          error:sourceErrors.length === 1
+            ? sourceErrors[0].message
+            : "Żadne wybrane źródło nie odpowiedziało poprawnie",
+          query:{ ean, asin, source:sourceMode },
+          sourceErrors
+        }, 502, origin);
+      }
 
       return out({
-        query: { ean, asin, candidateId },
-        sources: { allegro: best, amazon: null },
-        best,
-        confidence: analysis.confidence,
-        completeness: analysis.completeness,
-        confidenceMethod: analysis.confidenceMethod,
-        confidenceEvidence: analysis.evidence,
-        checks,
-        conflicts: [
-          ...(analysis.conflicts || []),
-          ...(analysis.hardConflicts || [])
-        ],
-        hardConflicts: analysis.hardConflicts.map(conflictLabel),
-        hardConflictDetails: analysis.hardConflicts,
-        requiresTesterChoice: analysis.requiresTesterChoice,
-        selectedBy: analysis.selectedBy,
-        candidates: analysis.ranked.slice(0, 5),
-        categoryMeta,
-        gpsr
+        query:{ ean, asin, source:sourceMode },
+        sources:{ allegro:null, amazon:null },
+        best:null,
+        confidence:0,
+        completeness:0,
+        confidenceMethod:"",
+        confidenceEvidence:[],
+        checks:[],
+        conflicts:[],
+        hardConflicts:[],
+        hardConflictDetails:[],
+        candidates:[],
+        sourceErrors,
+        sourceConsensus:{ available:false, matched:0, compared:0, label:"Brak wyników" }
       }, 200, origin);
-    } catch (e) {
-      return out({ error: e.message }, 502, origin);
     }
+
+    const candidateId = clean(url.searchParams.get("candidateId"));
+
+    let allegroAnalysis = null;
+    let allegroBest = null;
+    if (allegroProducts.length) {
+      allegroAnalysis = analyzeIdentification(allegroProducts, ean, candidateId);
+      allegroBest = allegroAnalysis.selected;
+    }
+
+    const amazonBest = amazonProducts[0] || null;
+    const amazonAnalysis = analyzeAmazonCandidate(amazonBest,{ asin, ean });
+
+    const best = allegroBest || amazonBest;
+    const primaryAnalysis = allegroBest
+      ? {
+          confidence:allegroAnalysis.confidence,
+          completeness:allegroAnalysis.completeness,
+          confidenceMethod:allegroAnalysis.confidenceMethod,
+          evidence:allegroAnalysis.evidence,
+          selectedBy:allegroAnalysis.selectedBy,
+          requiresTesterChoice:allegroAnalysis.requiresTesterChoice,
+          candidates:allegroAnalysis.ranked || [],
+          conflicts:allegroAnalysis.conflicts || [],
+          hardConflictDetails:allegroAnalysis.hardConflicts || []
+        }
+      : {
+          confidence:amazonAnalysis.confidence,
+          completeness:amazonAnalysis.completeness,
+          confidenceMethod:amazonAnalysis.confidenceMethod,
+          evidence:amazonAnalysis.evidence,
+          selectedBy:"amazon-direct",
+          requiresTesterChoice:false,
+          candidates:amazonProducts,
+          conflicts:amazonAnalysis.conflicts || [],
+          hardConflictDetails:amazonAnalysis.hardConflictDetails || []
+        };
+
+    const sourceComparison = compareCatalogSources(allegroBest,amazonBest);
+    const conflicts = [
+      ...(primaryAnalysis.conflicts || []),
+      ...(sourceComparison.conflicts || [])
+    ];
+    const hardConflictDetails = [
+      ...(primaryAnalysis.hardConflictDetails || []),
+      ...(sourceComparison.hardConflictDetails || [])
+    ];
+
+    let categoryMeta = null;
+    let gpsr = {
+      available:false,
+      status:"Brak danych GPSR w katalogu Allegro",
+      producers:[],
+      safetyInformation:null
+    };
+
+    if (allegroBest) {
+      try {
+        categoryMeta = await categoryMetadata(env, allegroBest?.categoryId);
+      } catch (error) {
+        categoryMeta = { error:error.message, categoryId:allegroBest?.categoryId || "" };
+      }
+      gpsr = summarizeProductSafety(allegroBest?.productSafety);
+    }
+
+    const checks = (primaryAnalysis.evidence || []).map(item => ({
+      label:item.label,
+      value:
+        item.key === "ean" ? (best?.ean || ean || "brak") :
+        item.key === "asin" ? (best?.asin || asin || "brak") :
+        item.key === "identifier" ? (best?.asin || best?.ean || "brak") :
+        item.key === "model" ? (best?.model || "brak") :
+        item.key === "brand" ? (best?.brand || "brak") :
+        item.key === "category" ? (best?.category || "brak") :
+        item.key === "name" ? (best?.name || "brak") :
+        item.key === "consensus" ? ((primaryAnalysis.requiresTesterChoice || conflicts.length) ? "wymaga sprawdzenia" : "jednoznaczny") :
+        "—",
+      status:
+        item.status === "conflict" ? "bad" :
+        item.status === "missing" ? "warn" :
+        "ok",
+      text:item.text
+    }));
+
+    checks.push(...(sourceComparison.checks || []));
+
+    return out({
+      query:{ ean, asin, candidateId, source:sourceMode },
+      sources:{ allegro:allegroBest, amazon:amazonBest },
+      best,
+      confidence:primaryAnalysis.confidence,
+      completeness:primaryAnalysis.completeness,
+      confidenceMethod:primaryAnalysis.confidenceMethod,
+      confidenceEvidence:primaryAnalysis.evidence,
+      checks,
+      conflicts,
+      hardConflicts:hardConflictDetails.map(conflictLabel),
+      hardConflictDetails,
+      requiresTesterChoice:primaryAnalysis.requiresTesterChoice,
+      selectedBy:primaryAnalysis.selectedBy,
+      candidates:(primaryAnalysis.candidates || []).slice(0,5),
+      categoryMeta,
+      gpsr,
+      sourceErrors,
+      sourceConsensus:sourceConsensusSummary(allegroBest,amazonBest)
+    }, 200, origin);
   }
 
   return out({ error: "Not found" }, 404, origin);
