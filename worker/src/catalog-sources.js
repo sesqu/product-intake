@@ -12,6 +12,11 @@ function same(a,b) {
   return Boolean(clean(a) && clean(b) && norm(a) === norm(b));
 }
 
+function sourceValue(source, field) {
+  if (field === 'ean') return clean(source?.catalogEan);
+  return clean(source?.[field]);
+}
+
 function sourceConflict(field, label, allegroValue, amazonValue, severity='warning') {
   return {
     key:'source:' + field,
@@ -61,8 +66,8 @@ export function compareCatalogSources(allegro, amazon) {
   const checks = [];
 
   for (const [field,label,severity] of definitions) {
-    const a = clean(allegro?.[field]);
-    const b = clean(amazon?.[field]);
+    const a = sourceValue(allegro,field);
+    const b = sourceValue(amazon,field);
 
     if (!a || !b) {
       checks.push({
