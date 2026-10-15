@@ -59,9 +59,9 @@
     },
     {
       "url": "./intake-session.js?v=40",
-      "chars": 14900,
-      "bytes": 14936,
-      "fnv32": "57545f78"
+      "chars": 14913,
+      "bytes": 14949,
+      "fnv32": "2a5ccd9a"
     },
     {
       "url": "./secondary-views.js?v=40",
@@ -77,9 +77,9 @@
     },
     {
       "url": "./product-editor.js?v=40",
-      "chars": 29245,
-      "bytes": 29440,
-      "fnv32": "096c15e5"
+      "chars": 29383,
+      "bytes": 29578,
+      "fnv32": "bae7c88c"
     },
     {
       "url": "./enhancements.js?v=40",
