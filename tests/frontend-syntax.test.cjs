@@ -111,3 +111,22 @@ assert(
   'Edytor produktu nie pokazuje wersji/metody scoringu'
 );
 console.log('PASS source snapshot and identification audit trail.');
+
+
+assert(
+  html.includes('id="sourceMode"'),
+  'Selektor źródła katalogu nie ma stabilnego id sourceMode'
+);
+assert(
+  catalogSource.includes('output.amazon'),
+  'Catalog lookup nie zapisuje osobnego snapshotu Amazon'
+);
+assert(
+  productEditorSource.includes('sourceSnapshot?.amazon'),
+  'Edytor produktu nie pokazuje osobnego źródła Amazon'
+);
+assert(
+  catalogSource.includes("query.set('source',sourceMode)"),
+  'Frontend nie przekazuje wybranego źródła do backendu'
+);
+console.log('PASS Amazon frontend wiring and separate source snapshots.');
