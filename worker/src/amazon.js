@@ -318,7 +318,6 @@ export function analyzeAmazonCandidate(product, query = {}) {
     };
     conflicts.push(conflict);
     hardConflictDetails.push(conflict);
-    score = Math.min(score,45);
   }
 
   if (product.model) {
@@ -336,6 +335,10 @@ export function analyzeAmazonCandidate(product, query = {}) {
   if (product.category) {
     score += 5;
     evidence.push({key:'category',label:'Kategoria',status:'supporting',points:5,text:'Kategoria jest określona'});
+  }
+
+  if (hardConflictDetails.length) {
+    score = Math.min(score,45);
   }
 
   return {
