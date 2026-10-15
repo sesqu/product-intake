@@ -62,6 +62,7 @@ assert.equal(direct.hardConflictDetails.length,0);
 
 const mismatch = analyzeAmazonCandidate(mapped,{asin:'B0TEST1234',ean:'5900000000000'});
 assert(mismatch.hardConflictDetails.some(x => x.key === 'amazon:ean'));
+assert(mismatch.confidence <= 45);
 assert(mismatch.hardConflictDetails[0].options.some(x => x.choice === 'amazon'));
 assert(mismatch.hardConflictDetails[0].options.some(x => x.choice === 'query'));
 
