@@ -201,7 +201,7 @@
     }
     if ($('sumIdentification')) {
       $('sumIdentification').textContent =
-        latestConfidence == null ? '—' : latestConfidence + '% • Allegro';
+        latestConfidence == null ? '—' : latestConfidence + '% • API';
     }
   }
 
@@ -246,33 +246,68 @@
   }
 
   function buildSourceSnapshot(data) {
-    const best = data?.best || data?.sources?.allegro || null;
-    if (!best) return null;
+    const sources = data?.sources && typeof data.sources === 'object'
+      ? data.sources
+      : {};
+    const query = data?.query && typeof data.query === 'object'
+      ? {...data.query}
+      : {};
+    const output = {};
+    const fetchedAt = new Date().toISOString();
 
-    return {
-      allegro: {
-        fetchedAt: new Date().toISOString(),
-        query: data?.query && typeof data.query === 'object' ? {...data.query} : {},
-        ean: best.ean || data?.query?.ean || '',
-        name: best.name || '',
-        brand: best.brand || '',
-        model: best.model || '',
-        category: data?.categoryMeta?.categoryName || best.category || '',
-        categoryId: best.categoryId || data?.categoryMeta?.categoryId || '',
-        image: best.image || '',
-        description: best.description || '',
-        parameters: Array.isArray(best.parameters) ? best.parameters : [],
-        gpsr: data?.gpsr || null,
-        categoryMeta: data?.categoryMeta || null,
-        confidence: Number(data?.confidence ?? 0),
-        completeness: Number(data?.completeness ?? 0),
-        confidenceMethod: data?.confidenceMethod || '',
-        confidenceEvidence: Array.isArray(data?.confidenceEvidence) ? data.confidenceEvidence : [],
-        selectedBy: data?.selectedBy || '',
-        selectedCandidateId: best.id || data?.selectedCandidateId || ''
-      },
-      amazon: data?.sources?.amazon || null
-    };
+    if (sources.allegro) {
+      const source = sources.allegro;
+      output.allegro = {
+        fetchedAt,
+        query,
+        id:source.id || '',
+        ean:source.ean || query.ean || '',
+        catalogEan:source.catalogEan || '',
+        asin:source.asin || '',
+        name:source.name || '',
+        brand:source.brand || '',
+        model:source.model || '',
+        category:data?.categoryMeta?.categoryName || source.category || '',
+        categoryId:source.categoryId || data?.categoryMeta?.categoryId || '',
+        image:source.image || '',
+        description:source.description || '',
+        parameters:Array.isArray(source.parameters) ? source.parameters : [],
+        gpsr:data?.gpsr || null,
+        categoryMeta:data?.categoryMeta || null,
+        confidence:Number(data?.confidence ?? 0),
+        completeness:Number(data?.completeness ?? 0),
+        confidenceMethod:data?.confidenceMethod || '',
+        confidenceEvidence:Array.isArray(data?.confidenceEvidence) ? data.confidenceEvidence : [],
+        selectedBy:data?.selectedBy || '',
+        selectedCandidateId:source.id || data?.selectedCandidateId || '',
+        sourceConsensus:data?.sourceConsensus || null
+      };
+    }
+
+    if (sources.amazon) {
+      const source = sources.amazon;
+      output.amazon = {
+        fetchedAt,
+        query,
+        id:source.id || source.asin || '',
+        asin:source.asin || query.asin || '',
+        ean:source.ean || '',
+        catalogEan:source.catalogEan || '',
+        upc:source.upc || '',
+        name:source.name || '',
+        brand:source.brand || '',
+        model:source.model || '',
+        category:source.category || '',
+        image:source.image || '',
+        description:source.description || '',
+        parameters:Array.isArray(source.parameters) ? source.parameters : [],
+        marketplaceId:source.amazonMarketplaceId || '',
+        productType:source.rawProductType || '',
+        sourceConsensus:data?.sourceConsensus || null
+      };
+    }
+
+    return Object.keys(output).length ? output : null;
   }
 
   function renderConflictSummary(data) {
@@ -317,7 +352,7 @@
     $('lookup').innerHTML =
       '<div class="lookupTop">'+
         '<div><b>Wymagany wybór testera</b>'+
-          '<div class="muted">Allegro zwróciło konkurencyjne warianty dla tego samego wyszukiwania.</div>'+
+          '<div class="muted">Katalog zwrócił konkurencyjne warianty dla tego samego wyszukiwania.</div>'+
         '</div>'+
         '<div><span class="score">'+Number(data.confidence ?? 0)+'%</span> <span class="badge warn">wybierz</span></div>'+
       '</div>'+
@@ -339,6 +374,34 @@
     return hard.filter(conflict => !latestConflictResolutions[conflict.key]);
   }
 
+  function conflictOptions(conflict) {
+    if (Array.isArray(conflict?.options) && conflict.options.length) {
+      return conflict.options
+        .filter(option => option && option.choice)
+        .map(option => ({
+          choice:String(option.choice),
+          source:String(option.source || option.choice),
+          label:String(option.label || option.choice),
+          value:String(option.value ?? '')
+        }));
+    }
+
+    return [
+      {
+        choice:'query',
+        source:'scan',
+        label:'Zostaw zeskanowane',
+        value:String(conflict?.expected ?? '')
+      },
+      {
+        choice:'catalog',
+        source:'allegro',
+        label:'Użyj Allegro',
+        value:String(conflict?.actual ?? '')
+      }
+    ];
+  }
+
   function renderHardConflictActions(data) {
     const hard = Array.isArray(data?.hardConflictDetails)
       ? data.hardConflictDetails
@@ -347,8 +410,7 @@
 
     return '<div class="pi-resolution-list">'+hard.map(conflict => {
       const resolution = latestConflictResolutions[conflict.key];
-      const expected = conflict.expected ?? '';
-      const actual = conflict.actual ?? '';
+      const options = conflictOptions(conflict);
 
       return '<div class="pi-resolution" data-conflict-key="'+safe(conflict.key)+'">'+
         '<div class="pi-resolution-title">'+
@@ -359,12 +421,12 @@
         '</div>'+
         '<div class="muted">'+safe(conflict.message || '')+'</div>'+
         '<div class="pi-resolution-actions">'+
-          '<button type="button" class="btn '+(resolution?.choice === 'query' ? 'primary' : '')+'" data-resolution-choice="query" data-conflict-key="'+safe(conflict.key)+'">'+
-            'Zostaw zeskanowane: '+safe(expected || '—')+
-          '</button>'+
-          '<button type="button" class="btn '+(resolution?.choice === 'catalog' ? 'primary' : '')+'" data-resolution-choice="catalog" data-conflict-key="'+safe(conflict.key)+'">'+
-            'Użyj Allegro: '+safe(actual || '—')+
-          '</button>'+
+          options.map(option =>
+            '<button type="button" class="btn '+(resolution?.choice === option.choice ? 'primary' : '')+'" '+
+              'data-resolution-choice="'+safe(option.choice)+'" data-conflict-key="'+safe(conflict.key)+'">'+
+              safe(option.label)+': '+safe(option.value || '—')+
+            '</button>'
+          ).join('')+
         '</div>'+
       '</div>';
     }).join('')+'</div>';
@@ -372,19 +434,36 @@
 
   function applyConflictResolution(conflict, choice, data) {
     const {setIdentified,saveDraft,addHistory,quality} = requireConfig();
-    const value = choice === 'catalog'
-      ? String(conflict.actual ?? '')
-      : String(conflict.expected ?? '');
+    const option = conflictOptions(conflict).find(item =>
+      String(item.choice) === String(choice)
+    );
+    if (!option) return;
+
+    const value = String(option.value ?? '');
 
     latestConflictResolutions[conflict.key] = {
-      choice,
+      choice:option.choice,
+      source:option.source,
+      label:option.label,
       value,
       resolvedAt:new Date().toISOString()
     };
 
-    if (conflict.key === 'ean' && $('ean')) {
-      $('ean').value = value;
-    }
+    const field = String(conflict.field || conflict.key || '')
+      .replace(/^source:/,'')
+      .replace(/^amazon:/,'');
+
+    const fieldMap = {
+      ean:'ean',
+      asin:'asin',
+      brand:'brand',
+      model:'model',
+      category:'category',
+      name:'productName',
+      productName:'productName'
+    };
+    const inputId = fieldMap[field];
+    if (inputId && $(inputId)) $(inputId).value = value;
 
     latestIdentification = {
       ...identificationSnapshot(data),
@@ -399,21 +478,23 @@
     saveDraft();
     addHistory(
       'Rozstrzygnięto konflikt',
-      (conflict.label || conflict.key) + ' • ' +
-      (choice === 'catalog' ? 'Allegro' : 'wartość zeskanowana')
+      (conflict.label || conflict.key) + ' • ' + option.label
     );
   }
 
   function bindResolutionActions(data) {
-    const details = Array.isArray(data?.hardConflictDetails)
-      ? data.hardConflictDetails
-      : [];
+    const items = [
+      ...(Array.isArray(data?.conflicts) ? data.conflicts : []),
+      ...(Array.isArray(data?.hardConflictDetails) ? data.hardConflictDetails : [])
+    ];
+    const byKey = new Map();
+    items.forEach(item => {
+      if (item?.key && !byKey.has(String(item.key))) byKey.set(String(item.key),item);
+    });
 
     $('lookup')?.querySelectorAll('[data-resolution-choice]').forEach(button => {
       button.onclick = () => {
-        const conflict = details.find(item =>
-          String(item.key) === String(button.dataset.conflictKey)
-        );
+        const conflict = byKey.get(String(button.dataset.conflictKey));
         if (!conflict) return;
         applyConflictResolution(
           conflict,
@@ -502,8 +583,13 @@
         : '')+
       '<div class="sources">'+sourceCards+'</div>'+
       '<div style="margin-top:12px">'+checks+'</div>'+
-      (wasTesterChoice ? renderConflictSummary(data) : '')+
-      (hard.length ? renderHardConflictActions(data) : '');
+      ((Array.isArray(data.conflicts) && data.conflicts.length) ? renderConflictSummary(data) : '')+
+      (hard.length ? renderHardConflictActions(data) : '')+
+      (Array.isArray(data.sourceErrors) && data.sourceErrors.length
+        ? '<div class="note">'+data.sourceErrors.map(error =>
+            safe((error.source || 'API')+': '+(error.message || 'błąd źródła'))
+          ).join('<br>')+'</div>'
+        : '');
 
     bindResolutionActions(data);
     return true;
@@ -555,6 +641,8 @@
     const query = new URLSearchParams();
     if ($('ean').value.trim()) query.set('ean',$('ean').value.trim());
     if ($('asin').value.trim()) query.set('asin',$('asin').value.trim());
+    const sourceMode = $('sourceMode')?.value || 'both';
+    query.set('source',sourceMode);
     if (candidateId) query.set('candidateId',candidateId);
 
     const response = await fetch(
