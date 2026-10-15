@@ -275,24 +275,50 @@ export function analyzeAmazonCandidate(product, query = {}) {
       confidence:0,
       completeness:0,
       evidence:[],
+      conflicts:[],
+      hardConflictDetails:[],
       confidenceMethod:'amazon-catalog-identification-v1'
     };
   }
 
   const evidence = [];
+  const conflicts = [];
+  const hardConflictDetails = [];
   let score = 0;
 
   const queryAsin = clean(query.asin).toUpperCase();
   const queryEan = clean(query.ean);
+  const catalogEan = clean(product.catalogEan);
 
   if (queryAsin && clean(product.asin).toUpperCase() === queryAsin) {
     score += 70;
     evidence.push({key:'asin',label:'ASIN',status:'strong',points:70,text:'ASIN potwierdzony bezpośrednio w katalogu Amazon'});
-  } else if (queryEan && product.catalogEan && normalizeIdentity(product.catalogEan) === normalizeIdentity(queryEan)) {
+  } else if (queryEan && catalogEan && normalizeIdentity(catalogEan) === normalizeIdentity(queryEan)) {
     score += 60;
     evidence.push({key:'ean',label:'EAN / GTIN',status:'strong',points:60,text:'EAN potwierdzony w katalogu Amazon'});
   } else {
     evidence.push({key:'identifier',label:'Identyfikator',status:'medium',points:0,text:'Produkt wymaga ręcznej weryfikacji identyfikatora'});
+  }
+
+  if (queryEan && catalogEan && normalizeIdentity(catalogEan) !== normalizeIdentity(queryEan)) {
+    const conflict = {
+      key:'amazon:ean',
+      field:'ean',
+      label:'EAN / GTIN — skan vs Amazon',
+      severity:'critical',
+      type:'value-mismatch',
+      expected:queryEan,
+      actual:catalogEan,
+      values:['Skan: ' + queryEan, 'Amazon: ' + catalogEan],
+      options:[
+        {choice:'query',source:'scan',label:'Zostaw zeskanowane',value:queryEan},
+        {choice:'amazon',source:'amazon',label:'Użyj Amazon',value:catalogEan}
+      ],
+      message:'EAN produktu w katalogu Amazon różni się od zeskanowanego EAN.'
+    };
+    conflicts.push(conflict);
+    hardConflictDetails.push(conflict);
+    score = Math.min(score,45);
   }
 
   if (product.model) {
@@ -316,6 +342,8 @@ export function analyzeAmazonCandidate(product, query = {}) {
     confidence:Math.max(0,Math.min(100,Math.round(score))),
     completeness:candidateCompleteness(product),
     evidence,
+    conflicts,
+    hardConflictDetails,
     confidenceMethod:'amazon-catalog-identification-v1'
   };
 }
