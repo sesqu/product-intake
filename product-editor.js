@@ -317,12 +317,14 @@ async function saveEditorProduct() {
 
 function confidenceMethodLabel(value) {
   if (value === 'weighted-identification-v2') return 'scoring v2';
+  if (value === 'amazon-catalog-identification-v1') return 'Amazon Catalog v1';
   return value || 'brak danych';
 }
 
 function selectionLabel(value) {
   if (value === 'tester') return 'wybór testera';
   if (value === 'ranking') return 'ranking automatyczny';
+  if (value === 'amazon-direct') return 'Amazon po ASIN';
   return value || 'brak danych';
 }
 
