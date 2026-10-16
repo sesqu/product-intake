@@ -24,12 +24,15 @@ function same(a,b,field='') {
 
 function sourceValue(source, field) {
   if (field === 'ean') {
-    return clean(
-      source?.catalogEan ||
-      source?.eanList?.[0] ||
-      source?.gtinList?.[0] ||
-      source?.ean
-    );
+    if (source?.source === 'keepa') {
+      return clean(
+        source?.matchedCode ||
+        source?.catalogEan ||
+        source?.gtinList?.[0] ||
+        source?.upcList?.[0]
+      );
+    }
+    return clean(source?.catalogEan);
   }
   if (field === 'partNumber') return clean(source?.partNumber);
   return clean(source?.[field]);
