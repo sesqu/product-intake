@@ -18,6 +18,7 @@
   function currentInput() {
     return {
       brand:inputValue('researchBrand'),
+      manufacturer:inputValue('researchBrand'),
       model:inputValue('researchModel'),
       mpn:inputValue('researchMpn'),
       details:inputValue('researchDetails')
@@ -52,7 +53,7 @@
         '<button type="button" class="btn researchCandidate" data-id="'+safe(candidate.id)+'" style="text-align:left">'+
           '<b>'+safe(candidate.name || 'Bez nazwy')+'</b>'+
           '<div class="muted" style="margin-top:4px">'+
-            safe([candidate.brand,candidate.model,candidate.mpn].filter(Boolean).join(' • ') || 'Brak danych modelu')+
+            safe([candidate.brand || candidate.manufacturer,candidate.model,candidate.mpn].filter(Boolean).join(' • ') || 'Brak danych modelu')+
             ' • '+safe(candidate.score)+'%'+
           '</div>'+
         '</button>'
@@ -78,7 +79,7 @@
     box.innerHTML =
       '<div class="lookupTop">'+
         '<div><b>'+safe(selected.name || 'Znaleziony produkt')+'</b>'+
-          '<div class="muted">'+safe([selected.brand,selected.model,selected.mpn].filter(Boolean).join(' • '))+'</div>'+
+          '<div class="muted">'+safe([selected.brand || selected.manufacturer,selected.model,selected.mpn].filter(Boolean).join(' • '))+'</div>'+
         '</div>'+
         '<div><span class="score">'+safe(result.confidence ?? 0)+'%</span> '+
           '<span class="badge '+(draft ? 'warn' : 'ok')+'">'+(draft ? 'wersja robocza' : 'wynik')+'</span></div>'+
@@ -114,8 +115,8 @@
     const input = currentInput();
     const resultBox = $('researchResult');
 
-    if (!input.mpn && !input.model && !(input.brand && input.details)) {
-      toast('Podaj kod / MPN albo model. Możesz też podać markę i dodatkową informację.');
+    if (!input.mpn && !input.model) {
+      toast('Podaj przynajmniej model albo kod / MPN. Marka / producent jest opcjonalna.');
       return;
     }
 
@@ -143,9 +144,9 @@
     openModal(
       'Kreator opisu',
       '<div>'+
-        '<div class="muted">Podaj 2–3 informacje z tabliczki znamionowej. Na początek szukamy w katalogu Allegro, zachowując informację które parametry są trusted.</div>'+
+        '<div class="muted">Wystarczy sam model. Marka / producent i kod / MPN są opcjonalne i zwiększają pewność dopasowania.</div>'+
         '<div class="grid" style="margin-top:16px">'+
-          '<div><label>Marka</label><input id="researchBrand" placeholder="np. Bosch"></div>'+
+          '<div><label>Marka / producent</label><input id="researchBrand" placeholder="np. Bosch"></div>'+
           '<div><label>Model</label><input id="researchModel" placeholder="np. GSR 18V-55"></div>'+
           '<div><label>Kod / MPN / numer katalogowy</label><input id="researchMpn" placeholder="np. 06019H5200"></div>'+
           '<div><label>Dodatkowa informacja</label><input id="researchDetails" placeholder="np. 18 V, 55 Nm"></div>'+
