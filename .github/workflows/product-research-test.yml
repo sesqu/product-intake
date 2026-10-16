@@ -1,4 +1,4 @@
-name: Product research unit tests
+name: Product finder and research tests
 
 on:
   push:
@@ -14,6 +14,7 @@ on:
       - 'enhancements.js'
       - 'index.html'
       - 'sw.js'
+      - 'version.json'
       - 'tests/product-research.test.mjs'
       - 'tests/research-live.test.mjs'
       - 'tests/frontend-syntax.test.cjs'
@@ -31,6 +32,7 @@ on:
       - 'enhancements.js'
       - 'index.html'
       - 'sw.js'
+      - 'version.json'
       - 'tests/product-research.test.mjs'
       - 'tests/frontend-syntax.test.cjs'
       - '.github/workflows/product-research-test.yml'
