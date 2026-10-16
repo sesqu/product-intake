@@ -513,6 +513,7 @@ async function handle(request, env) {
         configured: Boolean(env.ALLEGRO_CLIENT_ID && env.ALLEGRO_CLIENT_SECRET && env.ALLEGRO_REDIRECT_URI),
         connected: Boolean(await env.AUTH.get("allegro:refresh_token"))
       },
+      keepa: keepaStatus(env),
       amazon: amazonStatus(env)
     }, 200, origin);
   }
