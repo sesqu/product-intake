@@ -10,7 +10,7 @@ for (let attempt = 0; attempt < 18; attempt++) {
     const response = await fetch(base + '/api/research', {
       method:'POST',
       headers:{'content-type':'application/json'},
-      body:JSON.stringify({model:'WH-1000XM5'})
+      body:JSON.stringify({query:'Sony WH-1000XM5'})
     });
     const text = await response.text();
     last = response.status + ' ' + text.slice(0,500);
@@ -19,7 +19,7 @@ for (let attempt = 0; attempt < 18; attempt++) {
       const data = JSON.parse(text);
       if (!data.best?.name) throw new Error('Brak najlepszego kandydata');
       if (!Array.isArray(data.candidates) || !data.candidates.length) throw new Error('Brak kandydatów');
-      if (data.query?.model !== 'WH-1000XM5') throw new Error('Backend nie zachował zapytania po modelu');
+      if (data.query?.query !== 'Sony WH-1000XM5') throw new Error('Backend nie zachował uniwersalnej frazy wyszukiwania');
       console.log('PASS LIVE RESEARCH:', data.best.name, '| confidence=', data.confidence);
       process.exit(0);
     }
@@ -30,4 +30,4 @@ for (let attempt = 0; attempt < 18; attempt++) {
   await sleep(10000);
 }
 
-throw new Error('Research po modelu nie jest dostępny na produkcyjnym Workerze: ' + last);
+throw new Error('Uniwersalne wyszukiwanie produktu nie jest dostępne na produkcyjnym Workerze: ' + last);
