@@ -19,6 +19,7 @@
   const Modal = window.ProductIntakeModal;
   const ProductEditor = window.ProductIntakeProductEditor;
   const ProductList = window.ProductIntakeProductList;
+  const ProductFinder = window.ProductIntakeProductFinder;
   const ProductResearch = window.ProductIntakeProductResearch;
   const SecondaryViews = window.ProductIntakeSecondaryViews;
   const Navigation = window.ProductIntakeNavigation;
@@ -109,8 +110,14 @@
     return SecondaryViews.showIntegrations();
   }
 
-  function showResearch() {
-    return ProductResearch.show();
+  function showResearch(prefill) {
+    return ProductResearch.show(prefill);
+  }
+
+  function showFinder() {
+    closeModal();
+    setMobileNavActive('search');
+    ProductFinder?.focus();
   }
 
   function setupSession() {
@@ -180,6 +187,20 @@
     });
   }
 
+  function setupProductFinder() {
+    ProductFinder?.setup({
+      safe,
+      apiBase,
+      toast,
+      catalogLookup:CatalogLookup,
+      saveDraft,
+      quality:updateQualityPanel,
+      addHistory,
+      showDescription:showResearch,
+      closeModal
+    });
+  }
+
   function setupProductResearch() {
     ProductResearch?.setup({
       safe,
@@ -206,6 +227,7 @@
     Navigation?.setup({
       closeModal,
       showProducts,
+      showFinder,
       showResearch,
       showIntegrations,
       showLocations,
@@ -238,6 +260,7 @@
     setupCatalogLookup();
     setupProductEditor();
     setupProductList();
+    setupProductFinder();
     setupProductResearch();
     setupSecondaryViews();
     setupNavigation();
