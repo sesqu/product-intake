@@ -58,6 +58,11 @@ function findParameter(parameters, names) {
   }) || null;
 }
 
+function findExactParameter(parameters, names) {
+  const wanted = new Set(names.map(norm));
+  return parameters.find(parameter => wanted.has(norm(parameter.name))) || null;
+}
+
 function uniqueParameters(parameters) {
   const seen = new Set();
   const output = [];
@@ -75,7 +80,11 @@ export function mapAllegroResearchProduct(product) {
 
   const parameters = parameterItems(product);
   const brandParam = findParameter(parameters,['marka','brand']);
-  const manufacturerParam = findParameter(parameters,['producent','manufacturer']);
+  const manufacturerParam = findExactParameter(parameters,[
+    'producent',
+    'manufacturer',
+    'nazwa producenta'
+  ]);
   const modelParam = findParameter(parameters,['model']);
   const mpnParam = findParameter(parameters,[
     'kod producenta',
