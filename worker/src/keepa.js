@@ -136,6 +136,7 @@ export function mapKeepaProduct(product, query = {}) {
     id:clean(product.asin),
     asin:clean(product.asin),
     ean:matchedCode || first(eanList) || queryEan,
+    matchedCode,
     catalogEan:first(eanList),
     eanList,
     gtinList,
