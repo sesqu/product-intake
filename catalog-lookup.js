@@ -284,6 +284,43 @@
       };
     }
 
+    if (sources.keepa) {
+      const source = sources.keepa;
+      output.keepa = {
+        fetchedAt,
+        query,
+        id:source.id || source.asin || '',
+        provider:'keepa',
+        catalog:'amazon',
+        asin:source.asin || '',
+        ean:source.ean || '',
+        matchedCode:source.matchedCode || '',
+        catalogEan:source.catalogEan || '',
+        eanList:Array.isArray(source.eanList) ? source.eanList : [],
+        gtinList:Array.isArray(source.gtinList) ? source.gtinList : [],
+        upcList:Array.isArray(source.upcList) ? source.upcList : [],
+        name:source.name || '',
+        brand:source.brand || '',
+        manufacturer:source.manufacturer || '',
+        model:source.model || '',
+        partNumber:source.partNumber || '',
+        category:source.category || '',
+        image:source.image || '',
+        description:source.description || '',
+        features:Array.isArray(source.features) ? source.features : [],
+        parameters:Array.isArray(source.parameters) ? source.parameters : [],
+        domainId:source.domainId || null,
+        productType:source.rawProductType || '',
+        lastUpdateAt:source.lastUpdateAt || '',
+        aPlusFromManufacturer:Boolean(source.aPlusFromManufacturer),
+        aPlusCount:Number(source.aPlusCount || 0),
+        videoCreatorTypes:Array.isArray(source.videoCreatorTypes) ? source.videoCreatorTypes : [],
+        provenance:source.provenance || null,
+        tokenStatus:data?.keepaTokenStatus || null,
+        sourceConsensus:data?.sourceConsensus || null
+      };
+    }
+
     if (sources.amazon) {
       const source = sources.amazon;
       output.amazon = {
@@ -449,9 +486,10 @@
       resolvedAt:new Date().toISOString()
     };
 
-    const field = String(conflict.field || conflict.key || '')
-      .replace(/^source:/,'')
-      .replace(/^amazon:/,'');
+    const rawField = String(conflict.field || conflict.key || '');
+    const field = rawField.includes(':')
+      ? rawField.split(':').pop()
+      : rawField;
 
     const fieldMap = {
       ean:'ean',
@@ -641,7 +679,7 @@
     const query = new URLSearchParams();
     if ($('ean').value.trim()) query.set('ean',$('ean').value.trim());
     if ($('asin').value.trim()) query.set('asin',$('asin').value.trim());
-    const sourceMode = $('sourceMode')?.value || 'both';
+    const sourceMode = $('sourceMode')?.value || 'allegro-keepa';
     query.set('source',sourceMode);
     if (candidateId) query.set('candidateId',candidateId);
 

@@ -318,6 +318,7 @@ async function saveEditorProduct() {
 function confidenceMethodLabel(value) {
   if (value === 'weighted-identification-v2') return 'scoring v2';
   if (value === 'amazon-catalog-identification-v1') return 'Amazon Catalog v1';
+  if (value === 'keepa-amazon-identification-v1') return 'Keepa / Amazon v1';
   return value || 'brak danych';
 }
 
@@ -325,6 +326,8 @@ function selectionLabel(value) {
   if (value === 'tester') return 'wybór testera';
   if (value === 'ranking') return 'ranking automatyczny';
   if (value === 'amazon-direct') return 'Amazon po ASIN';
+  if (value === 'keepa-asin') return 'Keepa po ASIN';
+  if (value === 'keepa-code') return 'Keepa po EAN / GTIN';
   return value || 'brak danych';
 }
 
@@ -413,10 +416,11 @@ function renderProductEditor(product) {
   const params = normalizeParameterItems(product);
   const gpsr = initialGpsrMaster(product);
   const source = product?.sourceSnapshot?.allegro || null;
+  const keepaSource = product?.sourceSnapshot?.keepa || null;
   const amazonSource = product?.sourceSnapshot?.amazon || null;
   const condValues = product?.categoryMeta?.condition?.values || product?.sourceSnapshot?.allegro?.categoryMeta?.condition?.values || [];
   const dims = product?.dimensions || {};
-  const image = product.catalogImage || source?.image || amazonSource?.image || '';
+  const image = product.catalogImage || source?.image || keepaSource?.image || amazonSource?.image || '';
 
   const imageHtml = image
     ? '<img class="pi-editor-image" src="'+safe(image)+'" alt="Zdjęcie katalogowe">'
@@ -442,6 +446,25 @@ function renderProductEditor(product) {
       '</div>'
     : '<div class="pi-source-box"><b>Allegro</b><div class="pi-muted pi-small" style="margin-top:6px">Brak zapisanego snapshotu źródłowego.</div></div>';
 
+  const keepaHtml = keepaSource
+    ? '<div class="pi-source-box">'+
+        '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>Keepa</b><span class="pi-chip">ASIN '+safe(keepaSource.asin || '—')+'</span></div>'+
+        '<div class="pi-small pi-muted" style="margin-top:5px">Dane katalogowe Amazon przez Keepa • '+safe(keepaSource.domainId ? ('domain '+keepaSource.domainId) : 'marketplace nieznany')+'</div>'+
+        '<div class="pi-small pi-muted" style="margin-top:8px">Pobrano: '+safe(keepaSource.fetchedAt ? new Date(keepaSource.fetchedAt).toLocaleString('pl-PL') : '—')+
+          (keepaSource.lastUpdateAt ? ' • aktualizacja Keepa: '+safe(new Date(keepaSource.lastUpdateAt).toLocaleString('pl-PL')) : '')+
+        '</div>'+
+        '<div style="margin-top:10px"><b>'+safe(keepaSource.name || '—')+'</b></div>'+
+        '<div class="pi-small pi-muted" style="margin-top:5px">EAN '+safe(keepaSource.ean || '—')+' • '+safe(keepaSource.brand || '—')+' • '+safe(keepaSource.model || '—')+' • '+safe(keepaSource.partNumber || '—')+'</div>'+
+        '<div class="pi-small pi-muted" style="margin-top:5px">Pochodzenie pól katalogowych: nieznane'+
+          (keepaSource.aPlusFromManufacturer ? ' • A+ od producenta/vendor: tak' : '')+
+        '</div>'+
+        (keepaSource.tokenStatus
+          ? '<div class="pi-small pi-muted" style="margin-top:5px">Tokeny Keepa po zapytaniu: '+safe(keepaSource.tokenStatus.tokensLeft ?? '—')+'</div>'
+          : '')+
+        '<div class="pi-small" style="margin-top:10px">Keepa jest osobnym źródłem pomocniczym. Snapshot nie jest zapisywany jako oficjalne Amazon SP-API.</div>'+
+      '</div>'
+    : '<div class="pi-source-box"><b>Keepa</b><div class="pi-muted pi-small" style="margin-top:6px">Brak zapisanego snapshotu Keepa.</div></div>';
+
   const amazonHtml = amazonSource
     ? '<div class="pi-source-box">'+
         '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>Amazon</b><span class="pi-chip">ASIN '+safe(amazonSource.asin || '—')+'</span></div>'+
@@ -453,7 +476,7 @@ function renderProductEditor(product) {
       '</div>'
     : '<div class="pi-source-box"><b>Amazon</b><div class="pi-muted pi-small" style="margin-top:6px">Brak zapisanego snapshotu Amazon.</div></div>';
 
-  const sourceHtml = allegroHtml + amazonHtml;
+  const sourceHtml = allegroHtml + keepaHtml + amazonHtml;
 
   openModal('Produkt • ' + (product.lpn || ''), 
     '<div class="pi-editor-hero">'+imageHtml+'<div><div class="pi-muted pi-small">'+safe(product.lpn || '')+'</div><h2 style="font-size:20px;margin:5px 0 7px">'+safe(product.productName || 'Bez nazwy')+'</h2><div>'+

@@ -130,3 +130,22 @@ assert(
   'Frontend nie przekazuje wybranego źródła do backendu'
 );
 console.log('PASS Amazon frontend wiring and separate source snapshots.');
+
+
+assert(
+  html.includes('value="allegro-keepa"') && html.includes('value="keepa"'),
+  'Selektor źródła nie udostępnia osobnego Keepa'
+);
+assert(
+  catalogSource.includes('output.keepa'),
+  'Catalog lookup nie zapisuje osobnego snapshotu Keepa'
+);
+assert(
+  productEditorSource.includes('sourceSnapshot?.keepa'),
+  'Edytor produktu nie pokazuje osobnego źródła Keepa'
+);
+assert(
+  catalogSource.includes("'allegro-keepa'"),
+  'Frontend nie używa Allegro + Keepa jako domyślnego trybu'
+);
+console.log('PASS Keepa frontend wiring and independent source snapshot.');

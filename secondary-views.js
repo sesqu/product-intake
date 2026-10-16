@@ -84,8 +84,14 @@
           '<div id="syncStatus" style="font-size:12px;color:#919baa;margin-top:8px">Wspólna baza online jest aktywna.</div>'+
         '</div>'+
         '<div style="padding:14px;border:1px solid #2a323c;border-radius:12px">'+
+          '<b>Keepa API</b>'+
+          '<div style="color:#919baa;font-size:12px;margin-top:4px">Osobne źródło pomocnicze dla danych katalogowych Amazon. Wyszukiwanie po EAN/GTIN lub ASIN, bez mieszania z oficjalnym Amazon SP-API.</div>'+
+          '<div style="margin-top:10px"><button id="checkKeepa" class="btn">Sprawdź status</button></div>'+
+          '<div id="keepaStatus" style="font-size:12px;color:#919baa;margin-top:8px"></div>'+
+        '</div>'+
+        '<div style="padding:14px;border:1px solid #2a323c;border-radius:12px">'+
           '<b>Amazon SP-API</b>'+
-          '<div style="color:#919baa;font-size:12px;margin-top:4px">Wyszukiwanie Catalog Items po ASIN. Dane Amazon są zapisywane jako osobny snapshot i nie nadpisują Allegro.</div>'+
+          '<div style="color:#919baa;font-size:12px;margin-top:4px">Oficjalny moduł Amazon pozostaje oddzielny i nie jest zastępowany przez Keepa. Włączymy go, gdy będziemy mieli prawidłowy dostęp SP-API.</div>'+
           '<div style="margin-top:10px"><button id="checkAmazon" class="btn">Sprawdź status</button></div>'+
           '<div id="amazonStatus" style="font-size:12px;color:#919baa;margin-top:8px"></div>'+
         '</div>'+
@@ -211,6 +217,27 @@
             : 'Backend nie ma jeszcze konfiguracji Allegro.';
       } catch {
         $('allegroStatus').textContent = 'Nie udało się sprawdzić statusu.';
+      }
+    };
+
+    $('checkKeepa').onclick = async () => {
+      const url = (
+        $('apiBaseInput').value.trim() ||
+        localStorage.getItem(keys.apiBase) ||
+        defaultApiBase
+      ).replace(/\/$/,'');
+
+      $('keepaStatus').textContent = 'Sprawdzam…';
+      try {
+        const response = await fetch(url + '/api/keepa/status');
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Błąd API');
+
+        $('keepaStatus').textContent = data.configured
+          ? 'Keepa skonfigurowana • '+(data.marketplace || ('domain '+data.domainId))
+          : 'Keepa nie jest jeszcze skonfigurowana. Potrzebny jest tylko KEEPA_API_KEY w Cloudflare.';
+      } catch {
+        $('keepaStatus').textContent = 'Nie udało się sprawdzić statusu Keepa.';
       }
     };
 
