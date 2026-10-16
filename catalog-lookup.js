@@ -679,7 +679,7 @@
     const query = new URLSearchParams();
     if ($('ean').value.trim()) query.set('ean',$('ean').value.trim());
     if ($('asin').value.trim()) query.set('asin',$('asin').value.trim());
-    const sourceMode = $('sourceMode')?.value || 'allegro-keepa';
+    const sourceMode = $('sourceMode')?.value || 'allegro';
     query.set('source',sourceMode);
     if (candidateId) query.set('candidateId',candidateId);
 
@@ -724,8 +724,8 @@
   async function lookup() {
     const {toast} = requireConfig();
 
-    if (!$('ean').value.trim() && !$('asin').value.trim()) {
-      toast('Podaj EAN lub ASIN');
+    if (!$('ean').value.trim()) {
+      toast('Podaj EAN / GTIN. Wyszukiwanie po modelu działa w osobnym module Research.');
       return;
     }
 
