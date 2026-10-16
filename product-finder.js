@@ -333,7 +333,8 @@
 
   async function useCandidate(candidateId) {
     const {catalogLookup,toast,saveDraft,quality} = requireConfig();
-    const button = document.querySelector('[data-finder-use="'+CSS.escape(String(candidateId || ''))+'"]');
+    const button = [...document.querySelectorAll('[data-finder-use]')]
+      .find(item => String(item.dataset.finderUse) === String(candidateId || ''));
     const oldText = button?.textContent;
     if (button) {
       button.disabled = true;
@@ -349,7 +350,7 @@
       if (ok !== false) {
         saveDraft?.();
         quality?.();
-        toast('Dane produktu wpisane. Porównaj je z fizyczzną sztuką.');
+        toast('Dane produktu wpisane. Porównaj je z fizyczną sztuką.');
         window.ProductIntakeCore?.showStep?.(1);
         document.querySelector('.section.on')?.scrollIntoView?.({behavior:'smooth',block:'start'});
       }
