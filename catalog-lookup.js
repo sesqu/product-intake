@@ -485,9 +485,10 @@
       resolvedAt:new Date().toISOString()
     };
 
-    const field = String(conflict.field || conflict.key || '')
-      .replace(/^source:/,'')
-      .replace(/^amazon:/,'');
+    const rawField = String(conflict.field || conflict.key || '');
+    const field = rawField.includes(':')
+      ? rawField.split(':').pop()
+      : rawField;
 
     const fieldMap = {
       ean:'ean',
