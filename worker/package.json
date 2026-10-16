@@ -17,21 +17,6 @@
       },
       "AUTH": {
         "description": "KV do przechowywania tokenów OAuth Allegro. Cloudflare utworzy zasób automatycznie."
-      },
-      "AMAZON_LWA_CLIENT_ID": {
-        "description": "Login with Amazon Client ID dla prywatnej aplikacji SP-API."
-      },
-      "AMAZON_LWA_CLIENT_SECRET": {
-        "description": "Login with Amazon Client Secret. Przechowuj wyłącznie jako sekret Cloudflare."
-      },
-      "AMAZON_LWA_REFRESH_TOKEN": {
-        "description": "Refresh token z autoryzacji Amazon SP-API. Przechowuj wyłącznie jako sekret Cloudflare."
-      },
-      "AMAZON_MARKETPLACE_ID": {
-        "description": "Marketplace ID katalogu Amazon używanego przez Product Intake, np. marketplace konta sprzedażowego."
-      },
-      "KEEPA_API_KEY": {
-        "description": "Klucz API Keepa. Przechowuj wyłącznie jako sekret Cloudflare — nigdy w GitHubie ani przeglądarce."
       }
     }
   }

@@ -284,65 +284,6 @@
       };
     }
 
-    if (sources.keepa) {
-      const source = sources.keepa;
-      output.keepa = {
-        fetchedAt,
-        query,
-        id:source.id || source.asin || '',
-        provider:'keepa',
-        catalog:'amazon',
-        asin:source.asin || '',
-        ean:source.ean || '',
-        matchedCode:source.matchedCode || '',
-        catalogEan:source.catalogEan || '',
-        eanList:Array.isArray(source.eanList) ? source.eanList : [],
-        gtinList:Array.isArray(source.gtinList) ? source.gtinList : [],
-        upcList:Array.isArray(source.upcList) ? source.upcList : [],
-        name:source.name || '',
-        brand:source.brand || '',
-        manufacturer:source.manufacturer || '',
-        model:source.model || '',
-        partNumber:source.partNumber || '',
-        category:source.category || '',
-        image:source.image || '',
-        description:source.description || '',
-        features:Array.isArray(source.features) ? source.features : [],
-        parameters:Array.isArray(source.parameters) ? source.parameters : [],
-        domainId:source.domainId || null,
-        productType:source.rawProductType || '',
-        lastUpdateAt:source.lastUpdateAt || '',
-        aPlusFromManufacturer:Boolean(source.aPlusFromManufacturer),
-        aPlusCount:Number(source.aPlusCount || 0),
-        videoCreatorTypes:Array.isArray(source.videoCreatorTypes) ? source.videoCreatorTypes : [],
-        provenance:source.provenance || null,
-        tokenStatus:data?.keepaTokenStatus || null,
-        sourceConsensus:data?.sourceConsensus || null
-      };
-    }
-
-    if (sources.amazon) {
-      const source = sources.amazon;
-      output.amazon = {
-        fetchedAt,
-        query,
-        id:source.id || source.asin || '',
-        asin:source.asin || query.asin || '',
-        ean:source.ean || '',
-        catalogEan:source.catalogEan || '',
-        upc:source.upc || '',
-        name:source.name || '',
-        brand:source.brand || '',
-        model:source.model || '',
-        category:source.category || '',
-        image:source.image || '',
-        description:source.description || '',
-        parameters:Array.isArray(source.parameters) ? source.parameters : [],
-        marketplaceId:source.amazonMarketplaceId || '',
-        productType:source.rawProductType || '',
-        sourceConsensus:data?.sourceConsensus || null
-      };
-    }
 
     return Object.keys(output).length ? output : null;
   }
@@ -679,7 +620,7 @@
     const query = new URLSearchParams();
     if ($('ean').value.trim()) query.set('ean',$('ean').value.trim());
     if ($('asin').value.trim()) query.set('asin',$('asin').value.trim());
-    const sourceMode = $('sourceMode')?.value || 'allegro-keepa';
+    const sourceMode = $('sourceMode')?.value || 'allegro';
     query.set('source',sourceMode);
     if (candidateId) query.set('candidateId',candidateId);
 
@@ -724,8 +665,8 @@
   async function lookup() {
     const {toast} = requireConfig();
 
-    if (!$('ean').value.trim() && !$('asin').value.trim()) {
-      toast('Podaj EAN lub ASIN');
+    if (!$('ean').value.trim()) {
+      toast('Podaj EAN / GTIN. Wyszukiwanie po modelu działa w osobnym module Research.');
       return;
     }
 

@@ -5,12 +5,7 @@ on:
     paths:
       - 'worker/src/index.js'
       - 'worker/src/confidence.js'
-      - 'worker/src/amazon.js'
-      - 'worker/src/keepa.js'
-      - 'worker/src/catalog-sources.js'
       - 'tests/confidence.test.mjs'
-      - 'tests/amazon.test.mjs'
-      - 'tests/keepa.test.mjs'
       - 'tests/live-api.test.mjs'
       - '.github/workflows/live-api-test.yml'
   workflow_dispatch:
@@ -25,9 +20,5 @@ jobs:
           node-version: '22'
       - name: Test confidence v2
         run: node tests/confidence.test.mjs
-      - name: Test Amazon catalog module
-        run: node tests/amazon.test.mjs
-      - name: Test Keepa catalog module
-        run: node tests/keepa.test.mjs
       - name: Wait for Cloudflare deploy and test 3 cloud products
         run: node tests/live-api.test.mjs
