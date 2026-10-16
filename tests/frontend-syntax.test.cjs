@@ -13,6 +13,7 @@ const scripts = [
   'secondary-views.js',
   'product-list.js',
   'product-editor.js',
+  'product-research.js',
   'enhancements.js',
   'sw.js'
 ];
@@ -40,6 +41,7 @@ for (const file of [
   'intake-session.js',
   'secondary-views.js',
   'product-editor.js',
+  'product-research.js',
   'enhancements.js'
 ]) {
   assert(
@@ -114,38 +116,30 @@ console.log('PASS source snapshot and identification audit trail.');
 
 
 assert(
-  html.includes('id="sourceMode"'),
-  'Selektor źródła katalogu nie ma stabilnego id sourceMode'
+  html.includes('id="sourceMode"') && html.includes('value="allegro"'),
+  'Aktywne źródło identyfikacji powinno pozostać Allegro'
 );
 assert(
-  catalogSource.includes('output.amazon'),
-  'Catalog lookup nie zapisuje osobnego snapshotu Amazon'
+  !html.includes('value="keepa"') && !html.includes('value="amazon"') && !html.includes('value="allegro-keepa"'),
+  'Nieaktywne źródła nie powinny być dostępne w selektorze'
 );
 assert(
-  productEditorSource.includes('sourceSnapshot?.amazon'),
-  'Edytor produktu nie pokazuje osobnego źródła Amazon'
+  catalogSource.includes("|| 'allegro'"),
+  'Frontend powinien domyślnie używać Allegro'
 );
-assert(
-  catalogSource.includes("query.set('source',sourceMode)"),
-  'Frontend nie przekazuje wybranego źródła do backendu'
-);
-console.log('PASS Amazon frontend wiring and separate source snapshots.');
 
-
+const researchSource = fs.readFileSync('product-research.js', 'utf8');
 assert(
-  html.includes('value="allegro-keepa"') && html.includes('value="keepa"'),
-  'Selektor źródła nie udostępnia osobnego Keepa'
+  researchSource.includes('Wystarczy sam model'),
+  'Kreator opisu nie komunikuje wyszukiwania po samym modelu'
 );
 assert(
-  catalogSource.includes('output.keepa'),
-  'Catalog lookup nie zapisuje osobnego snapshotu Keepa'
+  fs.existsSync('worker/src/dormant/amazon.js') && fs.existsSync('worker/src/dormant/keepa.js'),
+  'Odłożone moduły powinny pozostać zachowane poza aktywną ścieżką'
 );
+const workerIndex = fs.readFileSync('worker/src/index.js','utf8');
 assert(
-  productEditorSource.includes('sourceSnapshot?.keepa'),
-  'Edytor produktu nie pokazuje osobnego źródła Keepa'
+  !workerIndex.includes("from './amazon.js'") && !workerIndex.includes("from './keepa.js'"),
+  'Worker nie powinien importować odłożonych integracji'
 );
-assert(
-  catalogSource.includes("'allegro-keepa'"),
-  'Frontend nie używa Allegro + Keepa jako domyślnego trybu'
-);
-console.log('PASS Keepa frontend wiring and independent source snapshot.');
+console.log('PASS active sources trimmed and model research UI wired.');
