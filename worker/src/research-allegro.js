@@ -22,7 +22,7 @@ export function buildAllegroResearchQueries(input = {}) {
     mpn,
     [brand,model].filter(Boolean).join(' '),
     model,
-    [brand,details].filter(Boolean).join(' ')
+    details ? [brand,details].filter(Boolean).join(' ') : ''
   ]).slice(0,3);
 }
 
