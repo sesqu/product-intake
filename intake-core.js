@@ -5,3 +5,5 @@ function scan(id){if(id==='lpn')document.getElementById(id).value='LPN-2026-0001
 function setReq(id,v){const e=document.getElementById(id);e.textContent=v?'OK':'brak';e.className=v?'ok':'bad'}
 function quality(){const vals=[!!lpn.value.trim(),identified,document.getElementById('confirm').checked,!!condition.value,!!contents.value.trim(),!!loc.value.trim(),!!shipping.value];['r1','r2','r3','r4','r5','r6','r7'].forEach((id,i)=>setReq(id,vals[i]));const p=Math.round(vals.filter(Boolean).length/7*100);pct.textContent=p+'%';pbar.style.width=p+'%';lpnTag.textContent=lpn.value||'—';sumLpn.textContent=lpn.value||'—';sumStatus.textContent=p===100?'Kompletne':'Wymaga uzupełnienia'}
 ['lpn','confirm','condition','contents','loc','shipping'].forEach(id=>document.getElementById(id).addEventListener('input',quality));render();
+
+window.ProductIntakeCore={showStep(index){const next=Math.max(0,Math.min(sections().length-1,Number(index)||0));step=next;render();}};
