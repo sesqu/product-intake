@@ -137,7 +137,7 @@
     }
   }
 
-  function show() {
+  function show(prefill = {}) {
     const {openModal,setActive} = requireConfig();
     setActive?.('research');
 
@@ -156,7 +156,16 @@
       '</div>'
     );
 
+    if ($('researchBrand')) $('researchBrand').value = prefill.brand || prefill.manufacturer || '';
+    if ($('researchModel')) $('researchModel').value = prefill.model || '';
+    if ($('researchMpn')) $('researchMpn').value = prefill.mpn || '';
+    if ($('researchDetails')) $('researchDetails').value = prefill.details || '';
+
     $('runProductResearch').onclick = () => runSearch('');
+
+    if (prefill.autoRun && (prefill.model || prefill.mpn)) {
+      runSearch(prefill.candidateId || '');
+    }
   }
 
   window.ProductIntakeProductResearch = {setup,show};

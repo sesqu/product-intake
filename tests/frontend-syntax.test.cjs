@@ -13,6 +13,7 @@ const scripts = [
   'secondary-views.js',
   'product-list.js',
   'product-editor.js',
+  'product-finder.js',
   'product-research.js',
   'enhancements.js',
   'sw.js'
@@ -41,6 +42,7 @@ for (const file of [
   'intake-session.js',
   'secondary-views.js',
   'product-editor.js',
+  'product-finder.js',
   'product-research.js',
   'enhancements.js'
 ]) {
@@ -128,7 +130,32 @@ assert(
   'Frontend powinien domyślnie używać Allegro'
 );
 
+const finderSource = fs.readFileSync('product-finder.js', 'utf8');
 const researchSource = fs.readFileSync('product-research.js', 'utf8');
+
+assert(
+  html.includes('id="productFinderQuery"') &&
+  html.includes('id="productFinderSearch"') &&
+  html.includes('EAN, modelu, MPN'),
+  'Główna identyfikacja nie zawiera uniwersalnego wyszukiwania produktu'
+);
+assert(
+  finderSource.includes("detectKind") &&
+  finderSource.includes("acceptResearchResult") &&
+  finderSource.includes("pamięć 24h"),
+  'Finder nie ma detekcji EAN/research, ręcznego użycia wyniku lub cache'
+);
+assert(
+  catalogSource.includes('function acceptResearchResult'),
+  'Catalog lookup nie przyjmuje jawnie wybranego wyniku Research'
+);
+assert(
+  fs.readFileSync('navigation.js','utf8').includes('Znajdź produkt') &&
+  fs.readFileSync('navigation.js','utf8').includes('data-act="search"'),
+  'Wyszukiwanie produktu nie jest główną akcją nawigacji'
+);
+console.log('PASS unified product finder wiring.');
+
 assert(
   researchSource.includes('Wystarczy sam model'),
   'Kreator opisu nie komunikuje wyszukiwania po samym modelu'

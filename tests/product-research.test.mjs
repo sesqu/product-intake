@@ -5,8 +5,16 @@ import {
   buildDescription,
   buildResearchResult
 } from '../worker/src/product-research.js';
-import { buildAllegroResearchQueries } from '../worker/src/research-allegro.js';
+import {
+  buildAllegroResearchQueries,
+  searchAllegroForResearch
+} from '../worker/src/research-allegro.js';
 
+assert.deepEqual(
+  buildAllegroResearchQueries({query:'Bosch GSR 18V-55'}),
+  ['Bosch GSR 18V-55'],
+  'Dowolna fraza powinna być pierwszym zapytaniem Research'
+);
 assert.deepEqual(
   buildAllegroResearchQueries({model:'GSR 18V-55'}),
   ['GSR 18V-55'],
@@ -82,8 +90,36 @@ const manufacturerMapped = mapAllegroResearchProduct(manufacturerOnlyRaw);
 assert.equal(manufacturerMapped.manufacturer,'Robert Bosch GmbH');
 assert.equal(manufacturerMapped.brand,'Robert Bosch GmbH');
 
+const queryResult = buildResearchResult([mapped,second],{query:'Bosch GSR 18V-55'});
+assert.equal(queryResult.selected.id,'p1');
+assert(queryResult.confidence >= 35);
+
+const originalFetch = globalThis.fetch;
+globalThis.fetch = async url => {
+  const phrase = new URL(String(url)).searchParams.get('phrase');
+  const products =
+    phrase === 'Bosch GSR 18V-55'
+      ? [raw,{...raw,id:'p2a',name:'Bosch GSR 18V-55 zestaw'}]
+      : phrase === 'GSR 18V-55'
+        ? [raw,{...raw,id:'p3a',name:'Bosch GSR 18V-55 solo'}]
+        : [];
+  return {
+    ok:true,
+    async json(){ return {products}; }
+  };
+};
+
+const aggregated = await searchAllegroForResearch({
+  token:'test',
+  userAgent:'test',
+  input:{brand:'Bosch',model:'GSR 18V-55'}
+});
+assert.deepEqual(aggregated.queriesUsed,['Bosch GSR 18V-55','GSR 18V-55']);
+assert.equal(aggregated.products.length,3,'Research powinien łączyć kandydatów z kolejnych prób i usuwać duplikaty');
+globalThis.fetch = originalFetch;
+
 const result = buildResearchResult([mapped],{brand:'Bosch',model:'GSR 18V-55'});
-assert.equal(result.confidenceMethod,'product-research-v1');
+assert.equal(result.confidenceMethod,'product-research-v2');
 assert(result.description.title.includes('Bosch'));
 
-console.log('PASS product research: model-only, manufacturer, scoring, trusted fields and description generation.');
+console.log('PASS product research v2: generic query, aggregation, model-only, manufacturer and trusted scoring.');

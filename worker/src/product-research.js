@@ -137,10 +137,64 @@ function scoreCandidate(candidate, input = {}) {
   const evidence = [];
   const warnings = [];
 
+  const query = clean(input.query);
   const brand = clean(input.brand || input.manufacturer);
   const model = clean(input.model);
   const mpn = clean(input.mpn);
   const details = clean(input.details);
+
+
+  if (query) {
+    const identity = [
+      candidate.name,
+      candidate.brand,
+      candidate.manufacturer,
+      candidate.model,
+      candidate.mpn,
+      candidate.ean
+    ].filter(Boolean).join(' ');
+
+    if (
+      exact(query,candidate.model) ||
+      exact(query,candidate.mpn) ||
+      exact(query,candidate.ean) ||
+      exact(query,candidate.name)
+    ) {
+      score += 45;
+      evidence.push({
+        field:'query',
+        label:'Wpisana fraza',
+        status:'match',
+        points:45,
+        trusted:false,
+        value:query
+      });
+    } else {
+      const overlap = tokenOverlap(query,identity);
+      if (overlap >= .8) {
+        const points = overlap === 1 ? 38 : 32;
+        score += points;
+        evidence.push({
+          field:'query',
+          label:'Wpisana fraza',
+          status:'partial',
+          points,
+          trusted:false,
+          value:query
+        });
+      } else if (overlap >= .5) {
+        score += 16;
+        evidence.push({
+          field:'query',
+          label:'Wpisana fraza',
+          status:'supporting',
+          points:16,
+          trusted:false,
+          value:query
+        });
+      }
+    }
+  }
 
   if (mpn) {
     if (exact(mpn,candidate.mpn) || exact(mpn,candidate.model)) {
@@ -286,7 +340,7 @@ export function buildDescription(product, input = {}, analysis = {}) {
   if (!product) return null;
 
   const title = clean(product.name) ||
-    [product.brand || product.manufacturer || input.brand || input.manufacturer, product.model || input.model, product.mpn || input.mpn]
+    [product.brand || product.manufacturer || input.brand || input.manufacturer, product.model || input.model || input.query, product.mpn || input.mpn]
       .filter(Boolean)
       .join(' ');
 
@@ -325,6 +379,6 @@ export function buildResearchResult(products, input = {}, selectedId = '') {
   return {
     ...analysis,
     description:buildDescription(analysis.selected,input,analysis),
-    confidenceMethod:'product-research-v1'
+    confidenceMethod:'product-research-v2'
   };
 }

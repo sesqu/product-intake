@@ -16,14 +16,14 @@
     actions.openModal(
       'Więcej',
       '<div style="display:grid;gap:8px">'+
-      '<button id="mResearch" class="btn">Kreator opisu</button>'+
+      '<button id="mIntegrations" class="btn">Integracje</button>'+
       '<button id="mLocations" class="btn">Lokalizacje</button>'+
       '<button id="mHistory" class="btn">Historia</button>'+
       '<button id="mSettings" class="btn">Ustawienia</button>'+
       '</div>'
     );
 
-    document.getElementById('mResearch').onclick = actions.showResearch;
+    document.getElementById('mIntegrations').onclick = actions.showIntegrations;
     document.getElementById('mLocations').onclick = actions.showLocations;
     document.getElementById('mHistory').onclick = actions.showHistory;
     document.getElementById('mSettings').onclick = () => {
@@ -97,8 +97,8 @@
     nav.setAttribute('aria-label','Główna nawigacja');
     nav.innerHTML = `
       <button class="primaryMobile" data-act="add" aria-current="page">Dodaj</button>
+      <button data-act="search">Szukaj</button>
       <button data-act="products">Produkty</button>
-      <button data-act="integrations">Integracje</button>
       <button data-act="more">Więcej</button>
     `;
     document.body.appendChild(nav);
@@ -108,13 +108,13 @@
       setActive('add');
       window.scrollTo({top:0,behavior:'smooth'});
     };
+    nav.querySelector('[data-act="search"]').onclick = () => {
+      setActive('search');
+      actions.showFinder();
+    };
     nav.querySelector('[data-act="products"]').onclick = () => {
       setActive('products');
       actions.showProducts();
-    };
-    nav.querySelector('[data-act="integrations"]').onclick = () => {
-      setActive('integrations');
-      actions.showIntegrations();
     };
     nav.querySelector('[data-act="more"]').onclick = showMore;
   }
@@ -125,12 +125,12 @@
     if (navs[2]) navs[2].onclick = actions.showLocations;
     if (navs[3]) navs[3].onclick = actions.showHistory;
 
-    if (navs[4] && !document.querySelector('.nav[data-research="true"]')) {
-      const research = navs[4].cloneNode(true);
-      research.textContent = 'Kreator opisu';
-      research.dataset.research = 'true';
-      navs[4].parentNode.insertBefore(research, navs[4]);
-      research.onclick = actions.showResearch;
+    if (navs[4] && !document.querySelector('.nav[data-finder="true"]')) {
+      const finder = navs[4].cloneNode(true);
+      finder.textContent = 'Znajdź produkt';
+      finder.dataset.finder = 'true';
+      navs[4].parentNode.insertBefore(finder, navs[4]);
+      finder.onclick = actions.showFinder;
     }
 
     if (navs[4] && !document.querySelector('.nav[data-integrations="true"]')) {

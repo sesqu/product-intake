@@ -610,6 +610,59 @@
     return unresolved.length === 0;
   }
 
+  function acceptResearchResult(result) {
+    const {toast,saveDraft,addHistory,setIdentified,quality} = requireConfig();
+    const best = result?.best || result?.selected || null;
+    if (!best) {
+      setIdentified(false);
+      toast('Nie wybrano produktu do użycia.');
+      return false;
+    }
+
+    const warnings = Array.isArray(result?.warnings)
+      ? result.warnings
+      : Array.isArray(best?.warnings)
+        ? best.warnings
+        : [];
+    const data = {
+      query:result?.query || {},
+      sources:{allegro:best},
+      best,
+      confidence:Number(result?.confidence ?? best?.score ?? 0),
+      completeness:0,
+      confidenceMethod:result?.confidenceMethod || 'product-research-v2',
+      confidenceEvidence:Array.isArray(best?.evidence) ? best.evidence : [],
+      selectedBy:'tester',
+      requiresTesterChoice:false,
+      conflicts:warnings.map((warning,index) => ({
+        key:'research:'+(warning.field || index),
+        label:warning.field || 'Uwagi Research',
+        severity:warning.severity || 'warning',
+        message:warning.message || '',
+        values:[warning.input,warning.catalog].filter(Boolean)
+      })),
+      hardConflictDetails:[],
+      categoryMeta:null,
+      gpsr:null,
+      sourceConsensus:{available:false,matched:0,compared:0,label:'Research Allegro'}
+    };
+
+    latestIdentification = identificationSnapshot(data);
+    latestConflictResolutions = {};
+    latestSourceSnapshot = buildSourceSnapshot(data);
+    populateMaster(best,data);
+    setIdentified(true);
+    quality();
+    saveDraft();
+
+    addHistory(
+      'Tester użył wyniku Research',
+      ($('lpn').value || '') + ' • ' + (best.name || best.model || '')
+    );
+
+    return true;
+  }
+
   async function fetchLookup(candidateId='') {
     const {keys,defaultApiBase} = requireConfig();
     const base = (
@@ -706,6 +759,7 @@
     applyGpsr,
     applyConfidence,
     renderRemote,
+    acceptResearchResult,
     lookup
   };
 })();

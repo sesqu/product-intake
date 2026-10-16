@@ -13,12 +13,14 @@ function unique(values) {
 }
 
 export function buildAllegroResearchQueries(input = {}) {
+  const query = clean(input.query);
   const brand = clean(input.brand || input.manufacturer);
   const model = clean(input.model);
   const mpn = clean(input.mpn);
   const details = clean(input.details);
 
   return unique([
+    query,
     mpn,
     [brand,model].filter(Boolean).join(' '),
     model,
@@ -55,13 +57,21 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   if (!queries.length) return {products:[],queriesUsed:[]};
 
   const queriesUsed = [];
+  const products = [];
+  const seen = new Set();
+
   for (const phrase of queries) {
     queriesUsed.push(phrase);
-    const products = await requestProducts(token,userAgent,phrase);
-    if (products.length) {
-      return {products,queriesUsed};
+    const found = await requestProducts(token,userAgent,phrase);
+
+    for (const product of found) {
+      const id = clean(product?.id);
+      const key = id || norm(product?.name);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      products.push(product);
     }
   }
 
-  return {products:[],queriesUsed};
+  return {products:products.slice(0,30),queriesUsed};
 }

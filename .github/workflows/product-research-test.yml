@@ -1,4 +1,4 @@
-name: Product research unit tests
+name: Product finder and research tests
 
 on:
   push:
@@ -7,10 +7,14 @@ on:
       - 'worker/src/research-allegro.js'
       - 'worker/src/index.js'
       - 'product-research.js'
+      - 'product-finder.js'
+      - 'catalog-lookup.js'
+      - 'intake-core.js'
       - 'navigation.js'
       - 'enhancements.js'
       - 'index.html'
       - 'sw.js'
+      - 'version.json'
       - 'tests/product-research.test.mjs'
       - 'tests/research-live.test.mjs'
       - 'tests/frontend-syntax.test.cjs'
@@ -21,10 +25,14 @@ on:
       - 'worker/src/research-allegro.js'
       - 'worker/src/index.js'
       - 'product-research.js'
+      - 'product-finder.js'
+      - 'catalog-lookup.js'
+      - 'intake-core.js'
       - 'navigation.js'
       - 'enhancements.js'
       - 'index.html'
       - 'sw.js'
+      - 'version.json'
       - 'tests/product-research.test.mjs'
       - 'tests/frontend-syntax.test.cjs'
       - '.github/workflows/product-research-test.yml'
