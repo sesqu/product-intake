@@ -1,5 +1,5 @@
-const CACHE='product-intake-v42';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./version.json','./styles.css?v=42','./intake-core.js?v=42','./product-storage.js?v=2','./pwa-updates.js?v=42','./modal-ui.js?v=42','./navigation.js?v=42','./cloud-products.js?v=42','./catalog-lookup.js?v=42','./intake-session.js?v=42','./secondary-views.js?v=42','./product-list.js?v=42','./product-editor.js?v=42','./product-research.js?v=42','./enhancements.js?v=42'];
+const CACHE='product-intake-v43';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./version.json','./styles.css?v=43','./intake-core.js?v=43','./product-storage.js?v=2','./pwa-updates.js?v=43','./modal-ui.js?v=43','./navigation.js?v=43','./cloud-products.js?v=43','./catalog-lookup.js?v=43','./intake-session.js?v=43','./secondary-views.js?v=43','./product-list.js?v=43','./product-editor.js?v=43','./product-finder.js?v=43','./product-research.js?v=43','./enhancements.js?v=43'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
