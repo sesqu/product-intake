@@ -654,6 +654,7 @@ async function handle(request, env) {
     try {
       const body = await request.json().catch(() => ({}));
       const input = {
+        query:clean(body?.query),
         brand:clean(body?.brand || body?.manufacturer),
         manufacturer:clean(body?.manufacturer || body?.brand),
         model:clean(body?.model),
@@ -662,9 +663,9 @@ async function handle(request, env) {
       };
       const candidateId = clean(body?.candidateId);
 
-      if (!input.mpn && !input.model) {
+      if (!input.query && !input.mpn && !input.model) {
         return out({
-          error:"Podaj przynajmniej model albo kod / MPN. Marka / producent jest opcjonalna."
+          error:"Podaj model, kod / MPN albo dowolną frazę identyfikującą produkt."
         }, 400, origin);
       }
 
@@ -692,7 +693,8 @@ async function handle(request, env) {
         requiresTesterChoice:result.requiresTesterChoice,
         selectedBy:result.selectedBy,
         warnings:result.warnings || [],
-        description:result.description || null
+        description:result.description || null,
+        searchMode:input.query ? "query" : (input.mpn ? "mpn" : "model")
       }, 200, origin);
     } catch (error) {
       return out({error:error.message || "Nie udało się wykonać researchu produktu"}, 502, origin);
