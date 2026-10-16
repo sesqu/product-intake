@@ -19,10 +19,11 @@
   const Modal = window.ProductIntakeModal;
   const ProductEditor = window.ProductIntakeProductEditor;
   const ProductList = window.ProductIntakeProductList;
+  const ProductResearch = window.ProductIntakeProductResearch;
   const SecondaryViews = window.ProductIntakeSecondaryViews;
   const Navigation = window.ProductIntakeNavigation;
 
-  window.ProductIntakePWA?.setup({build:41,label:'v41'});
+  window.ProductIntakePWA?.setup({build:42,label:'v42'});
 
   function getProducts() {
     return IntakeSession.getProducts();
@@ -108,6 +109,10 @@
     return SecondaryViews.showIntegrations();
   }
 
+  function showResearch() {
+    return ProductResearch.show();
+  }
+
   function setupSession() {
     IntakeSession?.setup({
       keys:KEYS,
@@ -175,6 +180,16 @@
     });
   }
 
+  function setupProductResearch() {
+    ProductResearch?.setup({
+      safe,
+      apiBase,
+      toast,
+      openModal,
+      setActive:setMobileNavActive
+    });
+  }
+
   function setupSecondaryViews() {
     SecondaryViews?.setup({
       keys:KEYS,
@@ -191,6 +206,7 @@
     Navigation?.setup({
       closeModal,
       showProducts,
+      showResearch,
       showIntegrations,
       showLocations,
       showHistory,
@@ -222,6 +238,7 @@
     setupCatalogLookup();
     setupProductEditor();
     setupProductList();
+    setupProductResearch();
     setupSecondaryViews();
     setupNavigation();
 

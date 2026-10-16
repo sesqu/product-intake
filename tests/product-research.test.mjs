@@ -22,6 +22,7 @@ const raw = {
 
 const mapped = mapAllegroResearchProduct(raw);
 assert.equal(mapped.brand,'Bosch');
+assert.equal(mapped.manufacturer,'Bosch');
 assert.equal(mapped.model,'GSR 18V-55');
 assert.equal(mapped.mpn,'06019H5200');
 assert.equal(mapped.trust.model,true);
@@ -51,8 +52,26 @@ const second = {
 const ambiguous = analyzeResearchCandidates([mapped,second],{brand:'Bosch',details:'18 V'});
 assert.equal(ambiguous.requiresTesterChoice,true);
 
+const modelOnly = buildResearchResult([mapped,second],{model:'GSR 18V-55'});
+assert.equal(modelOnly.selected.id,'p1');
+assert(modelOnly.confidence >= 30);
+assert(modelOnly.description.draft, 'Sam model powinien pozostać ostrożnym wynikiem roboczym');
+
+const manufacturerOnlyRaw = {
+  ...raw,
+  id:'p3',
+  parameters:raw.parameters.map(parameter =>
+    parameter.name === 'Marka'
+      ? {...parameter,name:'Producent',valuesLabels:['Robert Bosch GmbH']}
+      : parameter
+  )
+};
+const manufacturerMapped = mapAllegroResearchProduct(manufacturerOnlyRaw);
+assert.equal(manufacturerMapped.manufacturer,'Robert Bosch GmbH');
+assert.equal(manufacturerMapped.brand,'Robert Bosch GmbH');
+
 const result = buildResearchResult([mapped],{brand:'Bosch',model:'GSR 18V-55'});
 assert.equal(result.confidenceMethod,'product-research-v1');
 assert(result.description.title.includes('Bosch'));
 
-console.log('PASS product research scoring, trusted fields and description generation.');
+console.log('PASS product research: model-only, manufacturer, scoring, trusted fields and description generation.');

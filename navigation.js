@@ -16,12 +16,14 @@
     actions.openModal(
       'Więcej',
       '<div style="display:grid;gap:8px">'+
+      '<button id="mResearch" class="btn">Kreator opisu</button>'+
       '<button id="mLocations" class="btn">Lokalizacje</button>'+
       '<button id="mHistory" class="btn">Historia</button>'+
       '<button id="mSettings" class="btn">Ustawienia</button>'+
       '</div>'
     );
 
+    document.getElementById('mResearch').onclick = actions.showResearch;
     document.getElementById('mLocations').onclick = actions.showLocations;
     document.getElementById('mHistory').onclick = actions.showHistory;
     document.getElementById('mSettings').onclick = () => {
@@ -122,6 +124,14 @@
     if (navs[1]) navs[1].onclick = actions.showProducts;
     if (navs[2]) navs[2].onclick = actions.showLocations;
     if (navs[3]) navs[3].onclick = actions.showHistory;
+
+    if (navs[4] && !document.querySelector('.nav[data-research="true"]')) {
+      const research = navs[4].cloneNode(true);
+      research.textContent = 'Kreator opisu';
+      research.dataset.research = 'true';
+      navs[4].parentNode.insertBefore(research, navs[4]);
+      research.onclick = actions.showResearch;
+    }
 
     if (navs[4] && !document.querySelector('.nav[data-integrations="true"]')) {
       const integrations = navs[4].cloneNode(true);
