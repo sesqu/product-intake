@@ -294,6 +294,7 @@
         catalog:'amazon',
         asin:source.asin || '',
         ean:source.ean || '',
+        matchedCode:source.matchedCode || '',
         catalogEan:source.catalogEan || '',
         eanList:Array.isArray(source.eanList) ? source.eanList : [],
         gtinList:Array.isArray(source.gtinList) ? source.gtinList : [],
