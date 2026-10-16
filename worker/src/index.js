@@ -16,6 +16,11 @@ import {
   searchKeepaCatalog,
   analyzeKeepaCandidates
 } from './keepa.js';
+import {
+  mapAllegroResearchProduct,
+  buildResearchResult
+} from './product-research.js';
+import { searchAllegroForResearch } from './research-allegro.js';
 
 const AAPI = "https://api.allegro.pl";
 const AOAUTH = "https://allegro.pl/auth/oauth";
@@ -665,6 +670,54 @@ async function handle(request, env) {
 
   if (url.pathname === "/api/keepa/status" && request.method === "GET") {
     return out(keepaStatus(env), 200, origin);
+  }
+
+  if (url.pathname === "/api/research" && request.method === "POST") {
+    try {
+      const body = await request.json().catch(() => ({}));
+      const input = {
+        brand:clean(body?.brand),
+        model:clean(body?.model),
+        mpn:clean(body?.mpn),
+        details:clean(body?.details)
+      };
+      const candidateId = clean(body?.candidateId);
+
+      if (!input.mpn && !input.model && !(input.brand && input.details)) {
+        return out({
+          error:"Podaj kod / MPN albo model. Alternatywnie podaj markę i dodatkową informację."
+        }, 400, origin);
+      }
+
+      const token = await userToken(env);
+      const search = await searchAllegroForResearch({
+        token,
+        userAgent:env.ALLEGRO_USER_AGENT,
+        input
+      });
+      const products = (search.products || [])
+        .map(mapAllegroResearchProduct)
+        .filter(Boolean);
+
+      const result = buildResearchResult(products,input,candidateId);
+
+      return out({
+        query:{...input,candidateId},
+        source:"allegro",
+        provider:"allegro-catalog",
+        queriesUsed:search.queriesUsed || [],
+        best:result.selected,
+        candidates:(result.ranked || []).slice(0,5),
+        confidence:result.confidence,
+        confidenceMethod:result.confidenceMethod,
+        requiresTesterChoice:result.requiresTesterChoice,
+        selectedBy:result.selectedBy,
+        warnings:result.warnings || [],
+        description:result.description || null
+      }, 200, origin);
+    } catch (error) {
+      return out({error:error.message || "Nie udało się wykonać researchu produktu"}, 502, origin);
+    }
   }
 
   if (url.pathname === "/api/search" && request.method === "GET") {
