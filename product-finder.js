@@ -349,8 +349,9 @@
       if (ok !== false) {
         saveDraft?.();
         quality?.();
-        toast('Dane produktu wpisane. Porównaj je z fizyczną sztuką.');
-        document.querySelector('[data-panel], .section:nth-of-type(2)')?.scrollIntoView?.({behavior:'smooth',block:'start'});
+        toast('Dane produktu wpisane. Porównaj je z fizyczzną sztuką.');
+        window.ProductIntakeCore?.showStep?.(1);
+        document.querySelector('.section.on')?.scrollIntoView?.({behavior:'smooth',block:'start'});
       }
     } catch (error) {
       toast('Nie udało się użyć produktu: ' + (error.message || 'błąd'));
@@ -382,6 +383,7 @@
 
   function focus() {
     requireConfig().closeModal?.();
+    window.ProductIntakeCore?.showStep?.(0);
     document.querySelector('.section.on')?.scrollIntoView?.({behavior:'smooth',block:'start'});
     setTimeout(() => $('productFinderQuery')?.focus(),150);
   }
