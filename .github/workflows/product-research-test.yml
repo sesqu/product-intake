@@ -6,7 +6,26 @@ on:
       - 'worker/src/product-research.js'
       - 'worker/src/research-allegro.js'
       - 'worker/src/index.js'
+      - 'product-research.js'
+      - 'navigation.js'
+      - 'enhancements.js'
+      - 'index.html'
+      - 'sw.js'
       - 'tests/product-research.test.mjs'
+      - 'tests/frontend-syntax.test.cjs'
+      - '.github/workflows/product-research-test.yml'
+  pull_request:
+    paths:
+      - 'worker/src/product-research.js'
+      - 'worker/src/research-allegro.js'
+      - 'worker/src/index.js'
+      - 'product-research.js'
+      - 'navigation.js'
+      - 'enhancements.js'
+      - 'index.html'
+      - 'sw.js'
+      - 'tests/product-research.test.mjs'
+      - 'tests/frontend-syntax.test.cjs'
       - '.github/workflows/product-research-test.yml'
   workflow_dispatch:
 
@@ -20,3 +39,5 @@ jobs:
           node-version: '22'
       - name: Test product research engine
         run: node tests/product-research.test.mjs
+      - name: Test frontend syntax and wiring
+        run: node tests/frontend-syntax.test.cjs
