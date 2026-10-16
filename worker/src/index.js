@@ -7,8 +7,15 @@ import {
 } from './amazon.js';
 import {
   compareCatalogSources,
+  compareAllegroKeepa,
   sourceConsensusSummary
 } from './catalog-sources.js';
+import {
+  keepaConfigured,
+  keepaStatus,
+  searchKeepaCatalog,
+  analyzeKeepaCandidates
+} from './keepa.js';
 
 const AAPI = "https://api.allegro.pl";
 const AOAUTH = "https://allegro.pl/auth/oauth";
@@ -655,20 +662,35 @@ async function handle(request, env) {
     return out(amazonStatus(env), 200, origin);
   }
 
+  if (url.pathname === "/api/keepa/status" && request.method === "GET") {
+    return out(keepaStatus(env), 200, origin);
+  }
+
   if (url.pathname === "/api/search" && request.method === "GET") {
     const ean = clean(url.searchParams.get("ean"));
     const asin = clean(url.searchParams.get("asin")).toUpperCase();
     const requestedSource = clean(url.searchParams.get("source")).toLowerCase();
-    const sourceMode = ["allegro","amazon","both"].includes(requestedSource)
-      ? requestedSource
-      : "both";
+    const normalizedSource = requestedSource === "both" ? "allegro-keepa" : requestedSource;
+    const sourceMode = ["allegro","keepa","amazon","allegro-keepa"].includes(normalizedSource)
+      ? normalizedSource
+      : "allegro-keepa";
+
+    const useAllegro = sourceMode === "allegro" || sourceMode === "allegro-keepa";
+    const useKeepa = sourceMode === "keepa" || sourceMode === "allegro-keepa";
+    const useAmazon = sourceMode === "amazon";
 
     if (!ean && !asin) return out({ error: "Podaj EAN lub ASIN" }, 400, origin);
     if (sourceMode === "allegro" && !ean) {
       return out({ error: "Wyszukiwanie Allegro wymaga EAN / GTIN" }, 400, origin);
     }
     if (sourceMode === "amazon" && !asin) {
-      return out({ error: "Wyszukiwanie Amazon w tej wersji wymaga ASIN" }, 400, origin);
+      return out({ error: "Wyszukiwanie Amazon SP-API wymaga ASIN" }, 400, origin);
+    }
+    if (sourceMode === "keepa" && !keepaConfigured(env)) {
+      return out({
+        error: "Keepa API nie jest jeszcze skonfigurowane",
+        keepa: keepaStatus(env)
+      }, 503, origin);
     }
     if (sourceMode === "amazon" && !amazonConfigured(env)) {
       return out({
@@ -679,9 +701,11 @@ async function handle(request, env) {
 
     const sourceErrors = [];
     let allegroProducts = [];
+    let keepaProducts = [];
     let amazonProducts = [];
+    let keepaTokenStatus = null;
 
-    if (sourceMode !== "amazon" && ean) {
+    if (useAllegro && ean) {
       try {
         allegroProducts = await allegroSearch(env, ean);
       } catch (error) {
@@ -689,7 +713,28 @@ async function handle(request, env) {
       }
     }
 
-    if (sourceMode !== "allegro" && asin) {
+    if (useKeepa) {
+      if (!keepaConfigured(env)) {
+        sourceErrors.push({
+          source:"keepa",
+          message:"Keepa API nie jest jeszcze skonfigurowane"
+        });
+      } else {
+        try {
+          const keepaResult = await searchKeepaCatalog(env,{ asin, ean });
+          keepaProducts = keepaResult.products || [];
+          keepaTokenStatus = keepaResult.tokenStatus || null;
+        } catch (error) {
+          sourceErrors.push({
+            source:"keepa",
+            message:error.message,
+            tokenStatus:error.keepa || null
+          });
+        }
+      }
+    }
+
+    if (useAmazon) {
       if (!amazonConfigured(env)) {
         sourceErrors.push({
           source:"amazon",
@@ -705,20 +750,21 @@ async function handle(request, env) {
       }
     }
 
-    if (!allegroProducts.length && !amazonProducts.length) {
+    if (!allegroProducts.length && !keepaProducts.length && !amazonProducts.length) {
       if (sourceErrors.length) {
         return out({
           error:sourceErrors.length === 1
             ? sourceErrors[0].message
             : "Żadne wybrane źródło nie odpowiedziało poprawnie",
           query:{ ean, asin, source:sourceMode },
-          sourceErrors
+          sourceErrors,
+          keepaTokenStatus
         }, 502, origin);
       }
 
       return out({
         query:{ ean, asin, source:sourceMode },
-        sources:{ allegro:null, amazon:null },
+        sources:{ allegro:null, keepa:null, amazon:null },
         best:null,
         confidence:0,
         completeness:0,
@@ -730,6 +776,7 @@ async function handle(request, env) {
         hardConflictDetails:[],
         candidates:[],
         sourceErrors,
+        keepaTokenStatus,
         sourceConsensus:{ available:false, matched:0, compared:0, label:"Brak wyników" }
       }, 200, origin);
     }
@@ -739,15 +786,29 @@ async function handle(request, env) {
     let allegroAnalysis = null;
     let allegroBest = null;
     if (allegroProducts.length) {
-      allegroAnalysis = analyzeIdentification(allegroProducts, ean, candidateId);
+      const allegroSelectedId = allegroProducts.some(item => clean(item?.id) === candidateId)
+        ? candidateId
+        : "";
+      allegroAnalysis = analyzeIdentification(allegroProducts, ean, allegroSelectedId);
       allegroBest = allegroAnalysis.selected;
+    }
+
+    let keepaAnalysis = null;
+    let keepaBest = null;
+    if (keepaProducts.length) {
+      const keepaSelectedId = keepaProducts.some(item => clean(item?.id) === candidateId)
+        ? candidateId
+        : "";
+      keepaAnalysis = analyzeKeepaCandidates(keepaProducts,{ asin, ean },keepaSelectedId);
+      keepaBest = keepaAnalysis.selected;
     }
 
     const amazonBest = amazonProducts[0] || null;
     const amazonAnalysis = analyzeAmazonCandidate(amazonBest,{ asin, ean });
 
-    const best = allegroBest || amazonBest;
-    const primaryAnalysis = allegroBest
+    const best = allegroBest || keepaBest || amazonBest;
+    const primaryKind = allegroBest ? "allegro" : (keepaBest ? "keepa" : "amazon");
+    const primaryAnalysis = primaryKind === "allegro"
       ? {
           confidence:allegroAnalysis.confidence,
           completeness:allegroAnalysis.completeness,
@@ -759,21 +820,61 @@ async function handle(request, env) {
           conflicts:allegroAnalysis.conflicts || [],
           hardConflictDetails:allegroAnalysis.hardConflicts || []
         }
-      : {
-          confidence:amazonAnalysis.confidence,
-          completeness:amazonAnalysis.completeness,
-          confidenceMethod:amazonAnalysis.confidenceMethod,
-          evidence:amazonAnalysis.evidence,
-          selectedBy:"amazon-direct",
-          requiresTesterChoice:false,
-          candidates:amazonProducts,
-          conflicts:amazonAnalysis.conflicts || [],
-          hardConflictDetails:amazonAnalysis.hardConflictDetails || []
-        };
+      : primaryKind === "keepa"
+        ? {
+            confidence:keepaAnalysis.confidence,
+            completeness:keepaAnalysis.completeness,
+            confidenceMethod:keepaAnalysis.confidenceMethod,
+            evidence:keepaAnalysis.evidence,
+            selectedBy:keepaAnalysis.selectedBy,
+            requiresTesterChoice:keepaAnalysis.requiresTesterChoice,
+            candidates:keepaAnalysis.ranked || [],
+            conflicts:keepaAnalysis.conflicts || [],
+            hardConflictDetails:keepaAnalysis.hardConflictDetails || []
+          }
+        : {
+            confidence:amazonAnalysis.confidence,
+            completeness:amazonAnalysis.completeness,
+            confidenceMethod:amazonAnalysis.confidenceMethod,
+            evidence:amazonAnalysis.evidence,
+            selectedBy:"amazon-direct",
+            requiresTesterChoice:false,
+            candidates:amazonProducts,
+            conflicts:amazonAnalysis.conflicts || [],
+            hardConflictDetails:amazonAnalysis.hardConflictDetails || []
+          };
 
-    const sourceComparison = compareCatalogSources(allegroBest,amazonBest);
+    let sourceComparison = {conflicts:[],hardConflictDetails:[],checks:[]};
+    let sourceConsensus = {available:false,matched:0,compared:0,label:"Jedno źródło"};
+
+    if (allegroBest && keepaBest) {
+      sourceComparison = compareAllegroKeepa(allegroBest,keepaBest);
+      sourceConsensus = sourceConsensusSummary(allegroBest,keepaBest,{
+        leftLabel:"Allegro",
+        rightLabel:"Keepa / Amazon"
+      });
+    } else if (allegroBest && amazonBest) {
+      sourceComparison = compareCatalogSources(allegroBest,amazonBest);
+      sourceConsensus = sourceConsensusSummary(allegroBest,amazonBest,{
+        leftLabel:"Allegro",
+        rightLabel:"Amazon"
+      });
+    }
+
+    const supplementalKeepaConflicts =
+      primaryKind === "allegro" && keepaAnalysis?.requiresTesterChoice
+        ? (keepaAnalysis.conflicts || [])
+            .filter(item => item.key === "keepa:candidate")
+            .map(item => ({
+              ...item,
+              severity:"warning",
+              message:item.message + " Dane Keepa są pomocnicze i nie zastępują wybranego produktu Allegro."
+            }))
+        : [];
+
     const conflicts = [
       ...(primaryAnalysis.conflicts || []),
+      ...supplementalKeepaConflicts,
       ...(sourceComparison.conflicts || [])
     ];
     const hardConflictDetails = [
@@ -805,6 +906,7 @@ async function handle(request, env) {
         item.key === "asin" ? (best?.asin || asin || "brak") :
         item.key === "identifier" ? (best?.asin || best?.ean || "brak") :
         item.key === "model" ? (best?.model || "brak") :
+        item.key === "partNumber" ? (best?.partNumber || "brak") :
         item.key === "brand" ? (best?.brand || "brak") :
         item.key === "category" ? (best?.category || "brak") :
         item.key === "name" ? (best?.name || "brak") :
@@ -821,7 +923,7 @@ async function handle(request, env) {
 
     return out({
       query:{ ean, asin, candidateId, source:sourceMode },
-      sources:{ allegro:allegroBest, amazon:amazonBest },
+      sources:{ allegro:allegroBest, keepa:keepaBest, amazon:amazonBest },
       best,
       confidence:primaryAnalysis.confidence,
       completeness:primaryAnalysis.completeness,
@@ -837,7 +939,8 @@ async function handle(request, env) {
       categoryMeta,
       gpsr,
       sourceErrors,
-      sourceConsensus:sourceConsensusSummary(allegroBest,amazonBest)
+      keepaTokenStatus,
+      sourceConsensus
     }, 200, origin);
   }
 
