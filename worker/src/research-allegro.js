@@ -13,7 +13,7 @@ function unique(values) {
 }
 
 export function buildAllegroResearchQueries(input = {}) {
-  const brand = clean(input.brand);
+  const brand = clean(input.brand || input.manufacturer);
   const model = clean(input.model);
   const mpn = clean(input.mpn);
   const details = clean(input.details);
