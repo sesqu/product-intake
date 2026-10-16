@@ -75,6 +75,7 @@ export function mapAllegroResearchProduct(product) {
 
   const parameters = parameterItems(product);
   const brandParam = findParameter(parameters,['marka','brand']);
+  const manufacturerParam = findParameter(parameters,['producent','manufacturer']);
   const modelParam = findParameter(parameters,['model']);
   const mpnParam = findParameter(parameters,[
     'kod producenta',
@@ -91,7 +92,8 @@ export function mapAllegroResearchProduct(product) {
     provider:'allegro-catalog',
     id:clean(product.id),
     name:clean(product.name),
-    brand:clean(brandParam?.value),
+    brand:clean(brandParam?.value || manufacturerParam?.value),
+    manufacturer:clean(manufacturerParam?.value || brandParam?.value),
     model:clean(modelParam?.value || mpnParam?.value),
     mpn:clean(mpnParam?.value),
     ean:clean(eanParam?.value),
@@ -101,7 +103,8 @@ export function mapAllegroResearchProduct(product) {
     description:flattenDescription(product.description),
     parameters:uniqueParameters(parameters).slice(0,80),
     trust:{
-      brand:Boolean(brandParam?.isTrusted),
+      brand:Boolean(brandParam?.isTrusted || manufacturerParam?.isTrusted),
+      manufacturer:Boolean(manufacturerParam?.isTrusted || brandParam?.isTrusted),
       model:Boolean(modelParam?.isTrusted),
       mpn:Boolean(mpnParam?.isTrusted),
       ean:Boolean(eanParam?.isTrusted)
@@ -125,7 +128,7 @@ function scoreCandidate(candidate, input = {}) {
   const evidence = [];
   const warnings = [];
 
-  const brand = clean(input.brand);
+  const brand = clean(input.brand || input.manufacturer);
   const model = clean(input.model);
   const mpn = clean(input.mpn);
   const details = clean(input.details);
@@ -159,13 +162,17 @@ function scoreCandidate(candidate, input = {}) {
   }
 
   if (brand) {
-    if (exact(brand,candidate.brand) || tokenOverlap(brand,candidate.name) === 1) {
+    if (
+      exact(brand,candidate.brand) ||
+      exact(brand,candidate.manufacturer) ||
+      tokenOverlap(brand,candidate.name) === 1
+    ) {
       const points = 15 + (candidate.trust?.brand ? 5 : 0);
       score += points;
-      evidence.push({field:'brand',label:'Marka',status:'match',points,trusted:Boolean(candidate.trust?.brand),value:candidate.brand || brand});
-    } else if (candidate.brand) {
+      evidence.push({field:'brand',label:'Marka / producent',status:'match',points,trusted:Boolean(candidate.trust?.brand || candidate.trust?.manufacturer),value:candidate.brand || candidate.manufacturer || brand});
+    } else if (candidate.brand || candidate.manufacturer) {
       score -= 18;
-      warnings.push({field:'brand',severity:'warning',message:'Marka katalogowa różni się od wpisanej.',input:brand,catalog:candidate.brand});
+      warnings.push({field:'brand',severity:'warning',message:'Marka / producent w katalogu różni się od wpisanej.',input:brand,catalog:candidate.brand || candidate.manufacturer});
     }
   }
 
@@ -173,6 +180,7 @@ function scoreCandidate(candidate, input = {}) {
     const corpus = [
       candidate.name,
       candidate.brand,
+      candidate.manufacturer,
       candidate.model,
       candidate.mpn,
       ...candidate.parameters.map(item => item.value)
@@ -194,7 +202,7 @@ function scoreCandidate(candidate, input = {}) {
 }
 
 function identitySignature(candidate) {
-  return [candidate.brand,candidate.model,candidate.mpn]
+  return [candidate.brand,candidate.manufacturer,candidate.model,candidate.mpn]
     .map(norm)
     .filter(Boolean)
     .join('|');
@@ -269,13 +277,13 @@ export function buildDescription(product, input = {}, analysis = {}) {
   if (!product) return null;
 
   const title = clean(product.name) ||
-    [product.brand || input.brand, product.model || input.model, product.mpn || input.mpn]
+    [product.brand || product.manufacturer || input.brand || input.manufacturer, product.model || input.model, product.mpn || input.mpn]
       .filter(Boolean)
       .join(' ');
 
   const facts = preferredFacts(product);
   const identity = [
-    product.brand ? 'Marka: ' + product.brand : '',
+    (product.brand || product.manufacturer) ? 'Marka / producent: ' + (product.brand || product.manufacturer) : '',
     product.model ? 'Model: ' + product.model : '',
     product.mpn ? 'Kod / MPN: ' + product.mpn : ''
   ].filter(Boolean);
