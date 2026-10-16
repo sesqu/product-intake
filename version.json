@@ -1,22 +1,22 @@
 {
-  "version": 40,
-  "label": "v40",
-  "publishedAt": "2026-10-15T21:45:00+02:00",
+  "version": 41,
+  "label": "v41",
+  "publishedAt": "2026-10-16T05:10:00+02:00",
   "assets": [
     {
       "url": "./index.html",
-      "chars": 8167,
-      "bytes": 8231,
-      "fnv32": "56cf5d05"
+      "chars": 8258,
+      "bytes": 8323,
+      "fnv32": "6340417c"
     },
     {
-      "url": "./styles.css?v=40",
+      "url": "./styles.css?v=41",
       "chars": 18143,
       "bytes": 18143,
       "fnv32": "c941f40b"
     },
     {
-      "url": "./intake-core.js?v=40",
+      "url": "./intake-core.js?v=41",
       "chars": 1494,
       "bytes": 1501,
       "fnv32": "45c2a4b1"
@@ -28,70 +28,70 @@
       "fnv32": "61a7532b"
     },
     {
-      "url": "./pwa-updates.js?v=40",
+      "url": "./pwa-updates.js?v=41",
       "chars": 20172,
       "bytes": 20197,
       "fnv32": "b9c511ba"
     },
     {
-      "url": "./modal-ui.js?v=40",
+      "url": "./modal-ui.js?v=41",
       "chars": 1762,
       "bytes": 1762,
       "fnv32": "e259e28a"
     },
     {
-      "url": "./navigation.js?v=40",
+      "url": "./navigation.js?v=41",
       "chars": 4935,
       "bytes": 4943,
       "fnv32": "9a0263c5"
     },
     {
-      "url": "./cloud-products.js?v=40",
+      "url": "./cloud-products.js?v=41",
       "chars": 11871,
       "bytes": 11915,
       "fnv32": "93c90b28"
     },
     {
-      "url": "./catalog-lookup.js?v=40",
-      "chars": 24752,
-      "bytes": 24831,
-      "fnv32": "d0862bb6"
+      "url": "./catalog-lookup.js?v=41",
+      "chars": 26360,
+      "bytes": 26439,
+      "fnv32": "d0f5bada"
     },
     {
-      "url": "./intake-session.js?v=40",
+      "url": "./intake-session.js?v=41",
       "chars": 14913,
       "bytes": 14949,
       "fnv32": "2a5ccd9a"
     },
     {
-      "url": "./secondary-views.js?v=40",
-      "chars": 9813,
-      "bytes": 9917,
-      "fnv32": "45a67e55"
+      "url": "./secondary-views.js?v=41",
+      "chars": 11186,
+      "bytes": 11308,
+      "fnv32": "de7dd631"
     },
     {
-      "url": "./product-list.js?v=40",
+      "url": "./product-list.js?v=41",
       "chars": 4374,
       "bytes": 4398,
       "fnv32": "ac85ddca"
     },
     {
-      "url": "./product-editor.js?v=40",
-      "chars": 29383,
-      "bytes": 29578,
-      "fnv32": "bae7c88c"
+      "url": "./product-editor.js?v=41",
+      "chars": 31490,
+      "bytes": 31717,
+      "fnv32": "96caff71"
     },
     {
-      "url": "./enhancements.js?v=40",
+      "url": "./enhancements.js?v=41",
       "chars": 5701,
       "bytes": 5708,
-      "fnv32": "bd4f658d"
+      "fnv32": "84b97e07"
     },
     {
       "url": "./sw.js",
       "chars": 2133,
       "bytes": 2133,
-      "fnv32": "e1ed8ccb"
+      "fnv32": "3a2f2fbe"
     },
     {
       "url": "./manifest.webmanifest",
