@@ -223,7 +223,7 @@ async function keepaRequest(env, query = {}) {
   }
 
   const response = await fetch(url, {
-    headers:{'accept':'application/json','accept-encoding':'gzip'}
+    headers:{'accept':'application/json'}
   });
   const body = await response.json().catch(() => ({}));
 
