@@ -5,6 +5,18 @@ import {
   buildDescription,
   buildResearchResult
 } from '../worker/src/product-research.js';
+import { buildAllegroResearchQueries } from '../worker/src/research-allegro.js';
+
+assert.deepEqual(
+  buildAllegroResearchQueries({model:'GSR 18V-55'}),
+  ['GSR 18V-55'],
+  'Sam model powinien wystarczyć do jednego wyszukania'
+);
+assert.deepEqual(
+  buildAllegroResearchQueries({brand:'Bosch',model:'GSR 18V-55'}),
+  ['Bosch GSR 18V-55','GSR 18V-55'],
+  'Marka + model powinny najpierw tworzyć precyzyjną frazę, a potem fallback po modelu'
+);
 
 const raw = {
   id:'p1',
