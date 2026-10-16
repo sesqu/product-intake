@@ -1,6 +1,6 @@
 {
   "name": "product-intake-worker",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -29,6 +29,9 @@
       },
       "AMAZON_MARKETPLACE_ID": {
         "description": "Marketplace ID katalogu Amazon używanego przez Product Intake, np. marketplace konta sprzedażowego."
+      },
+      "KEEPA_API_KEY": {
+        "description": "Klucz API Keepa. Przechowuj wyłącznie jako sekret Cloudflare — nigdy w GitHubie ani przeglądarce."
       }
     }
   }
