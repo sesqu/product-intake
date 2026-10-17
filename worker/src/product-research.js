@@ -315,7 +315,7 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
     selected,
     ranked,
     confidence:selected.score,
-    requiresTesterChoice:closeCompetition,
+    requiresTesterChoice:Boolean(closeCompetition || selected.score < 55),
     selectedBy:requested ? 'tester' : 'ranking',
     warnings:selected.warnings || []
   };
