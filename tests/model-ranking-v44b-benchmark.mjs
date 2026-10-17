@@ -56,7 +56,7 @@ const cases=[
   {query:'S27AG550',brand:'Samsung',primary:/monitor/i}
 ];
 
-const accessory=/\bbateria\b|\bakumulator\b|\betui\b|futerał|pokrowiec|\bfiltr\b|uchwyt|toner|bęben|chip|złącze|złącza|płytka|płyta główna|mocowanie|osłona|wyświetlacz|ekran|klapka|część|obudowa|czujnik|kabel|adapter|ładowark|szkło|folia|pilot|mop|szmatk|szczotk|worki|worek|akcesori|silnik|wyłącznik|przełącznik|pierścień|koło zębate|grzałka|kosz|głośnik rozmów|nausznik|nakładk|łącznik|stojak|noga|głowica|korpus/i;
+const accessory=/\bbateria\b|\bakumulator\b|\betui\b|futerał|pokrowiec|\bfiltr\b|uchwyt|toner|bęben|chip|złącze|złącza|płytka|płyta główna|mocowanie|osłona|wyświetlacz|ekran|klapka|część|obudowa|czujnik|adapter|ładowark|szkło|folia|pilot|mop|szmatk|szczotk|worki|worek|akcesori|silnik|wyłącznik|przełącznik|pierścień|koło zębate|grzałka|kosz|głośnik rozmów|nausznik|nakładk|łącznik|stojak|noga|głowica|korpus/i;
 
 function normalize(value=''){
   return String(value).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l');
@@ -74,9 +74,12 @@ function brandMatch(candidate,brand){
 function isPrimary(candidate,test){
   const name=String(candidate?.name||'');
   const corpus=[name,candidate?.category||''].filter(Boolean).join(' ');
+  const nameCompact=normalize(name).replace(/[^a-z0-9]+/g,'');
+  const queryCompact=normalize(test.query).replace(/[^a-z0-9]+/g,'');
+  const identityInName=Boolean(queryCompact && nameCompact.includes(queryCompact));
   return Boolean(
     name &&
-    test.primary.test(corpus) &&
+    (test.primary.test(corpus) || identityInName) &&
     brandMatch(candidate,test.brand) &&
     !accessory.test(name) &&
     candidate?.relation?.type!=='accessory'
