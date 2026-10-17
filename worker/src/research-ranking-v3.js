@@ -99,6 +99,24 @@ export function classifyCandidateRelation(candidate,input = {}) {
     };
   }
 
+  const candidateModelFp = modelFingerprint(candidate?.model);
+  const candidateMpnFp = modelFingerprint(candidate?.mpn);
+  const targetIsCandidateIdentity = Boolean(
+    targetFp &&
+    (
+      targetFp === candidateModelFp ||
+      targetFp === candidateMpnFp
+    )
+  );
+
+  if (targetMentioned && noun && !targetIsCandidateIdentity) {
+    return {
+      type:'accessory',
+      confidence:'medium',
+      reason:noun + ' • model tylko w nazwie'
+    };
+  }
+
   if (targetMentioned && accessoryCategory) {
     return {
       type:'accessory',
@@ -458,6 +476,28 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
       for (const phrase of extractEquivalentModelPhrases(value,original)) {
         variants.push(phrase);
       }
+    }
+  }
+
+  for (const candidate of candidates || []) {
+    const nameFp = modelFingerprint(candidate?.name);
+    if (!nameFp.includes(fingerprint)) continue;
+
+    for (const alias of [candidate?.model,candidate?.mpn]) {
+      const aliasValue = clean(alias);
+      const aliasFp = modelFingerprint(aliasValue);
+      const tokenCount = normalizeText(aliasValue).split(' ').filter(Boolean).length;
+      if (
+        !aliasValue ||
+        aliasValue.length > 40 ||
+        tokenCount > 4 ||
+        !/[a-z]/.test(aliasFp) ||
+        !/\d/.test(aliasFp) ||
+        aliasFp === fingerprint ||
+        aliasFp.includes(fingerprint) ||
+        fingerprint.includes(aliasFp)
+      ) continue;
+      variants.push(aliasValue);
     }
   }
 
