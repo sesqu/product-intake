@@ -144,4 +144,69 @@ assert(
   ).includes('Sony WH-1000XM5')
 );
 
+
+const servicePart = {
+  id:'dewalt-motor',
+  name:'DEWALT NA067843 SILNIK Z WYŁĄCZNIKIEM DO DCD791 DCD796',
+  brand:'DeWalt',
+  manufacturer:'DeWalt',
+  model:'NA067843',
+  mpn:'NA067843',
+  category:'Części zamienne do elektronarzędzi',
+  parameters:[],
+  trust:{brand:true,manufacturer:true,model:true,mpn:true}
+};
+assert.equal(
+  classifyCandidateRelation(servicePart,{query:'DCD791'}).type,
+  'accessory',
+  'Silnik / wyłącznik do konkretnego modelu nie może konkurować jak produkt główny'
+);
+
+const robotMop = {
+  id:'roborock-mop',
+  name:'Oryginalny Mop Szmatka główna do Roborock S8 MaxV Ultra 2 szt.',
+  brand:'Roborock',
+  manufacturer:'Roborock',
+  model:'Mop',
+  mpn:'MOP-S8',
+  category:'Akcesoria do robotów sprzątających',
+  parameters:[],
+  trust:{brand:true,manufacturer:true,model:false,mpn:false}
+};
+assert.equal(
+  classifyCandidateRelation(robotMop,{query:'S8 MaxV Ultra'}).type,
+  'accessory',
+  'Mop do robota powinien być częścią / akcesorium'
+);
+
+const makita = {
+  id:'makita-dhp484',
+  name:'Wiertarko-wkrętarka Makita DHP484 18V',
+  brand:'Makita',
+  manufacturer:'Makita',
+  model:'DHP484',
+  mpn:'DHP484',
+  category:'Wiertarko-wkrętarki',
+  parameters:[],
+  trust:{brand:true,manufacturer:true,model:true,mpn:true}
+};
+const wrongBrandSameModel = {
+  ...makita,
+  id:'bosch-dhp484',
+  name:'Bosch DHP484 cordless drill driver',
+  brand:'Bosch',
+  manufacturer:'Bosch',
+  trust:{brand:true,manufacturer:true,model:true,mpn:true}
+};
+const brandCollision = analyzeResearchCandidates(
+  [wrongBrandSameModel,makita],
+  {query:'DHP484'}
+);
+assert.equal(
+  brandCollision.requiresTesterChoice,
+  true,
+  'Ten sam dokładny model występujący pod różnymi markami musi wymagać wyboru testera'
+);
+assert.equal(brandCollision.ambiguity.brandCollision,true);
+
 console.log('PASS Research ranking v3: model fingerprint, primary-product ranking, accessory penalties, brand handling and query recovery.');
