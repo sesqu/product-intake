@@ -7,6 +7,7 @@ import {
 } from '../worker/src/product-research.js';
 import {
   buildAllegroResearchQueries,
+  shouldTryMpnMode,
   searchAllegroForResearch
 } from '../worker/src/research-allegro.js';
 
@@ -25,6 +26,12 @@ assert.deepEqual(
   ['Bosch GSR 18V-55','GSR 18V-55'],
   'Marka + model powinny najpierw tworzyć precyzyjną frazę, a potem fallback po modelu'
 );
+
+assert.equal(shouldTryMpnMode({query:'SM-S921B'}),true);
+assert.equal(shouldTryMpnMode({query:'WH-1000XM5'}),true);
+assert.equal(shouldTryMpnMode({query:'Flip 6'}),true);
+assert.equal(shouldTryMpnMode({query:'słuchawki sony'}),false);
+assert.equal(shouldTryMpnMode({mpn:'06019H5200'}),true);
 
 const raw = {
   id:'p1',
@@ -95,8 +102,11 @@ assert.equal(queryResult.selected.id,'p1');
 assert(queryResult.confidence >= 35);
 
 const originalFetch = globalThis.fetch;
+const requestedUrls = [];
 globalThis.fetch = async url => {
-  const phrase = new URL(String(url)).searchParams.get('phrase');
+  const parsed = new URL(String(url));
+  requestedUrls.push(parsed);
+  const phrase = parsed.searchParams.get('phrase');
   const products =
     phrase === 'Bosch GSR 18V-55'
       ? [raw,{...raw,id:'p2a',name:'Bosch GSR 18V-55 zestaw'}]
@@ -114,7 +124,23 @@ const aggregated = await searchAllegroForResearch({
   userAgent:'test',
   input:{brand:'Bosch',model:'GSR 18V-55'}
 });
-assert.deepEqual(aggregated.queriesUsed,['Bosch GSR 18V-55','GSR 18V-55']);
+assert.deepEqual(
+  aggregated.queriesUsed,
+  ['Bosch GSR 18V-55','GSR 18V-55 [MPN]','GSR 18V-55']
+);
+assert.deepEqual(
+  aggregated.searchAttempts.map(item => ({phrase:item.phrase,mode:item.mode,reason:item.reason})),
+  [
+    {phrase:'Bosch GSR 18V-55',mode:'',reason:'primary'},
+    {phrase:'GSR 18V-55',mode:'MPN',reason:'mpn'},
+    {phrase:'GSR 18V-55',mode:'',reason:'fallback'}
+  ]
+);
+assert.equal(
+  requestedUrls[1].searchParams.get('mode'),
+  'MPN',
+  'Druga próba kodu modelowego powinna używać oficjalnego mode=MPN'
+);
 assert.equal(aggregated.products.length,3,'Research powinien łączyć kandydatów z kolejnych prób i usuwać duplikaty');
 globalThis.fetch = originalFetch;
 
