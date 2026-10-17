@@ -1,3 +1,4 @@
+import { rankResearchCandidate } from './research-ranking-v3.js';
 const clean = value => String(value ?? '').trim();
 
 function norm(value) {
@@ -275,8 +276,14 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
   const ranked = (Array.isArray(products) ? products : [])
     .filter(Boolean)
     .map(product => {
-      const analysis = scoreCandidate(product,input);
-      return {...product,score:analysis.score,evidence:analysis.evidence,warnings:analysis.warnings};
+      const analysis = rankResearchCandidate(product,input);
+      return {
+        ...product,
+        score:analysis.score,
+        evidence:analysis.evidence,
+        warnings:analysis.warnings,
+        relation:analysis.relation
+      };
     })
     .sort((a,b) => b.score - a.score || clean(a.name).localeCompare(clean(b.name)));
 
@@ -379,6 +386,6 @@ export function buildResearchResult(products, input = {}, selectedId = '') {
   return {
     ...analysis,
     description:buildDescription(analysis.selected,input,analysis),
-    confidenceMethod:'product-research-v2'
+    confidenceMethod:'product-research-v3'
   };
 }
