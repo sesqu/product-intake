@@ -485,30 +485,9 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
     }
   }
 
-  for (const candidate of candidates || []) {
-    const nameFp = modelFingerprint(candidate?.name);
-    if (!nameFp.includes(fingerprint)) continue;
-
-    for (const alias of [candidate?.model,candidate?.mpn]) {
-      const aliasValue = clean(alias);
-      const aliasFp = modelFingerprint(aliasValue);
-      const tokenCount = normalizeText(aliasValue).split(' ').filter(Boolean).length;
-      if (
-        !aliasValue ||
-        aliasValue.length > 40 ||
-        tokenCount > 4 ||
-        !/[a-z]/.test(aliasFp) ||
-        !/\d/.test(aliasFp) ||
-        aliasFp === fingerprint ||
-        aliasFp.includes(fingerprint) ||
-        fingerprint.includes(aliasFp)
-      ) continue;
-      for (const prefix of contextPrefixes.slice(0,1)) {
-        variants.push(prefix + ' ' + aliasValue);
-      }
-      variants.push(aliasValue);
-    }
-  }
+  // Do not pivot to unrelated model/MPN values from accessory candidates.
+  // The dedicated Allegro MPN request handles manufacturer codes; recovered
+  // phrase variants are limited to equivalent spellings and brand context.
 
   const spaced = original
     .replace(/[_/\-]+/g,' ')
