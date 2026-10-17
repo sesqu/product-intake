@@ -341,7 +341,8 @@ export function rankResearchCandidate(candidate,input = {}) {
   const evidence = [];
   const warnings = [];
 
-  score += modelEvidence(candidate,input,evidence,warnings);
+  const modelPoints = modelEvidence(candidate,input,evidence,warnings);
+  score += modelPoints;
   score += brandEvidence(candidate,input,evidence,warnings);
   score += detailsEvidence(candidate,input,evidence);
 
@@ -362,7 +363,7 @@ export function rankResearchCandidate(candidate,input = {}) {
       severity:'warning',
       message:'Kandydat wygląda na część lub akcesorium przeznaczone do szukanego modelu.'
     });
-  } else if (isProbableModelQuery(input)) {
+  } else if (isProbableModelQuery(input) && modelPoints > 0) {
     score += 12;
     evidence.push({
       field:'relation',
@@ -464,10 +465,15 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
 
   const variants = [original];
   const fingerprint = modelFingerprint(original);
+  const contextPrefixes = [];
 
   for (const candidate of candidates || []) {
     for (const phrase of extractContextualModelPhrases(candidate?.name,original)) {
       variants.push(phrase);
+      const prefix = clean(phrase.split(/\s+/)[0]);
+      if (prefix && !contextPrefixes.some(item => normalizeText(item) === normalizeText(prefix))) {
+        contextPrefixes.push(prefix);
+      }
     }
   }
 
@@ -497,6 +503,9 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
         aliasFp.includes(fingerprint) ||
         fingerprint.includes(aliasFp)
       ) continue;
+      for (const prefix of contextPrefixes.slice(0,1)) {
+        variants.push(prefix + ' ' + aliasValue);
+      }
       variants.push(aliasValue);
     }
   }
