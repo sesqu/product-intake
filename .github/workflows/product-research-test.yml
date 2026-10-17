@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'worker/src/product-research.js'
+      - 'worker/src/research-ranking-v3.js'
       - 'worker/src/research-allegro.js'
       - 'worker/src/index.js'
       - 'product-research.js'
@@ -16,12 +17,14 @@ on:
       - 'sw.js'
       - 'version.json'
       - 'tests/product-research.test.mjs'
+      - 'tests/research-ranking-v3.test.mjs'
       - 'tests/research-live.test.mjs'
       - 'tests/frontend-syntax.test.cjs'
       - '.github/workflows/product-research-test.yml'
   pull_request:
     paths:
       - 'worker/src/product-research.js'
+      - 'worker/src/research-ranking-v3.js'
       - 'worker/src/research-allegro.js'
       - 'worker/src/index.js'
       - 'product-research.js'
@@ -34,6 +37,7 @@ on:
       - 'sw.js'
       - 'version.json'
       - 'tests/product-research.test.mjs'
+      - 'tests/research-ranking-v3.test.mjs'
       - 'tests/frontend-syntax.test.cjs'
       - '.github/workflows/product-research-test.yml'
   workflow_dispatch:
@@ -48,6 +52,8 @@ jobs:
           node-version: '22'
       - name: Test product research engine
         run: node tests/product-research.test.mjs
+      - name: Test model-aware ranking v3
+        run: node tests/research-ranking-v3.test.mjs
       - name: Test frontend syntax and wiring
         run: node tests/frontend-syntax.test.cjs
       - name: Live production model research smoke test
