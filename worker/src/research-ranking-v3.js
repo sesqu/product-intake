@@ -652,39 +652,61 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
     const relation = classifyCandidateRelation(candidate,input);
     if (relation.type !== 'accessory') continue;
 
-    const context = extractContextualModelPhrases(candidate?.name || '',original)[0] || '';
+    const name = clean(candidate?.name);
+    const exactContext = extractContextualModelPhrases(name,original)[0] || '';
+    const looseContext = extractLooseContextPhrases(name,original)[0] || '';
+    const context = exactContext || looseContext;
     const contextBrand = clean(context.split(/\s+/)[0]);
     const explicitBrand = clean(candidate?.brand || candidate?.manufacturer);
-    const brand =
-      contextBrand ||
-      (explicitBrand && !genericBrand(explicitBrand) ? explicitBrand : '');
+    const explicitNamed =
+      explicitBrand &&
+      !genericBrand(explicitBrand) &&
+      normalizeText(name).includes(normalizeText(explicitBrand));
+    const brand = contextBrand || (explicitNamed ? explicitBrand : '');
 
-    const alias = clean(candidate?.model);
+    const rawAlias = clean(candidate?.model);
+    const alias = stripLiteralTarget(rawAlias,original) || rawAlias;
     const aliasFp = modelFingerprint(alias);
     const aliasTokens = normalizeText(alias).split(' ').filter(Boolean);
+    const group = aliasGroupKey(alias,brand);
 
     if (
       !brand ||
       !alias ||
-      alias.length > 32 ||
+      alias.length > 40 ||
       aliasTokens.length < 2 ||
-      aliasTokens.length > 4 ||
+      aliasTokens.length > 6 ||
+      !group ||
       !/[a-z]/.test(aliasFp) ||
       !/\d/.test(aliasFp) ||
-      aliasFp === fingerprint ||
-      aliasFp.includes(fingerprint) ||
-      fingerprint.includes(aliasFp)
+      aliasFp === fingerprint
     ) continue;
 
-    const key = modelFingerprint(brand) + '|' + aliasFp;
-    const item = aliasSupport.get(key) || {brand,alias,count:0};
-    item.count += 1;
-    aliasSupport.set(key,item);
+    const key = modelFingerprint(brand) + '|' + group;
+    const current = aliasSupport.get(key) || {
+      brand,
+      alias,
+      count:0,
+      richness:0
+    };
+    current.count += 1;
+
+    const richness =
+      (normalizeText(alias).includes('galaxy') ? 4 : 0) +
+      Math.min(4,aliasTokens.length);
+    if (richness > current.richness) {
+      current.alias = alias;
+      current.richness = richness;
+    }
+    aliasSupport.set(key,current);
   }
 
   for (const item of aliasSupport.values()) {
     if (item.count < 2) continue;
-    add(item.brand + ' ' + item.alias,58 + Math.min(12,(item.count - 2) * 4),'repeated-alias');
+    const aliasText = normalizeText(item.alias).includes(normalizeText(item.brand))
+      ? item.alias
+      : item.brand + ' ' + item.alias;
+    add(aliasText,62 + Math.min(12,(item.count - 2) * 4),'repeated-alias');
   }
 
   const spaced = original
