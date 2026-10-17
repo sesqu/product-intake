@@ -333,6 +333,14 @@ function candidateTargetBrand(candidate,input = {}) {
   const contextual = inferredTargetBrand(candidate,input);
   if (contextual) return contextual;
 
+  if (
+    candidate?.relation?.type === 'accessory' &&
+    explicit &&
+    norm(candidate?.name).includes(norm(explicit))
+  ) {
+    return explicit;
+  }
+
   return candidate?.relation?.type !== 'accessory' ? explicit : '';
 }
 
