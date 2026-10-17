@@ -59,6 +59,11 @@ for(const test of cases){
   const v44=analyzeResearchCandidates(candidates,{query:test.query});
   const baselineName=baseline.best?.name||'';
   const v44Name=v44.selected?.name||'';
+  const baselineRelation=(baseline.best?.relation?.type)||'unknown';
+  const baselineNegative=/bateria|akumulator|etui|futerał|pokrowiec|filtr|uchwyt|toner|bęben|chip|złącze|złącza|płytka|płyta główna|mocowanie|osłona|wyświetlacz|ekran|klapka|część|obudowa|czujnik/i.test(baselineName);
+  const v44Relation=v44.selected?.relation?.type||'unknown';
+  const v44Negative=/bateria|akumulator|etui|futerał|pokrowiec|filtr|uchwyt|toner|bęben|chip|złącze|złącza|płytka|płyta główna|mocowanie|osłona|wyświetlacz|ekran|klapka|część|obudowa|czujnik/i.test(v44Name);
+
   const row={
     label:test.label,
     query:test.query,
@@ -66,12 +71,12 @@ for(const test of cases){
     baseline:{
       name:baselineName,
       score:baseline.confidence??null,
-      primary:test.primary.test(baselineName)
+      primary:test.primary.test(baselineName)&&!baselineNegative
     },
     v44:{
       name:v44Name,
       score:v44.confidence??null,
-      primary:test.primary.test(v44Name),
+      primary:test.primary.test(v44Name)&&!v44Negative&&v44Relation!=='accessory',
       relation:v44.selected?.relation||null,
       testerChoice:v44.requiresTesterChoice,
       top:(v44.ranked||[]).slice(0,5).map(x=>({
