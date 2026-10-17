@@ -1,0 +1,23 @@
+name: Compare v43 vs v44 model ranking
+
+on:
+  push:
+    branches:
+      - feature/model-ranking-v44
+    paths:
+      - 'tests/model-ranking-v44-live-eval.mjs'
+      - 'worker/src/research-ranking-v3.js'
+      - 'worker/src/product-research.js'
+      - '.github/workflows/model-ranking-v44-eval.yml'
+  workflow_dispatch:
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compare production v43 candidates with local v44 ranking
+        run: node tests/model-ranking-v44-live-eval.mjs

@@ -1,3 +1,8 @@
+import {
+  rankResearchCandidate,
+  modelFingerprint,
+  extractContextualModelPhrases
+} from './research-ranking-v3.js';
 const clean = value => String(value ?? '').trim();
 
 function norm(value) {
@@ -271,12 +276,67 @@ function identitySignature(candidate) {
     .join('|');
 }
 
+
+function explicitBrand(candidate) {
+  const value = clean(candidate?.brand || candidate?.manufacturer);
+  const key = norm(value).replace(/\s+/g,'');
+  if (!value || ['bezmarki','nieznanyproducent','unknown','unbranded','other'].includes(key)) return '';
+  return value;
+}
+
+function exactTargetIdentity(candidate,input = {}) {
+  const target = modelFingerprint(input.model || input.mpn || input.query);
+  if (!target) return false;
+
+  const direct = [candidate?.model,candidate?.mpn]
+    .map(modelFingerprint)
+    .filter(Boolean);
+
+  if (direct.includes(target)) return true;
+
+  const title = modelFingerprint(candidate?.name);
+  return Boolean(title && title.includes(target));
+}
+
+function inferredTargetBrand(candidate,input = {}) {
+  const target = clean(input.model || input.mpn || input.query);
+  if (!target) return '';
+  const phrases = extractContextualModelPhrases(candidate?.name || '',target);
+  const first = clean(phrases?.[0]);
+  if (!first) return '';
+  return clean(first.split(/\s+/)[0]);
+}
+
+function hasBrandCollision(ranked,input = {}) {
+  const brands = new Set();
+  for (const candidate of ranked || []) {
+    if (candidate?.relation?.type === 'accessory') continue;
+    if (!exactTargetIdentity(candidate,input)) continue;
+
+    const brand = explicitBrand(candidate) || inferredTargetBrand(candidate,input);
+    if (!brand) continue;
+
+    const key = norm(brand);
+    if (!key || ['router','monitor','telewizor','drukarka','smartfon','telefon'].includes(key)) continue;
+
+    brands.add(key);
+    if (brands.size >= 2) return true;
+  }
+  return false;
+}
+
 export function analyzeResearchCandidates(products, input = {}, selectedId = '') {
   const ranked = (Array.isArray(products) ? products : [])
     .filter(Boolean)
     .map(product => {
-      const analysis = scoreCandidate(product,input);
-      return {...product,score:analysis.score,evidence:analysis.evidence,warnings:analysis.warnings};
+      const analysis = rankResearchCandidate(product,input);
+      return {
+        ...product,
+        score:analysis.score,
+        evidence:analysis.evidence,
+        warnings:analysis.warnings,
+        relation:analysis.relation
+      };
     })
     .sort((a,b) => b.score - a.score || clean(a.name).localeCompare(clean(b.name)));
 
@@ -304,13 +364,26 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
     identitySignature(selected) !== identitySignature(runnerUp)
   );
 
+  const brandCollision = !requested && hasBrandCollision(ranked,input);
+  const selectedAccessory = selected?.relation?.type === 'accessory';
+
   return {
     selected,
     ranked,
     confidence:selected.score,
-    requiresTesterChoice:closeCompetition,
+    requiresTesterChoice:Boolean(
+      closeCompetition ||
+      brandCollision ||
+      selectedAccessory ||
+      selected.score < 55
+    ),
     selectedBy:requested ? 'tester' : 'ranking',
-    warnings:selected.warnings || []
+    warnings:selected.warnings || [],
+    ambiguity:{
+      closeCompetition,
+      brandCollision,
+      selectedAccessory
+    }
   };
 }
 
@@ -379,6 +452,6 @@ export function buildResearchResult(products, input = {}, selectedId = '') {
   return {
     ...analysis,
     description:buildDescription(analysis.selected,input,analysis),
-    confidenceMethod:'product-research-v2'
+    confidenceMethod:'product-research-v3'
   };
 }

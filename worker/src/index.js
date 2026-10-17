@@ -686,6 +686,7 @@ async function handle(request, env) {
         source:"allegro",
         provider:"allegro-catalog",
         queriesUsed:search.queriesUsed || [],
+        searchAttempts:search.searchAttempts || [],
         best:result.selected,
         candidates:(result.ranked || []).slice(0,5),
         confidence:result.confidence,
