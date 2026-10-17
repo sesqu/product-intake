@@ -546,7 +546,7 @@ function stripLiteralTarget(value,target) {
   let result = clean(value);
   const literal = clean(target);
   if (!result || !literal) return result;
-  const escaped = literal.replace(/[.*+?^$()|[\]\\]/g,'\\export function buildModelQueryVariants(input = {}, candidates = []) {');
+  const escaped = literal.replace(/[.*+?^$()|[\]\\]/g,'\\$&');
   result = result.replace(new RegExp(escaped,'ig'),' ');
   return result
     .replace(/[()[\]]/g,' ')
