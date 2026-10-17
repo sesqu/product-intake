@@ -1,6 +1,38 @@
+import { buildModelQueryVariants } from './research-ranking-v3.js';
 const AAPI = 'https://api.allegro.pl';
 const clean = value => String(value ?? '').trim();
 const norm = value => clean(value).toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+
+
+function first(values) {
+  return Array.isArray(values) && values.length ? values[0] : '';
+}
+
+function hintValue(product,names) {
+  const wanted = names.map(norm);
+  for (const parameter of product?.parameters || []) {
+    const name = norm(parameter?.name || parameter?.id);
+    if (!wanted.some(item => name === item || name.includes(item))) continue;
+    const value = clean(first(parameter?.valuesLabels) || first(parameter?.values));
+    if (value) return value;
+  }
+  return '';
+}
+
+function candidateHint(product) {
+  return {
+    name:clean(product?.name),
+    model:hintValue(product,['model']),
+    mpn:hintValue(product,[
+      'kod producenta',
+      'numer katalogowy',
+      'numer katalogowy części',
+      'manufacturer code',
+      'manufacturer part number',
+      'mpn'
+    ])
+  };
+}
 
 function unique(values) {
   const seen = new Set();
@@ -25,7 +57,7 @@ export function buildAllegroResearchQueries(input = {}) {
     [brand,model].filter(Boolean).join(' '),
     model,
     details ? [brand,details].filter(Boolean).join(' ') : ''
-  ]).slice(0,3);
+  ]).slice(0,2);
 }
 
 async function requestProducts(token, userAgent, phrase) {
@@ -59,19 +91,36 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   const queriesUsed = [];
   const products = [];
   const seen = new Set();
+  const seenQueries = new Set();
 
-  for (const phrase of queries) {
+  async function runPhrase(phrase) {
+    const key = norm(phrase);
+    if (!key || seenQueries.has(key) || queriesUsed.length >= 3) return;
+    seenQueries.add(key);
     queriesUsed.push(phrase);
-    const found = await requestProducts(token,userAgent,phrase);
 
+    const found = await requestProducts(token,userAgent,phrase);
     for (const product of found) {
       const id = clean(product?.id);
-      const key = id || norm(product?.name);
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
+      const productKey = id || norm(product?.name);
+      if (!productKey || seen.has(productKey)) continue;
+      seen.add(productKey);
       products.push(product);
     }
   }
 
-  return {products:products.slice(0,30),queriesUsed};
+  for (const phrase of queries) {
+    await runPhrase(phrase);
+  }
+
+  const recovered = buildModelQueryVariants(
+    input,
+    products.map(candidateHint)
+  );
+
+  for (const phrase of recovered) {
+    await runPhrase(phrase);
+  }
+
+  return {products:products.slice(0,40),queriesUsed};
 }
