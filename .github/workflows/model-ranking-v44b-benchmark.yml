@@ -1,0 +1,25 @@
+name: v44b 50-model benchmark
+
+on:
+  push:
+    branches:
+      - feature/model-ranking-v44b-mpn-benchmark
+    paths:
+      - 'tests/model-ranking-v44b-benchmark.mjs'
+      - 'worker/src/research-ranking-v3.js'
+      - 'worker/src/product-research.js'
+      - 'worker/src/research-allegro.js'
+      - '.github/workflows/model-ranking-v44b-benchmark.yml'
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compare v43 with v44b on 50 live product-model queries
+        run: node tests/model-ranking-v44b-benchmark.mjs

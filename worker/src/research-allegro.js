@@ -22,6 +22,8 @@ function hintValue(product,names) {
 function candidateHint(product) {
   return {
     name:clean(product?.name),
+    brand:hintValue(product,['marka','brand','producent','manufacturer']),
+    manufacturer:hintValue(product,['producent','manufacturer','marka','brand']),
     model:hintValue(product,['model']),
     mpn:hintValue(product,[
       'kod producenta',
@@ -30,7 +32,8 @@ function candidateHint(product) {
       'manufacturer code',
       'manufacturer part number',
       'mpn'
-    ])
+    ]),
+    category:clean(product?.category?.name || product?.category?.id)
   };
 }
 
@@ -42,6 +45,21 @@ function unique(values) {
     seen.add(key);
     return true;
   });
+}
+
+export function shouldTryMpnMode(input = {}) {
+  const explicit = clean(input.mpn);
+  if (explicit) return true;
+
+  const value = clean(input.model || input.query);
+  if (!value || value.length < 4 || value.length > 32) return false;
+
+  const compact = value.replace(/[^A-Za-z0-9]/g,'');
+  if (compact.length < 4 || compact.length > 28) return false;
+  if (!/[A-Za-z]/.test(compact) || !/\d/.test(compact)) return false;
+
+  const tokens = value.split(/\s+/).filter(Boolean);
+  return tokens.length <= 3;
 }
 
 export function buildAllegroResearchQueries(input = {}) {
@@ -60,9 +78,10 @@ export function buildAllegroResearchQueries(input = {}) {
   ]).slice(0,2);
 }
 
-async function requestProducts(token, userAgent, phrase) {
+async function requestProducts(token, userAgent, phrase, mode = '') {
   const url = new URL(AAPI + '/sale/products');
   url.searchParams.set('phrase', phrase);
+  if (mode) url.searchParams.set('mode', mode);
   url.searchParams.set('language', 'pl-PL');
 
   const response = await fetch(url, {
@@ -89,17 +108,22 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   if (!queries.length) return {products:[],queriesUsed:[]};
 
   const queriesUsed = [];
+  const searchAttempts = [];
   const products = [];
   const seen = new Set();
-  const seenQueries = new Set();
+  const seenRequests = new Set();
+  const maxAttempts = 3;
 
-  async function runPhrase(phrase) {
-    const key = norm(phrase);
-    if (!key || seenQueries.has(key) || queriesUsed.length >= 3) return;
-    seenQueries.add(key);
-    queriesUsed.push(phrase);
+  async function runPhrase(phrase, mode = '', reason = 'phrase') {
+    const phraseKey = norm(phrase);
+    const requestKey = [mode || 'PHRASE', phraseKey].join('|');
+    if (!phraseKey || seenRequests.has(requestKey) || searchAttempts.length >= maxAttempts) return;
 
-    const found = await requestProducts(token,userAgent,phrase);
+    seenRequests.add(requestKey);
+    queriesUsed.push(mode ? phrase + ' [' + mode + ']' : phrase);
+    searchAttempts.push({phrase,mode:mode || '',reason});
+
+    const found = await requestProducts(token,userAgent,phrase,mode);
     for (const product of found) {
       const id = clean(product?.id);
       const productKey = id || norm(product?.name);
@@ -109,10 +133,24 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     }
   }
 
-  for (const phrase of queries) {
-    await runPhrase(phrase);
+  // First attempt stays backward compatible: ordinary catalog phrase search.
+  if (queries[0]) {
+    await runPhrase(queries[0],'','primary');
   }
 
+  // Allegro officially supports mode=MPN. Use it only for model/code-like input.
+  const mpnPhrase = clean(input?.mpn || input?.model || input?.query);
+  if (mpnPhrase && shouldTryMpnMode(input)) {
+    await runPhrase(mpnPhrase,'MPN','mpn');
+  }
+
+  // Structured brand+model input can still use the normal second phrase.
+  if (queries[1] && searchAttempts.length < maxAttempts) {
+    await runPhrase(queries[1],'','fallback');
+  }
+
+  // Generic finder input may recover the canonical spelling / brand context
+  // from the first candidates, but never exceeds the 3-request budget.
   const recovered = (
     input?.query &&
     !input?.brand &&
@@ -124,8 +162,13 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     : [];
 
   for (const phrase of recovered) {
-    await runPhrase(phrase);
+    if (searchAttempts.length >= maxAttempts) break;
+    await runPhrase(phrase,'','recovered');
   }
 
-  return {products:products.slice(0,40),queriesUsed};
+  return {
+    products:products.slice(0,40),
+    queriesUsed,
+    searchAttempts
+  };
 }

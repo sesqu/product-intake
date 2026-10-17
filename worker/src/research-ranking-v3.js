@@ -65,6 +65,10 @@ const ACCESSORY_NOUNS = [
   'zasilacz','plyta glowna','plytka','plyta','zlacz','buzzer','klapka','wyswietl',
   'mocowanie','front','oslona','toner','beben','chip','slizgacze',
   'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
+  'pilot','mop','szmatk','szczotk','worek','worki','akcesori','wklad',
+  'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
+  'kosz','blok zaparzajacy','glosnik rozmow','nausznik','nakladk','folia',
+  'mata ochronna','lacznik','noga','stojak','glowica','korpus',
   'kabel','przewod','adapter','ladowarka','szklo','case','cover',
   'replacement','zamienny','zamienna','zamienne','kompatybilny','kompatybilna'
 ];
@@ -79,6 +83,17 @@ const ACCESSORY_CATEGORY_WORDS = [
   'uchwyty','zasilacze','tonery','bebny','kable','ladowarki','wyswietlacze'
 ];
 
+const HARD_ACCESSORY_NOUNS = [
+  'mocowanie','front','oslona','toner','beben','chip','zlacz','buzzer',
+  'klapka','plyta glowna','plytka','plyta','zasilacz','wyswietl',
+  'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
+  'pilot','mop','szmatk','szczotk','worek','worki','akcesori','wklad',
+  'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
+  'kosz','blok zaparzajacy','glosnik rozmow','nausznik','nakladk','folia',
+  'mata ochronna','lacznik','noga','stojak','glowica','korpus'
+];
+
+
 export function classifyCandidateRelation(candidate,input = {}) {
   const name = ' ' + normalizeText(candidate?.name) + ' ';
   const category = normalizeText(candidate?.category);
@@ -87,6 +102,7 @@ export function classifyCandidateRelation(candidate,input = {}) {
   const nameFp = modelFingerprint(candidate?.name);
 
   const noun = ACCESSORY_NOUNS.find(word => name.includes(word)) || '';
+  const hardNoun = HARD_ACCESSORY_NOUNS.find(word => name.includes(word)) || '';
   const relationWord = RELATION_WORDS.find(word => name.includes(word)) || '';
   const accessoryCategory = ACCESSORY_CATEGORY_WORDS.find(word => category.includes(word)) || '';
   const targetMentioned = Boolean(targetFp && nameFp.includes(targetFp));
@@ -125,19 +141,11 @@ export function classifyCandidateRelation(candidate,input = {}) {
     };
   }
 
-  if (
-    targetMentioned &&
-    noun &&
-    [
-      'mocowanie','front','oslona','toner','beben','chip','zlacz','buzzer',
-      'klapka','plyta glowna','plytka','plyta','zasilacz','wyswietl',
-      'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka'
-    ].includes(noun)
-  ) {
+  if (targetMentioned && hardNoun) {
     return {
       type:'accessory',
       confidence:'medium',
-      reason:noun
+      reason:hardNoun
     };
   }
 
@@ -463,50 +471,60 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
   const original = clean(input.model || input.mpn || input.query);
   if (!original) return [];
 
-  const variants = [original];
   const fingerprint = modelFingerprint(original);
-  const contextPrefixes = [];
+  const suggestions = new Map();
 
-  for (const candidate of candidates || []) {
-    for (const phrase of extractContextualModelPhrases(candidate?.name,original)) {
-      variants.push(phrase);
-      const prefix = clean(phrase.split(/\s+/)[0]);
-      if (prefix && !contextPrefixes.some(item => normalizeText(item) === normalizeText(prefix))) {
-        contextPrefixes.push(prefix);
-      }
+  function add(value,score,reason) {
+    const phrase = clean(value);
+    const key = normalizeText(phrase);
+    if (!key || key === normalizeText(original)) return;
+    const current = suggestions.get(key);
+    if (!current || score > current.score) {
+      suggestions.set(key,{phrase,score,reason});
     }
   }
 
   for (const candidate of candidates || []) {
-    for (const value of [candidate?.model,candidate?.mpn,candidate?.name]) {
-      for (const phrase of extractEquivalentModelPhrases(value,original)) {
-        variants.push(phrase);
-      }
-    }
-  }
-
-  for (const candidate of candidates || []) {
-    const nameFp = modelFingerprint(candidate?.name);
+    const name = clean(candidate?.name);
+    const nameFp = modelFingerprint(name);
     if (!nameFp.includes(fingerprint)) continue;
 
-    for (const alias of [candidate?.model,candidate?.mpn]) {
-      const aliasValue = clean(alias);
-      const aliasFp = modelFingerprint(aliasValue);
-      const tokenCount = normalizeText(aliasValue).split(' ').filter(Boolean).length;
-      if (
-        !aliasValue ||
-        aliasValue.length > 40 ||
-        tokenCount > 4 ||
-        !/[a-z]/.test(aliasFp) ||
-        !/\d/.test(aliasFp) ||
-        aliasFp === fingerprint ||
-        aliasFp.includes(fingerprint) ||
-        fingerprint.includes(aliasFp)
-      ) continue;
-      for (const prefix of contextPrefixes.slice(0,1)) {
-        variants.push(prefix + ' ' + aliasValue);
+    const relation = classifyCandidateRelation(candidate,input);
+    const brand = clean(candidate?.brand || candidate?.manufacturer);
+    const explicit = brand && !genericBrand(brand);
+
+    const equivalent = [];
+    for (const value of [candidate?.model,candidate?.mpn,candidate?.name]) {
+      for (const phrase of extractEquivalentModelPhrases(value,original)) {
+        equivalent.push(phrase);
+        add(phrase,24,'equivalent');
       }
-      variants.push(aliasValue);
+    }
+    const canonical = equivalent[0] || original;
+
+    // A catalog brand attached to a product candidate is stronger than a
+    // random word next to the model. For accessory candidates we do not use
+    // their own brand as the target brand.
+    if (explicit && relation.type !== 'accessory') {
+      add(brand + ' ' + canonical,46,'catalog-brand');
+    }
+
+    for (const phrase of extractContextualModelPhrases(name,original)) {
+      const prefix = clean(phrase.split(/\s+/)[0]);
+      const prefixIsCatalogBrand =
+        explicit &&
+        modelFingerprint(prefix) === modelFingerprint(brand);
+
+      let score = 28;
+      if (relation.type === 'accessory') {
+        score = prefixIsCatalogBrand ? 12 : 42;
+      } else if (prefixIsCatalogBrand) {
+        score = 48;
+      } else if (explicit) {
+        score = 32;
+      }
+
+      add(phrase,score,'context');
     }
   }
 
@@ -517,13 +535,12 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
     .replace(/\s+/g,' ')
     .trim();
 
-  if (spaced && modelFingerprint(spaced) === fingerprint) variants.push(spaced);
+  if (spaced && modelFingerprint(spaced) === fingerprint) {
+    add(spaced,8,'spacing');
+  }
 
-  const seen = new Set();
-  return variants.filter(value => {
-    const key = normalizeText(value);
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).slice(0,3);
+  const ranked = [...suggestions.values()]
+    .sort((a,b) => b.score - a.score || a.phrase.localeCompare(b.phrase,'pl'));
+
+  return [original,...ranked.map(item => item.phrase)].slice(0,3);
 }

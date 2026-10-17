@@ -144,4 +144,128 @@ assert(
   ).includes('Sony WH-1000XM5')
 );
 
+
+const servicePart = {
+  id:'dewalt-motor',
+  name:'DEWALT NA067843 SILNIK Z WYŁĄCZNIKIEM DO DCD791 DCD796',
+  brand:'DeWalt',
+  manufacturer:'DeWalt',
+  model:'NA067843',
+  mpn:'NA067843',
+  category:'Części zamienne do elektronarzędzi',
+  parameters:[],
+  trust:{brand:true,manufacturer:true,model:true,mpn:true}
+};
+assert.equal(
+  classifyCandidateRelation(servicePart,{query:'DCD791'}).type,
+  'accessory',
+  'Silnik / wyłącznik do konkretnego modelu nie może konkurować jak produkt główny'
+);
+
+const robotMop = {
+  id:'roborock-mop',
+  name:'Oryginalny Mop Szmatka główna do Roborock S8 MaxV Ultra 2 szt.',
+  brand:'Roborock',
+  manufacturer:'Roborock',
+  model:'Mop',
+  mpn:'MOP-S8',
+  category:'Akcesoria do robotów sprzątających',
+  parameters:[],
+  trust:{brand:true,manufacturer:true,model:false,mpn:false}
+};
+assert.equal(
+  classifyCandidateRelation(robotMop,{query:'S8 MaxV Ultra'}).type,
+  'accessory',
+  'Mop do robota powinien być częścią / akcesorium'
+);
+
+
+const robotAccessoryKit = {
+  id:'roborock-kit',
+  name:'Zestaw akcesoriów Roborock S8 MaxV Ultra, 2x szczotka, 2x filtr',
+  brand:'Roborock',
+  manufacturer:'Roborock',
+  model:'S8 MaxV Ultra',
+  mpn:'S8 MaxV Ultra',
+  category:'Akcesoria',
+  parameters:[],
+  trust:{brand:true,manufacturer:true,model:false,mpn:false}
+};
+assert.equal(
+  classifyCandidateRelation(robotAccessoryKit,{query:'S8 MaxV Ultra'}).type,
+  'accessory',
+  'Twardy sygnał akcesoriów ma wygrać nawet gdy katalog błędnie wpisuje model urządzenia'
+);
+
+const printerBundle = {
+  id:'brother-main',
+  name:'MFP laserowe Brother DCP-L2622DW Duplex WiFi Kabel USB',
+  brand:'Brother',
+  manufacturer:'Brother',
+  model:'DCP-L2622DW',
+  mpn:'DCP-L2622DW',
+  category:'Urządzenia wielofunkcyjne',
+  parameters:[],
+  trust:{brand:true,manufacturer:true,model:true,mpn:true}
+};
+assert.equal(
+  classifyCandidateRelation(printerBundle,{query:'DCP-L2622DW'}).type,
+  'product',
+  'Produkt główny z kablem w zestawie nie może zostać uznany za samo akcesorium'
+);
+
+const makita = {
+  id:'makita-dhp484',
+  name:'Wiertarko-wkrętarka Makita DHP484 18V',
+  brand:'Makita',
+  manufacturer:'Makita',
+  model:'DHP484',
+  mpn:'DHP484',
+  category:'Wiertarko-wkrętarki',
+  parameters:[],
+  trust:{brand:true,manufacturer:true,model:true,mpn:true}
+};
+const wrongBrandSameModel = {
+  ...makita,
+  id:'bosch-dhp484',
+  name:'Bosch DHP484 cordless drill driver',
+  brand:'Bosch',
+  manufacturer:'Bosch',
+  trust:{brand:true,manufacturer:true,model:true,mpn:true}
+};
+const brandCollision = analyzeResearchCandidates(
+  [wrongBrandSameModel,makita],
+  {query:'DHP484'}
+);
+assert.equal(
+  brandCollision.requiresTesterChoice,
+  true,
+  'Ten sam dokładny model występujący pod różnymi markami musi wymagać wyboru testera'
+);
+assert.equal(brandCollision.ambiguity.brandCollision,true);
+
+const titleOnlyWrongBrand = {
+  ...wrongBrandSameModel,
+  id:'bosch-title-only',
+  brand:'bez marki',
+  manufacturer:'bez marki'
+};
+const makitaBundle = {
+  ...makita,
+  id:'makita-bundle',
+  name:'MAKITA DLX2180TJ DTD153 DHP484 MAKPAC 2x5.0Ah',
+  model:'DLX2180TJ',
+  mpn:'DLX2180TJ'
+};
+const inferredBrandCollision = analyzeResearchCandidates(
+  [titleOnlyWrongBrand,makitaBundle],
+  {query:'DHP484'}
+);
+assert.equal(
+  inferredBrandCollision.requiresTesterChoice,
+  true,
+  'Marka z tytułu ma zabezpieczyć model, gdy katalog ma pole marka=bez marki'
+);
+assert.equal(inferredBrandCollision.ambiguity.brandCollision,true);
+
 console.log('PASS Research ranking v3: model fingerprint, primary-product ranking, accessory penalties, brand handling and query recovery.');
