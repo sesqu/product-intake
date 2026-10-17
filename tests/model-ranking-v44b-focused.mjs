@@ -60,6 +60,8 @@ for(const test of cases){
     top:(result.ranked||[]).slice(0,5).map(x=>({
       name:x.name||'',
       brand:x.brand||x.manufacturer||'',
+      model:x.model||'',
+      mpn:x.mpn||'',
       score:x.score,
       relation:x.relation?.type||''
     }))
