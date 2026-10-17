@@ -65,6 +65,9 @@ const ACCESSORY_NOUNS = [
   'zasilacz','plyta glowna','plytka','plyta','zlacz','buzzer','klapka','wyswietl',
   'mocowanie','front','oslona','toner','beben','chip','slizgacze',
   'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
+  'pilot','mop','szczotk','worek','worki','silnik','wylacznik','przelacznik',
+  'pierscien','kolo zebate','grzalka','kosz','blok zaparzajacy',
+  'glosnik rozmow','nausznik','nakladk','folia','mata ochronna',
   'kabel','przewod','adapter','ladowarka','szklo','case','cover',
   'replacement','zamienny','zamienna','zamienne','kompatybilny','kompatybilna'
 ];
@@ -131,7 +134,10 @@ export function classifyCandidateRelation(candidate,input = {}) {
     [
       'mocowanie','front','oslona','toner','beben','chip','zlacz','buzzer',
       'klapka','plyta glowna','plytka','plyta','zasilacz','wyswietl',
-      'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka'
+      'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
+      'pilot','mop','szczotk','worek','worki','silnik','wylacznik','przelacznik',
+      'pierscien','kolo zebate','grzalka','kosz','blok zaparzajacy',
+      'glosnik rozmow','nausznik','nakladk','folia','mata ochronna'
     ].includes(noun)
   ) {
     return {
