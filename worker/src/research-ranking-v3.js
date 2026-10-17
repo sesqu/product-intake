@@ -462,7 +462,7 @@ const CONTEXT_STOPWORDS = new Set([
   'kompatybilna','bateria','akumulator','etui','futeral','pokrowiec','filtr',
   'uchwyt','toner','beben','chip','zlacze','mocowanie','oslona','front',
   'professional','series','lattego','lightspeed','pro','ultra','max','plus',
-  'mini','slim','ecotank','oryginalny','oryginalna','zestaw','szt'
+  'mini','slim','ecotank','galaxy','oryginalny','oryginalna','zestaw','szt'
 ]);
 
 export function extractContextualModelPhrases(value,target) {
