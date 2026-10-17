@@ -283,15 +283,21 @@ function explicitBrand(candidate) {
 function exactTargetIdentity(candidate,input = {}) {
   const target = modelFingerprint(input.model || input.mpn || input.query);
   if (!target) return false;
-  return [candidate?.model,candidate?.mpn]
+
+  const direct = [candidate?.model,candidate?.mpn]
     .map(modelFingerprint)
-    .filter(Boolean)
-    .includes(target);
+    .filter(Boolean);
+
+  if (direct.includes(target)) return true;
+
+  const title = modelFingerprint(candidate?.name);
+  return Boolean(title && title.includes(target));
 }
 
 function hasBrandCollision(ranked,input = {}) {
   const brands = new Set();
   for (const candidate of ranked || []) {
+    if (candidate?.relation?.type === 'accessory') continue;
     if (!exactTargetIdentity(candidate,input)) continue;
     const brand = explicitBrand(candidate);
     if (!brand) continue;
