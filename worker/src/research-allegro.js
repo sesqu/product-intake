@@ -113,10 +113,15 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     await runPhrase(phrase);
   }
 
-  const recovered = buildModelQueryVariants(
-    input,
-    products.map(candidateHint)
-  );
+  const recovered = (
+    input?.query &&
+    !input?.brand &&
+    !input?.manufacturer &&
+    !input?.model &&
+    !input?.mpn
+  )
+    ? buildModelQueryVariants(input,products.map(candidateHint))
+    : [];
 
   for (const phrase of recovered) {
     await runPhrase(phrase);
