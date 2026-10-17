@@ -693,6 +693,7 @@ async function handle(request, env) {
         confidenceMethod:result.confidenceMethod,
         requiresTesterChoice:result.requiresTesterChoice,
         selectedBy:result.selectedBy,
+        ambiguity:result.ambiguity || null,
         warnings:result.warnings || [],
         description:result.description || null,
         searchMode:input.query ? "query" : (input.mpn ? "mpn" : "model")
