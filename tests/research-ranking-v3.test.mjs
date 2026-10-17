@@ -358,4 +358,17 @@ assert.equal(
   'Etui z rozdzielonymi tokenami modelu powinno pozostać akcesorium'
 );
 
+
+const aliasAccessoryRelation = classifyCandidateRelation({
+  name:'Etui z klapką do Samsung Galaxy S24 czarne',
+  brand:'bez marki',
+  model:'Galaxy S24',
+  category:'Etui'
+},{query:'SM-S921B'});
+assert.equal(
+  aliasAccessoryRelation.type,
+  'accessory',
+  'Oczywiste akcesorium z wyszukania po aliasie nie może stać się produktem głównym'
+);
+
 console.log('PASS Research ranking v3: model fingerprint, primary-product ranking, accessory penalties, brand handling and query recovery.');
