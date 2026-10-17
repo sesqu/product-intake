@@ -74,8 +74,8 @@ assert.equal(ambiguous.requiresTesterChoice,true);
 
 const modelOnly = buildResearchResult([mapped,second],{model:'GSR 18V-55'});
 assert.equal(modelOnly.selected.id,'p1');
-assert(modelOnly.confidence >= 30);
-assert(modelOnly.description.draft, 'Sam model powinien pozostać ostrożnym wynikiem roboczym');
+assert(modelOnly.confidence >= 80);
+assert.equal(modelOnly.description.draft,false,'Dokładny, zaufany model może być mocnym wynikiem bez wymuszania draftu');
 
 const manufacturerOnlyRaw = {
   ...raw,
@@ -119,7 +119,7 @@ assert.equal(aggregated.products.length,3,'Research powinien łączyć kandydat�
 globalThis.fetch = originalFetch;
 
 const result = buildResearchResult([mapped],{brand:'Bosch',model:'GSR 18V-55'});
-assert.equal(result.confidenceMethod,'product-research-v2');
+assert.equal(result.confidenceMethod,'product-research-v3');
 assert(result.description.title.includes('Bosch'));
 
-console.log('PASS product research v2: generic query, aggregation, model-only, manufacturer and trusted scoring.');
+console.log('PASS product research v3 integration: generic query, aggregation, model-only, manufacturer and trusted scoring.');
