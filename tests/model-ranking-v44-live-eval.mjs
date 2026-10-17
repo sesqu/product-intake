@@ -60,9 +60,9 @@ for(const test of cases){
   const baselineName=baseline.best?.name||'';
   const v44Name=v44.selected?.name||'';
   const baselineRelation=(baseline.best?.relation?.type)||'unknown';
-  const baselineNegative=/bateria|akumulator|etui|futerał|pokrowiec|filtr|uchwyt|toner|bęben|chip|złącze|złącza|płytka|płyta główna|mocowanie|osłona|wyświetlacz|ekran|klapka|część|obudowa|czujnik/i.test(baselineName);
+  const baselineNegative=/\bbateria\b|\bakumulator\b|\betui\b|futerał|pokrowiec|\bfiltr\b|uchwyt|toner|bęben|chip|złącze|złącza|płytka|płyta główna|mocowanie|osłona|wyświetlacz|ekran|klapka|część|obudowa|czujnik/i.test(baselineName);
   const v44Relation=v44.selected?.relation?.type||'unknown';
-  const v44Negative=/bateria|akumulator|etui|futerał|pokrowiec|filtr|uchwyt|toner|bęben|chip|złącze|złącza|płytka|płyta główna|mocowanie|osłona|wyświetlacz|ekran|klapka|część|obudowa|czujnik/i.test(v44Name);
+  const v44Negative=/\bbateria\b|\bakumulator\b|\betui\b|futerał|pokrowiec|\bfiltr\b|uchwyt|toner|bęben|chip|złącze|złącza|płytka|płyta główna|mocowanie|osłona|wyświetlacz|ekran|klapka|część|obudowa|czujnik/i.test(v44Name);
 
   const row={
     label:test.label,
