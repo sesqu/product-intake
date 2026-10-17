@@ -82,7 +82,8 @@ async function lookup(body){
   const response=await fetch(base+'/api/research',{
     method:'POST',
     headers:{'content-type':'application/json'},
-    body:JSON.stringify(body)
+    body:JSON.stringify(body),
+    signal:AbortSignal.timeout(15000)
   });
   const text=await response.text();
   if(!response.ok) return {error:'HTTP '+response.status+' '+text.slice(0,160),candidates:[]};
