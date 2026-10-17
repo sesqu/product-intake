@@ -62,14 +62,15 @@ function titleContainsBrand(candidate) {
 
 const ACCESSORY_NOUNS = [
   'bateria','akumulator','etui','futeral','pokrowiec','filtr','uchwyt',
-  'zasilacz','plyta glowna','zlacze','buzzer','klapka','wyswietlacz',
+  'zasilacz','plyta glowna','plytka','plyta','zlacz','buzzer','klapka','wyswietl',
   'mocowanie','front','oslona','toner','beben','chip','slizgacze',
+  'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
   'kabel','przewod','adapter','ladowarka','szklo','case','cover',
   'replacement','zamienny','zamienna','zamienne','kompatybilny','kompatybilna'
 ];
 
 const RELATION_WORDS = [
-  ' do ',' dla ',' kompatybilny z ',' kompatybilna z ',' kompatybilne z ',
+  ' do ',' dla ',' na ',' kompatybilny z ',' kompatybilna z ',' kompatybilne z ',
   ' pasuje do ',' przeznaczony do ',' przeznaczona do ',' for '
 ];
 
@@ -110,8 +111,9 @@ export function classifyCandidateRelation(candidate,input = {}) {
     targetMentioned &&
     noun &&
     [
-      'mocowanie','front','oslona','toner','beben','chip','zlacze','buzzer',
-      'klapka','plyta glowna','zasilacz','wyswietlacz'
+      'mocowanie','front','oslona','toner','beben','chip','zlacz','buzzer',
+      'klapka','plyta glowna','plytka','plyta','zasilacz','wyswietl',
+      'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka'
     ].includes(noun)
   ) {
     return {
