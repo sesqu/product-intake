@@ -179,6 +179,41 @@ assert.equal(
   'Mop do robota powinien być częścią / akcesorium'
 );
 
+
+const robotAccessoryKit = {
+  id:'roborock-kit',
+  name:'Zestaw akcesoriów Roborock S8 MaxV Ultra, 2x szczotka, 2x filtr',
+  brand:'Roborock',
+  manufacturer:'Roborock',
+  model:'S8 MaxV Ultra',
+  mpn:'S8 MaxV Ultra',
+  category:'Akcesoria',
+  parameters:[],
+  trust:{brand:true,manufacturer:true,model:false,mpn:false}
+};
+assert.equal(
+  classifyCandidateRelation(robotAccessoryKit,{query:'S8 MaxV Ultra'}).type,
+  'accessory',
+  'Twardy sygnał akcesoriów ma wygrać nawet gdy katalog błędnie wpisuje model urządzenia'
+);
+
+const printerBundle = {
+  id:'brother-main',
+  name:'MFP laserowe Brother DCP-L2622DW Duplex WiFi Kabel USB',
+  brand:'Brother',
+  manufacturer:'Brother',
+  model:'DCP-L2622DW',
+  mpn:'DCP-L2622DW',
+  category:'Urządzenia wielofunkcyjne',
+  parameters:[],
+  trust:{brand:true,manufacturer:true,model:true,mpn:true}
+};
+assert.equal(
+  classifyCandidateRelation(printerBundle,{query:'DCP-L2622DW'}).type,
+  'product',
+  'Produkt główny z kablem w zestawie nie może zostać uznany za samo akcesorium'
+);
+
 const makita = {
   id:'makita-dhp484',
   name:'Wiertarko-wkrętarka Makita DHP484 18V',
