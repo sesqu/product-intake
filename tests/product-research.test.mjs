@@ -201,6 +201,44 @@ assert.equal(
   'Wynik MPN z produktem głównym powinien wygrać z częścią kompatybilną'
 );
 assert.equal(phoneRanked.requiresTesterChoice,false);
+globalThis.fetch = async url => {
+  const parsed = new URL(String(url));
+  const mode = parsed.searchParams.get('mode');
+  const phrase = parsed.searchParams.get('phrase');
+
+  if (mode === 'MPN') {
+    return {
+      ok:false,
+      status:422,
+      async json(){ return {errors:[{message:'Nie znaleziono poprawnego MPN'}]}; }
+    };
+  }
+
+  const products = phrase === 'Bosch GSR 18V-55'
+    ? [raw]
+    : phrase === 'GSR 18V-55'
+      ? [{...raw,id:'fallback-product'}]
+      : [];
+
+  return {
+    ok:true,
+    status:200,
+    async json(){ return {products}; }
+  };
+};
+
+const mpnRejected = await searchAllegroForResearch({
+  token:'test',
+  userAgent:'test',
+  input:{brand:'Bosch',model:'GSR 18V-55'}
+});
+assert.equal(mpnRejected.searchAttempts[1].mode,'MPN');
+assert(mpnRejected.searchAttempts[1].error,'Odrzucony MPN powinien zostać zapisany diagnostycznie');
+assert(
+  mpnRejected.products.some(item => item.id === 'fallback-product'),
+  'Błąd 422 w mode=MPN nie może blokować zwykłego fallbacku po modelu'
+);
+
 globalThis.fetch = originalFetch;
 
 const result = buildResearchResult([mapped],{brand:'Bosch',model:'GSR 18V-55'});
