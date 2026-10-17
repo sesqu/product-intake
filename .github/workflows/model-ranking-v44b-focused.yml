@@ -1,0 +1,22 @@
+name: v44b focused hard cases
+
+on:
+  push:
+    branches:
+      - feature/model-ranking-v44b-mpn-benchmark
+    paths:
+      - 'tests/model-ranking-v44b-focused.mjs'
+      - '.github/workflows/model-ranking-v44b-focused.yml'
+  workflow_dispatch:
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run focused hard-case evaluation
+        run: node tests/model-ranking-v44b-focused.mjs
