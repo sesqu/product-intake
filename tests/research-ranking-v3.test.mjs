@@ -332,4 +332,30 @@ assert(
   'Powtarzający się alias modelu w akcesoriach powinien tworzyć bezpieczne zapytanie marka + alias'
 );
 
+
+const epsonPrinterRelation = classifyCandidateRelation({
+  name:'Drukarka wielofunkcyjna atramentowa Epson EcoTank L3250',
+  brand:'Epson',
+  model:'EcoTank L3250',
+  category:'Drukarki atramentowe'
+},{query:'L3250'});
+assert.equal(
+  epsonPrinterRelation.type,
+  'product',
+  'Słowo atramentowa nie może być mylone z materiałem eksploatacyjnym atrament'
+);
+
+const splitModelCaseRelation = classifyCandidateRelation({
+  name:'Etui Case do Motorola Edge 50 Ultra - L50',
+  brand:'bez marki',
+  model:'Edge 50 Ultra',
+  mpn:'ETUI MOTOROLA EDGE 50 ULTRA L50',
+  category:'Etui'
+},{query:'L50 Ultra'});
+assert.equal(
+  splitModelCaseRelation.type,
+  'accessory',
+  'Etui z rozdzielonymi tokenami modelu powinno pozostać akcesorium'
+);
+
 console.log('PASS Research ranking v3: model fingerprint, primary-product ranking, accessory penalties, brand handling and query recovery.');
