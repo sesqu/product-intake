@@ -62,7 +62,7 @@ function titleContainsBrand(candidate) {
 
 const STEM_ACCESSORY_TERMS = new Set([
   'wyswietl','obudow','szmatk','szczotk','akcesori','nakladk',
-  'zlacz','wklad'
+  'zlacz','wklad','ekran'
 ]);
 
 function hasNormalizedTerm(text,term) {
@@ -81,7 +81,7 @@ const ACCESSORY_NOUNS = [
   'pilot','mop','szmatk','szczotk','worek','worki','akcesori','wklad',
   'tusz','atrament','kartridz','cartridge','stojan','kontroler','glowka',
   'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
-  'kosz','blok zaparzajacy','glosnik rozmow','nausznik','nakladk','folia',
+  'kosz','blok zaparzajacy','glosnik rozmow','charging board','nausznik','nakladk','folia',
   'mata ochronna','lacznik','noga','stojak','glowica','korpus',
   'kabel','przewod','adapter','ladowarka','szklo','case','cover',
   'replacement','zamienny','zamienna','zamienne','kompatybilny','kompatybilna'
@@ -106,7 +106,7 @@ const HARD_ACCESSORY_NOUNS = [
   'pilot','mop','szmatk','szczotk','worek','worki','akcesori','wklad',
   'tusz','atrament','kartridz','cartridge','stojan','kontroler','glowka',
   'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
-  'kosz','blok zaparzajacy','glosnik rozmow','nausznik','nakladk','folia',
+  'kosz','blok zaparzajacy','glosnik rozmow','charging board','nausznik','nakladk','folia',
   'mata ochronna','lacznik','noga','stojak','glowica','korpus'
 ];
 
@@ -119,6 +119,21 @@ export function classifyCandidateRelation(candidate,input = {}) {
   const nameFp = modelFingerprint(candidate?.name);
 
   const noun = ACCESSORY_NOUNS.find(word => hasNormalizedTerm(name,word)) || '';
+  const phoneSpeaker = Boolean(
+    hasNormalizedTerm(name,'glosnik') &&
+    (
+      normalizeText(name).includes('galaxy') ||
+      /^sm[a-z0-9]/.test(targetFp)
+    )
+  );
+  if (phoneSpeaker && isProbableModelQuery(input)) {
+    return {
+      type:'accessory',
+      confidence:'strong',
+      reason:'glosnik • część urządzenia mobilnego'
+    };
+  }
+
   const hardNoun = HARD_ACCESSORY_NOUNS.find(word => hasNormalizedTerm(name,word)) || '';
   const relationWord = RELATION_WORDS.find(word => name.includes(word)) || '';
   const accessoryCategory = ACCESSORY_CATEGORY_WORDS.find(word => category.includes(word)) || '';
