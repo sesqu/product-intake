@@ -82,6 +82,8 @@ const ACCESSORY_NOUNS = [
   'tusz','atrament','kartridz','cartridge','stojan','kontroler','glowka',
   'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
   'kosz','blok zaparzajacy','glosnik rozmow','charging board','nausznik','nakladk','folia',
+  'atrapa','eksponat','prezenter','dummy',
+  'atrapa','eksponat','prezenter','dummy',
   'mata ochronna','lacznik','noga','stojak','glowica','korpus',
   'kabel','przewod','adapter','ladowarka','szklo','case','cover',
   'replacement','zamienny','zamienna','zamienne','kompatybilny','kompatybilna'
@@ -615,6 +617,85 @@ function aliasGroupKey(alias,brand) {
   return modelTokens.join('|');
 }
 
+
+const PRODUCT_TYPE_RULES = [
+  {
+    type:'smartfon',
+    patterns:[/\bsmartfon\b/,/\btelefon\b/,/galaxy/,/czesci do telefon/,/akcesoria do telefon/]
+  },
+  {
+    type:'robot odkurzajacy',
+    patterns:[/robot sprzataj/,/robot odkurz/,/robotow sprzataj/,/stacja robota/]
+  },
+  {
+    type:'odkurzacz',
+    patterns:[/\bodkurzacz/,/odkurzaczy/]
+  },
+  {
+    type:'wiertarko-wkretarka',
+    patterns:[/wiertarko/,/wkretark/,/drill driver/]
+  },
+  {
+    type:'szlifierka',
+    patterns:[/szlifierk/]
+  },
+  {
+    type:'drukarka',
+    patterns:[/\bdrukark/,/drukarki/,/ecotank/,/laserjet/,/pixma/]
+  },
+  {
+    type:'sluchawki',
+    patterns:[/sluchawk/,/nausznik/]
+  },
+  {
+    type:'glosnik',
+    patterns:[/glosnik mobilny/,/glosnik przenosny/,/bluetooth speaker/]
+  },
+  {
+    type:'telewizor',
+    patterns:[/telewizor/,/\btv\b/]
+  },
+  {
+    type:'monitor',
+    patterns:[/\bmonitor/]
+  },
+  {
+    type:'ekspres',
+    patterns:[/ekspres/]
+  }
+];
+
+export function inferProductTypeHint(candidates = []) {
+  const scores = new Map();
+
+  for (const candidate of candidates || []) {
+    const corpus = normalizeText([
+      candidate?.name,
+      candidate?.category
+    ].filter(Boolean).join(' '));
+    if (!corpus) continue;
+
+    for (const rule of PRODUCT_TYPE_RULES) {
+      let hits = 0;
+      for (const pattern of rule.patterns) {
+        if (pattern.test(corpus)) hits += 1;
+      }
+      if (!hits) continue;
+
+      const relation = classifyCandidateRelation(candidate,{query:candidate?.model || candidate?.mpn || ''});
+      const weight = (relation.type === 'accessory' ? 1 : 2) + hits;
+      scores.set(rule.type,(scores.get(rule.type) || 0) + weight);
+    }
+  }
+
+  const ranked = [...scores.entries()].sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0],'pl'));
+  const [first,second] = ranked;
+  if (!first || first[1] < 3) return '';
+  if (second && first[1] === second[1]) return '';
+
+  return first[0];
+}
+
 export function buildModelQueryVariants(input = {}, candidates = []) {
   const original = clean(input.model || input.mpn || input.query);
   if (!original) return [];
@@ -757,6 +838,23 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
       ? item.alias
       : item.brand + ' ' + item.alias;
     add(aliasText,62 + Math.min(12,(item.count - 2) * 4),'repeated-alias');
+  }
+
+  const productType = inferProductTypeHint(candidates);
+  if (productType) {
+    const preliminary = [...suggestions.values()]
+      .map(item => ({
+        ...item,
+        effectiveScore:item.score + Math.min(16,Math.max(0,Number(item.support || 1) - 1) * 4)
+      }))
+      .sort((a,b) => b.effectiveScore - a.effectiveScore || b.score - a.score);
+
+    for (const item of preliminary.slice(0,2)) {
+      const phraseNorm = normalizeText(item.phrase);
+      const typeNorm = normalizeText(productType);
+      if (!phraseNorm || phraseNorm.includes(typeNorm)) continue;
+      add(item.phrase + ' ' + productType,Math.max(70,item.score + 18),'type-recovery');
+    }
   }
 
   const spaced = original
