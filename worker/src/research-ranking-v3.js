@@ -60,6 +60,19 @@ function titleContainsBrand(candidate) {
   return normalizeText(candidate?.name).includes(normalizeText(brand));
 }
 
+const STEM_ACCESSORY_TERMS = new Set([
+  'wyswietl','obudow','szmatk','szczotk','akcesori','nakladk',
+  'zlacz','wklad'
+]);
+
+function hasNormalizedTerm(text,term) {
+  const value = normalizeText(text);
+  const needle = normalizeText(term);
+  if (!value || !needle) return false;
+  if (STEM_ACCESSORY_TERMS.has(needle)) return value.includes(needle);
+  return (' ' + value + ' ').includes(' ' + needle + ' ');
+}
+
 const ACCESSORY_NOUNS = [
   'bateria','akumulator','etui','futeral','pokrowiec','filtr','uchwyt',
   'zasilacz','plyta glowna','plytka','plyta','zlacz','buzzer','klapka','wyswietl',
@@ -103,8 +116,8 @@ export function classifyCandidateRelation(candidate,input = {}) {
   const targetFp = modelFingerprint(target);
   const nameFp = modelFingerprint(candidate?.name);
 
-  const noun = ACCESSORY_NOUNS.find(word => name.includes(word)) || '';
-  const hardNoun = HARD_ACCESSORY_NOUNS.find(word => name.includes(word)) || '';
+  const noun = ACCESSORY_NOUNS.find(word => hasNormalizedTerm(name,word)) || '';
+  const hardNoun = HARD_ACCESSORY_NOUNS.find(word => hasNormalizedTerm(name,word)) || '';
   const relationWord = RELATION_WORDS.find(word => name.includes(word)) || '';
   const accessoryCategory = ACCESSORY_CATEGORY_WORDS.find(word => category.includes(word)) || '';
   const targetMentioned = Boolean(targetFp && nameFp.includes(targetFp));
