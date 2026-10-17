@@ -168,6 +168,27 @@ export function classifyCandidateRelation(candidate,input = {}) {
     };
   }
 
+  const targetNameOverlap = tokenOverlap(target,candidate?.name || '');
+  if (
+    noun &&
+    targetNameOverlap >= 0.8 &&
+    [
+      'etui','futeral','pokrowiec','case','cover','folia','szklo',
+      'pilot','mop','szmatk','szczotk','worek','worki','akcesori',
+      'tusz','atrament','kartridz','cartridge','stojan','kontroler','glowka',
+      'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
+      'kosz','blok zaparzajacy','glosnik rozmow','nausznik','nakladk',
+      'mocowanie','oslona','obudow','korpus','zlacz','buzzer','klapka',
+      'plyta','plytka','zasilacz','wyswietl','ekran','ramka','adapter'
+    ].includes(noun)
+  ) {
+    return {
+      type:'accessory',
+      confidence:'medium',
+      reason:noun + ' • zgodność nazwy z modelem'
+    };
+  }
+
   if (targetMentioned && accessoryCategory) {
     return {
       type:'accessory',
