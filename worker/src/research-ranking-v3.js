@@ -3,6 +3,7 @@ const clean = value => String(value ?? '').trim();
 export function normalizeText(value) {
   return clean(value)
     .toLowerCase()
+    .replace(/ł/g,'l')
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g,'')
     .replace(/[^a-z0-9]+/g,' ')
@@ -84,7 +85,7 @@ export function classifyCandidateRelation(candidate,input = {}) {
   const targetFp = modelFingerprint(target);
   const nameFp = modelFingerprint(candidate?.name);
 
-  const noun = ACCESSORY_NOUNS.find(word => name.includes(' ' + word + ' ')) || '';
+  const noun = ACCESSORY_NOUNS.find(word => name.includes(word)) || '';
   const relationWord = RELATION_WORDS.find(word => name.includes(word)) || '';
   const accessoryCategory = ACCESSORY_CATEGORY_WORDS.find(word => category.includes(word)) || '';
   const targetMentioned = Boolean(targetFp && nameFp.includes(targetFp));
@@ -105,7 +106,14 @@ export function classifyCandidateRelation(candidate,input = {}) {
     };
   }
 
-  if (targetMentioned && noun && ['mocowanie','front','oslona','toner','beben','chip','zlacze','buzzer','klapka'].includes(noun)) {
+  if (
+    targetMentioned &&
+    noun &&
+    [
+      'mocowanie','front','oslona','toner','beben','chip','zlacze','buzzer',
+      'klapka','plyta glowna','zasilacz','wyswietlacz'
+    ].includes(noun)
+  ) {
     return {
       type:'accessory',
       confidence:'medium',
@@ -388,7 +396,8 @@ export function extractEquivalentModelPhrases(value,target) {
 const CONTEXT_STOPWORDS = new Set([
   'do','dla','na','z','ze','od','for','with','compatible','kompatybilny',
   'kompatybilna','bateria','akumulator','etui','futeral','pokrowiec','filtr',
-  'uchwyt','toner','beben','chip','zlacze','mocowanie','oslona','front'
+  'uchwyt','toner','beben','chip','zlacze','mocowanie','oslona','front',
+  'professional','series','lattego','lightspeed','pro'
 ]);
 
 export function extractContextualModelPhrases(value,target) {
@@ -412,7 +421,8 @@ export function extractContextualModelPhrases(value,target) {
       const previousNorm = normalizeText(previous);
       if (
         previous &&
-        /^[\p{L}][\p{L}\p{N}\-]{1,}$/u.test(previous) &&
+        /^[\p{Lu}][\p{L}\-]{1,}$/u.test(previous) &&
+        !/\d/.test(previous) &&
         !CONTEXT_STOPWORDS.has(previousNorm)
       ) {
         const phrase = previous + ' ' + modelPhrase;
