@@ -236,9 +236,11 @@
           '<button id="productFinderRefresh" type="button" class="btn">Odśwież</button>'+
         '</div>'+
       '</div>'+
-      (result?.requiresTesterChoice
-        ? '<div class="note" style="margin-top:10px">Wyniki są zbyt podobne, żeby wybierać automatycznie. Porównaj model, MPN i wariant.</div>'
-        : '')+
+      (result?.ambiguity?.noConfidentProduct
+        ? '<div class="note" style="margin-top:10px">Nie mam jeszcze pewnego produktu głównego. Najwyższe wyniki wyglądają na część / akcesorium albo mają za słabe potwierdzenie. Dopisz markę, producenta lub typ produktu i porównaj fizyczną sztukę.</div>'
+        : result?.requiresTesterChoice
+          ? '<div class="note" style="margin-top:10px">Wyniki są niejednoznaczne — nie wybieram automatycznie. Porównaj model, markę, MPN i wariant.</div>'
+          : '')+
       '<div style="display:grid;gap:10px;margin-top:12px">'+
         candidates.map((candidate,index) => renderCandidate(candidate,result,index)).join('')+
       '</div>';
