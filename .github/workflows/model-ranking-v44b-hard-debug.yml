@@ -1,0 +1,21 @@
+name: v44b hard-case debug
+
+on:
+  push:
+    branches:
+      - feature/model-ranking-v44b-mpn-benchmark
+    paths:
+      - 'tests/model-ranking-v44b-hard-debug.mjs'
+      - '.github/workflows/model-ranking-v44b-hard-debug.yml'
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/model-ranking-v44b-hard-debug.mjs
