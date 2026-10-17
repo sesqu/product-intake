@@ -22,6 +22,8 @@ function hintValue(product,names) {
 function candidateHint(product) {
   return {
     name:clean(product?.name),
+    brand:hintValue(product,['marka','brand','producent','manufacturer']),
+    manufacturer:hintValue(product,['producent','manufacturer','marka','brand']),
     model:hintValue(product,['model']),
     mpn:hintValue(product,[
       'kod producenta',
@@ -30,7 +32,8 @@ function candidateHint(product) {
       'manufacturer code',
       'manufacturer part number',
       'mpn'
-    ])
+    ]),
+    category:clean(product?.category?.name || product?.category?.id)
   };
 }
 
