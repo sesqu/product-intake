@@ -95,7 +95,9 @@ async function requestProducts(token, userAgent, phrase, mode = '') {
 
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(body?.errors?.[0]?.message || ('Allegro research HTTP ' + response.status));
+    const error = new Error(body?.errors?.[0]?.message || ('Allegro research HTTP ' + response.status));
+    error.status = response.status;
+    throw error;
   }
 
   return Array.isArray(body.products) ? body.products : [];
@@ -123,7 +125,17 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     queriesUsed.push(mode ? phrase + ' [' + mode + ']' : phrase);
     searchAttempts.push({phrase,mode:mode || '',reason});
 
-    const found = await requestProducts(token,userAgent,phrase,mode);
+    let found = [];
+    try {
+      found = await requestProducts(token,userAgent,phrase,mode);
+    } catch (error) {
+      if (mode === 'MPN' && [400,422].includes(Number(error?.status))) {
+        searchAttempts[searchAttempts.length - 1].error = clean(error?.message || 'MPN search rejected');
+        return;
+      }
+      throw error;
+    }
+
     for (const product of found) {
       const id = clean(product?.id);
       const productKey = id || norm(product?.name);
