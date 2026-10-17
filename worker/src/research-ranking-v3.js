@@ -602,7 +602,8 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
     for (const value of [candidate?.model,candidate?.mpn,candidate?.name]) {
       for (const phrase of extractEquivalentModelPhrases(value,original)) {
         equivalent.push(phrase);
-        add(phrase,24,'equivalent');
+        const formattingChanged = normalizeText(phrase) !== normalizeText(original);
+        add(phrase,formattingChanged ? 56 : 24,'equivalent');
       }
     }
     const canonical = equivalent[0] || original;
@@ -612,6 +613,14 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
     // their own brand as the target brand.
     if (explicit && relation.type !== 'accessory') {
       add(brand + ' ' + canonical,46,'catalog-brand');
+    }
+
+    if (
+      relation.type === 'accessory' &&
+      explicit &&
+      normalizeText(name).includes(normalizeText(brand))
+    ) {
+      add(brand + ' ' + canonical,44,'accessory-brand-context');
     }
 
     for (const phrase of extractContextualModelPhrases(name,original)) {
@@ -630,6 +639,10 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
       }
 
       add(phrase,score,'context');
+    }
+
+    for (const phrase of extractLooseContextPhrases(name,original)) {
+      add(phrase,36,'loose-context');
     }
   }
 
