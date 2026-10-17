@@ -361,12 +361,70 @@ export function extractEquivalentModelPhrases(value,target) {
   return output;
 }
 
+
+const CONTEXT_STOPWORDS = new Set([
+  'do','dla','na','z','ze','od','for','with','compatible','kompatybilny',
+  'kompatybilna','bateria','akumulator','etui','futeral','pokrowiec','filtr',
+  'uchwyt','toner','beben','chip','zlacze','mocowanie','oslona','front'
+]);
+
+export function extractContextualModelPhrases(value,target) {
+  const targetFp = modelFingerprint(target);
+  if (!targetFp) return [];
+
+  const tokens = clean(value)
+    .replace(/[^\p{L}\p{N}\-_/]+/gu,' ')
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const output = [];
+  const seen = new Set();
+
+  for (let start=0; start<tokens.length; start++) {
+    for (let length=1; length<=4 && start+length<=tokens.length; length++) {
+      const modelPhrase = tokens.slice(start,start+length).join(' ');
+      if (modelFingerprint(modelPhrase) !== targetFp) continue;
+
+      const previous = tokens[start-1] || '';
+      const previousNorm = normalizeText(previous);
+      if (
+        previous &&
+        /^[\p{L}][\p{L}\p{N}\-]{1,}$/u.test(previous) &&
+        !CONTEXT_STOPWORDS.has(previousNorm)
+      ) {
+        const phrase = previous + ' ' + modelPhrase;
+        const key = normalizeText(phrase);
+        if (!seen.has(key)) {
+          seen.add(key);
+          output.push(phrase);
+        }
+      }
+    }
+  }
+
+  return output;
+}
+
 export function buildModelQueryVariants(input = {}, candidates = []) {
   const original = clean(input.model || input.mpn || input.query);
   if (!original) return [];
 
   const variants = [original];
   const fingerprint = modelFingerprint(original);
+
+  for (const candidate of candidates || []) {
+    for (const phrase of extractContextualModelPhrases(candidate?.name,original)) {
+      variants.push(phrase);
+    }
+  }
+
+  for (const candidate of candidates || []) {
+    for (const value of [candidate?.model,candidate?.mpn,candidate?.name]) {
+      for (const phrase of extractEquivalentModelPhrases(value,original)) {
+        variants.push(phrase);
+      }
+    }
+  }
 
   const spaced = original
     .replace(/[_/\-]+/g,' ')
@@ -376,14 +434,6 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
     .trim();
 
   if (spaced && modelFingerprint(spaced) === fingerprint) variants.push(spaced);
-
-  for (const candidate of candidates || []) {
-    for (const value of [candidate?.model,candidate?.mpn,candidate?.name]) {
-      for (const phrase of extractEquivalentModelPhrases(value,original)) {
-        variants.push(phrase);
-      }
-    }
-  }
 
   const seen = new Set();
   return variants.filter(value => {
