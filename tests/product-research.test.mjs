@@ -144,6 +144,65 @@ assert.equal(
 assert.equal(aggregated.products.length,3,'Research powinien łączyć kandydatów z kolejnych prób i usuwać duplikaty');
 globalThis.fetch = originalFetch;
 
+const rawPhone = {
+  id:'phone-main',
+  name:'Smartfon Samsung Galaxy S24 SM-S921B 128GB',
+  category:{id:'phones',name:'Smartfony'},
+  images:[],
+  parameters:[
+    {id:'brand',name:'Marka',valuesLabels:['Samsung'],options:{isTrusted:true}},
+    {id:'model',name:'Model',valuesLabels:['SM-S921B'],options:{isTrusted:true}},
+    {id:'mpn',name:'Kod producenta',valuesLabels:['SM-S921B'],options:{isTrusted:true}}
+  ]
+};
+const rawPort = {
+  id:'phone-port',
+  name:'Złącze USB-C do Samsung SM-S921B',
+  category:{id:'parts',name:'Części do telefonów'},
+  images:[],
+  parameters:[
+    {id:'brand',name:'Marka',valuesLabels:['bez marki'],options:{isTrusted:false}},
+    {id:'model',name:'Model',valuesLabels:['SM-S921B'],options:{isTrusted:false}}
+  ]
+};
+
+globalThis.fetch = async url => {
+  const parsed = new URL(String(url));
+  const mode = parsed.searchParams.get('mode') || '';
+  const phrase = parsed.searchParams.get('phrase');
+  const products =
+    phrase === 'SM-S921B' && mode === 'MPN'
+      ? [rawPhone]
+      : phrase === 'SM-S921B'
+        ? [rawPort]
+        : [];
+  return {
+    ok:true,
+    async json(){ return {products}; }
+  };
+};
+
+const mpnRescue = await searchAllegroForResearch({
+  token:'test',
+  userAgent:'test',
+  input:{query:'SM-S921B'}
+});
+assert(
+  mpnRescue.searchAttempts.some(item => item.mode === 'MPN'),
+  'Kod podobny do modelu producenta powinien dostać próbę mode=MPN'
+);
+const phoneRanked = buildResearchResult(
+  mpnRescue.products.map(mapAllegroResearchProduct),
+  {query:'SM-S921B'}
+);
+assert.equal(
+  phoneRanked.selected.id,
+  'phone-main',
+  'Wynik MPN z produktem głównym powinien wygrać z częścią kompatybilną'
+);
+assert.equal(phoneRanked.requiresTesterChoice,false);
+globalThis.fetch = originalFetch;
+
 const result = buildResearchResult([mapped],{brand:'Bosch',model:'GSR 18V-55'});
 assert.equal(result.confidenceMethod,'product-research-v3');
 assert(result.description.title.includes('Bosch'));
