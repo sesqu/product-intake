@@ -209,6 +209,29 @@ function modelEvidence(candidate,input,evidence,warnings) {
   if (
     queryFp &&
     (
+      (modelFp && modelFp.length >= 4 && queryFp.includes(modelFp)) ||
+      (mpnFp && mpnFp.length >= 5 && queryFp.includes(mpnFp))
+    )
+  ) {
+    const value = modelFp && queryFp.includes(modelFp) ? model : mpn;
+    const trusted =
+      (value === model && candidate?.trust?.model === true) ||
+      (value === mpn && candidate?.trust?.mpn === true);
+    const points = trusted ? 60 : 54;
+    evidence.push({
+      field:'model-contained',
+      label:'Dokładny model w podanej frazie',
+      status:'match',
+      points,
+      trusted,
+      value
+    });
+    return points;
+  }
+
+  if (
+    queryFp &&
+    (
       (modelFp && (modelFp.startsWith(queryFp) || queryFp.startsWith(modelFp))) ||
       (mpnFp && (mpnFp.startsWith(queryFp) || queryFp.startsWith(mpnFp)))
     )
