@@ -477,6 +477,12 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
 
   const brandCollision = !requested && hasBrandCollision(ranked,input);
   const selectedAccessory = selected?.relation?.type === 'accessory';
+  const strongestPrimary = ranked.find(item => item?.relation?.type !== 'accessory') || null;
+  const noConfidentProduct = Boolean(
+    selectedAccessory ||
+    selected.score < 35 ||
+    (!strongestPrimary && ranked.length)
+  );
 
   return {
     selected,
@@ -494,6 +500,8 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
       closeCompetition,
       brandCollision,
       selectedAccessory,
+      noConfidentProduct,
+      strongestPrimaryScore:strongestPrimary?.score ?? null,
       brandConsensus:brandAdjusted.consensus
     }
   };
