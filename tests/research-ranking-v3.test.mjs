@@ -244,4 +244,28 @@ assert.equal(
 );
 assert.equal(brandCollision.ambiguity.brandCollision,true);
 
+const titleOnlyWrongBrand = {
+  ...wrongBrandSameModel,
+  id:'bosch-title-only',
+  brand:'bez marki',
+  manufacturer:'bez marki'
+};
+const makitaBundle = {
+  ...makita,
+  id:'makita-bundle',
+  name:'MAKITA DLX2180TJ DTD153 DHP484 MAKPAC 2x5.0Ah',
+  model:'DLX2180TJ',
+  mpn:'DLX2180TJ'
+};
+const inferredBrandCollision = analyzeResearchCandidates(
+  [titleOnlyWrongBrand,makitaBundle],
+  {query:'DHP484'}
+);
+assert.equal(
+  inferredBrandCollision.requiresTesterChoice,
+  true,
+  'Marka z tytułu ma zabezpieczyć model, gdy katalog ma pole marka=bez marki'
+);
+assert.equal(inferredBrandCollision.ambiguity.brandCollision,true);
+
 console.log('PASS Research ranking v3: model fingerprint, primary-product ranking, accessory penalties, brand handling and query recovery.');
