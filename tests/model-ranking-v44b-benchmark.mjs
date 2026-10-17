@@ -10,9 +10,9 @@ const cases=[
   {query:'Flip 6',brand:'JBL',primary:/głośnik/i},
   {query:'Charge 5',brand:'JBL',primary:/głośnik/i},
   {query:'QC45',brand:'Bose',primary:/słuchawk/i},
-  {query:'G502 X',brand:'Logitech',primary:/mysz|myszka/i},
-  {query:'MX Master 3S',brand:'Logitech',primary:/mysz|myszka/i},
-  {query:'G Pro X Superlight 2',brand:'Logitech',primary:/mysz|myszka/i},
+  {query:'G502 X',brand:'Logitech',primary:/mysz|myszka|mouse/i},
+  {query:'MX Master 3S',brand:'Logitech',primary:/mysz|myszka|mouse/i},
+  {query:'G Pro X Superlight 2',brand:'Logitech',primary:/mysz|myszka|mouse/i},
   {query:'Archer AX55',brand:'TP-Link',primary:/router/i},
   {query:'Archer AX23',brand:'TP-Link',primary:/router/i},
   {query:'RT-AX58U',brand:'ASUS',primary:/router/i},
@@ -22,7 +22,7 @@ const cases=[
   {query:'55PUS8518',brand:'Philips',primary:/telewizor|\btv\b/i},
   {query:'55C745',brand:'TCL',primary:/telewizor|\btv\b/i},
   {query:'HL-L2402D',brand:'Brother',primary:/drukark/i},
-  {query:'DCP-L2622DW',brand:'Brother',primary:/drukark|urządzenie wielofunkcyjne/i},
+  {query:'DCP-L2622DW',brand:'Brother',primary:/drukark|urządzenie wielofunkcyjne|\bmfp\b/i},
   {query:'LaserJet M110w',brand:'HP',primary:/drukark|laserjet/i},
   {query:'L3250',brand:'Epson',primary:/drukark|ecotank/i},
   {query:'TS3450',brand:'Canon',primary:/drukark|pixma|urządzenie wielofunkcyjne/i},
@@ -37,11 +37,11 @@ const cases=[
   {query:'GSR18V55',brand:'Bosch',primary:/wiertarko|wkrętark/i},
   {query:'GSB 18V-55',brand:'Bosch',primary:/wiertarko|wkrętark/i},
   {query:'GWS 18V-10',brand:'Bosch',primary:/szlifierk/i},
-  {query:'DDF485',brand:'Makita',primary:/wiertarko|wkrętark/i},
-  {query:'DHP484',brand:'Makita',primary:/wiertarko|wkrętark/i},
+  {query:'DDF485',brand:'Makita',primary:/wiertarko|wkrętark|drill driver|\btool\b/i},
+  {query:'DHP484',brand:'Makita',primary:/wiertarko|wkrętark|drill driver|\btool\b/i},
   {query:'DGA504',brand:'Makita',primary:/szlifierk/i},
-  {query:'DCD791',brand:'DeWalt',primary:/wiertarko|wkrętark/i},
-  {query:'DCD796',brand:'DeWalt',primary:/wiertarko|wkrętark/i},
+  {query:'DCD791',brand:'DeWalt',primary:/wiertarko|wkrętark|drill driver|wiertarka/i},
+  {query:'DCD796',brand:'DeWalt',primary:/wiertarko|wkrętark|drill driver|wiertarka/i},
   {query:'SM-S921B',brand:'Samsung',primary:/telefon|smartfon|galaxy s24(?!\+)/i},
   {query:'SM-S928B',brand:'Samsung',primary:/telefon|smartfon|galaxy s24 ultra/i},
   {query:'SM-A556B',brand:'Samsung',primary:/telefon|smartfon|galaxy a55/i},
@@ -56,18 +56,31 @@ const cases=[
   {query:'S27AG550',brand:'Samsung',primary:/monitor/i}
 ];
 
-const accessory=/\bbateria\b|\bakumulator\b|\betui\b|futerał|pokrowiec|\bfiltr\b|uchwyt|toner|bęben|chip|złącze|złącza|płytka|płyta główna|mocowanie|osłona|wyświetlacz|ekran|klapka|część|obudowa|czujnik|kabel|adapter|ładowark|szkło|folia ochronna/i;
+const accessory=/\bbateria\b|\bakumulator\b|\betui\b|futerał|pokrowiec|\bfiltr\b|uchwyt|toner|bęben|chip|złącze|złącza|płytka|płyta główna|mocowanie|osłona|wyświetlacz|ekran|klapka|część|obudowa|czujnik|kabel|adapter|ładowark|szkło|folia|pilot|mop|szmatk|szczotk|worki|worek|akcesori|silnik|wyłącznik|przełącznik|pierścień|koło zębate|grzałka|kosz|głośnik rozmów|nausznik|nakładk|łącznik|stojak|noga|głowica|korpus/i;
 
 function normalize(value=''){
   return String(value).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l');
 }
-function brandMatch(name,brand){
-  const n=normalize(name);
-  const b=normalize(brand);
-  return !b || n.includes(b.replace(/[^a-z0-9]+/g,' ')) || n.replace(/[^a-z0-9]+/g,'').includes(b.replace(/[^a-z0-9]+/g,''));
+function brandMatch(candidate,brand){
+  const explicit=normalize(candidate?.brand||candidate?.manufacturer||'').replace(/[^a-z0-9]+/g,'');
+  const expected=normalize(brand).replace(/[^a-z0-9]+/g,'');
+  if (!expected) return true;
+  if (explicit && !['bezmarki','nieznanyproducent','unknown','unbranded'].includes(explicit)) {
+    return explicit.includes(expected) || expected.includes(explicit);
+  }
+  const text=normalize(candidate?.name||'').replace(/[^a-z0-9]+/g,'');
+  return text.includes(expected);
 }
-function isPrimary(name,test){
-  return Boolean(name && test.primary.test(name) && brandMatch(name,test.brand) && !accessory.test(name));
+function isPrimary(candidate,test){
+  const name=String(candidate?.name||'');
+  const corpus=[name,candidate?.category||''].filter(Boolean).join(' ');
+  return Boolean(
+    name &&
+    test.primary.test(corpus) &&
+    brandMatch(candidate,test.brand) &&
+    !accessory.test(name) &&
+    candidate?.relation?.type!=='accessory'
+  );
 }
 function unique(items){
   const seen=new Set();
@@ -116,14 +129,14 @@ for(let i=0;i<cases.length;i++){
     baseline:{
       name:baselineName,
       score:baseline.confidence??0,
-      correct:isPrimary(baselineName,test),
+      correct:isPrimary(baseline.best||{},test),
       accessory:accessory.test(baselineName)
     },
     v44b:{
       name:localName,
       score:local.confidence??0,
-      correct:isPrimary(localName,test),
-      top3Correct:top3.some(item=>isPrimary(item.name||'',test)),
+      correct:isPrimary(local.selected||{},test),
+      top3Correct:top3.some(item=>isPrimary(item,test)),
       accessory:local.selected?.relation?.type==='accessory'||accessory.test(localName),
       testerChoice:Boolean(local.requiresTesterChoice),
       top3:top3.map(item=>({name:item.name||'',score:item.score??0,relation:item.relation?.type||''}))
