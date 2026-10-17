@@ -268,4 +268,68 @@ assert.equal(
 );
 assert.equal(inferredBrandCollision.ambiguity.brandCollision,true);
 
+
+const sharedCodeNoise = [
+  {
+    id:'ferodo',
+    name:'Ferodo DDF485 Tarcza hamulcowa',
+    brand:'',
+    manufacturer:'',
+    model:'DDF485',
+    mpn:'DDF485',
+    category:'Tarcze hamulcowe',
+    parameters:[],
+    trust:{}
+  },
+  {
+    id:'makita-tool',
+    name:'Makita DDF485 Tool',
+    brand:'bez marki',
+    manufacturer:'bez marki',
+    model:'DDF485',
+    mpn:'DDF485',
+    category:'Wiertarko-wkrętarki',
+    parameters:[],
+    trust:{}
+  },
+  {
+    id:'makita-part-1',
+    name:'MAKITA KONTROLER DO DDF485',
+    brand:'Makita',
+    manufacturer:'Makita',
+    model:'620964-8',
+    mpn:'620964-8',
+    category:'Części',
+    parameters:[],
+    trust:{brand:true}
+  },
+  {
+    id:'makita-part-2',
+    name:'MAKITA STOJAN DO DDF485',
+    brand:'Makita',
+    manufacturer:'Makita',
+    model:'629372-0',
+    mpn:'629372-0',
+    category:'Części',
+    parameters:[],
+    trust:{brand:true}
+  }
+];
+const sharedRanked = analyzeResearchCandidates(sharedCodeNoise,{query:'DDF485'});
+assert.equal(sharedRanked.selected.id,'makita-tool','Powtarzający się kontekst marki powinien przebić samotny obcy produkt z tym samym kodem');
+assert.equal(sharedRanked.ambiguity.brandConsensus?.brand,'Makita');
+
+const phoneVariants = buildModelQueryVariants(
+  {query:'SM-S921B'},
+  [
+    {name:'Bateria do Samsung SM-S921B Galaxy S24',brand:'bez marki',model:'Galaxy S24',category:'Baterie'},
+    {name:'Etui do Samsung SM-S921B Galaxy S24',brand:'bez marki',model:'Galaxy S24',category:'Etui'},
+    {name:'Buzzer do Samsung Galaxy S24 (SM-S921B)',brand:'Samsung',model:'Galaxy S24',category:'Części'}
+  ]
+);
+assert(
+  phoneVariants.includes('Samsung Galaxy S24'),
+  'Powtarzający się alias modelu w akcesoriach powinien tworzyć bezpieczne zapytanie marka + alias'
+);
+
 console.log('PASS Research ranking v3: model fingerprint, primary-product ranking, accessory penalties, brand handling and query recovery.');
