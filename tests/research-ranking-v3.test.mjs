@@ -4,6 +4,7 @@ import {
   classifyCandidateRelation,
   rankResearchCandidate,
   buildModelQueryVariants,
+  inferProductTypeHint,
   extractEquivalentModelPhrases,
   extractContextualModelPhrases
 } from '../worker/src/research-ranking-v3.js';
@@ -370,5 +371,60 @@ assert.equal(
   'accessory',
   'Oczywiste akcesorium z wyszukania po aliasie nie może stać się produktem głównym'
 );
+
+
+const phoneAccessorySet = [
+  {
+    name:'Etui do Samsung Galaxy S24 SM-S921B',
+    brand:'bez marki',
+    model:'Galaxy S24',
+    category:'Etui do telefonów'
+  },
+  {
+    name:'Bateria do Samsung Galaxy S24 SM-S921B',
+    brand:'bez marki',
+    model:'Galaxy S24',
+    category:'Części do telefonów'
+  },
+  {
+    name:'Buzzer do Samsung Galaxy S24 (SM-S921B)',
+    brand:'Samsung',
+    model:'Galaxy S24',
+    category:'Części do telefonów'
+  }
+];
+assert.equal(inferProductTypeHint(phoneAccessorySet),'smartfon');
+const phoneRecovery = buildModelQueryVariants({query:'SM-S921B'},phoneAccessorySet);
+assert(
+  phoneRecovery.some(value => /samsung galaxy s24 smartfon/i.test(value)),
+  'Accessory-heavy phone results should generate a product-type enriched query'
+);
+
+const robotAccessorySet = [
+  {
+    name:'Mop do Roborock S8 MaxV Ultra',
+    brand:'Roborock',
+    model:'S8 MaxV Ultra',
+    category:'Akcesoria do robotów sprzątających'
+  },
+  {
+    name:'Filtr do robota sprzątającego Roborock S8 MaxV Ultra',
+    brand:'Roborock',
+    model:'S8 MaxV Ultra',
+    category:'Akcesoria do robotów sprzątających'
+  }
+];
+assert(
+  inferProductTypeHint(robotAccessorySet).includes('robot'),
+  'Robot accessories should infer the target as a cleaning robot'
+);
+
+const dummyPhone = classifyCandidateRelation({
+  name:'Atrapa eksponat smartfon Samsung Galaxy S24',
+  brand:'Samsung',
+  model:'Galaxy S24',
+  category:'Telefony'
+},{query:'Galaxy S24'});
+assert.equal(dummyPhone.type,'accessory','Display dummy must not rank as the real phone');
 
 console.log('PASS Research ranking v3: model fingerprint, primary-product ranking, accessory penalties, brand handling and query recovery.');
