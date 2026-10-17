@@ -503,6 +503,68 @@ export function extractContextualModelPhrases(value,target) {
   return output;
 }
 
+export function extractLooseContextPhrases(value,target) {
+  const targetFp = modelFingerprint(target);
+  if (!targetFp) return [];
+
+  const rawTokens = clean(value)
+    .replace(/[^\p{L}\p{N}\-_/]+/gu,' ')
+    .split(/\s+/)
+    .filter(Boolean);
+  const output = [];
+  const seen = new Set();
+
+  for (let start=0; start<rawTokens.length; start++) {
+    for (let length=1; length<=4 && start+length<=rawTokens.length; length++) {
+      const modelPhrase = rawTokens.slice(start,start+length).join(' ');
+      if (modelFingerprint(modelPhrase) !== targetFp) continue;
+
+      for (let offset=1; offset<=6 && start-offset>=0; offset++) {
+        const prefix = rawTokens[start-offset];
+        const prefixNorm = normalizeText(prefix);
+        if (!prefixNorm) continue;
+        if (/\d/.test(prefixNorm)) continue;
+        if (!/^[a-z][a-z-]{2,}$/i.test(prefixNorm)) continue;
+        if (CONTEXT_STOPWORDS.has(prefixNorm)) continue;
+        if (ACCESSORY_NOUNS.some(term => hasNormalizedTerm(prefixNorm,term))) continue;
+
+        const phrase = prefix + ' ' + modelPhrase;
+        const key = normalizeText(phrase);
+        if (!seen.has(key)) {
+          seen.add(key);
+          output.push(phrase);
+        }
+        break;
+      }
+    }
+  }
+
+  return output;
+}
+
+function stripLiteralTarget(value,target) {
+  let result = clean(value);
+  const literal = clean(target);
+  if (!result || !literal) return result;
+  const escaped = literal.replace(/[.*+?^$()|[\]\\]/g,'\\export function buildModelQueryVariants(input = {}, candidates = []) {');
+  result = result.replace(new RegExp(escaped,'ig'),' ');
+  return result
+    .replace(/[()[\]]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+
+function aliasGroupKey(alias,brand) {
+  const brandTokens = new Set(normalizeText(brand).split(' ').filter(Boolean));
+  const generic = new Set([
+    'galaxy','series','5g','4g','lte','wifi','wi','fi','smart','model'
+  ]);
+  const tokens = normalizeText(alias).split(' ').filter(Boolean)
+    .filter(token => !brandTokens.has(token) && !generic.has(token));
+  const modelTokens = tokens.filter(token => /[a-z]/.test(token) && /\d/.test(token));
+  return modelTokens.join('|');
+}
+
 export function buildModelQueryVariants(input = {}, candidates = []) {
   const original = clean(input.model || input.mpn || input.query);
   if (!original) return [];
