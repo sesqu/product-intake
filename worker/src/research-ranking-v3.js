@@ -471,6 +471,82 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
   const original = clean(input.model || input.mpn || input.query);
   if (!original) return [];
 
+  const fingerprint = modelFingerprint(original);
+  const suggestions = new Map();
+
+  function add(value,score,reason) {
+    const phrase = clean(value);
+    const key = normalizeText(phrase);
+    if (!key || key === normalizeText(original)) return;
+    const current = suggestions.get(key);
+    if (!current || score > current.score) {
+      suggestions.set(key,{phrase,score,reason});
+    }
+  }
+
+  for (const candidate of candidates || []) {
+    const name = clean(candidate?.name);
+    const nameFp = modelFingerprint(name);
+    if (!nameFp.includes(fingerprint)) continue;
+
+    const relation = classifyCandidateRelation(candidate,input);
+    const brand = clean(candidate?.brand || candidate?.manufacturer);
+    const explicit = brand && !genericBrand(brand);
+
+    const equivalent = [];
+    for (const value of [candidate?.model,candidate?.mpn,candidate?.name]) {
+      for (const phrase of extractEquivalentModelPhrases(value,original)) {
+        equivalent.push(phrase);
+        add(phrase,24,'equivalent');
+      }
+    }
+    const canonical = equivalent[0] || original;
+
+    // A catalog brand attached to a product candidate is stronger than a
+    // random word next to the model. For accessory candidates we do not use
+    // their own brand as the target brand.
+    if (explicit && relation.type !== 'accessory') {
+      add(brand + ' ' + canonical,46,'catalog-brand');
+    }
+
+    for (const phrase of extractContextualModelPhrases(name,original)) {
+      const prefix = clean(phrase.split(/\s+/)[0]);
+      const prefixIsCatalogBrand =
+        explicit &&
+        modelFingerprint(prefix) === modelFingerprint(brand);
+
+      let score = 28;
+      if (relation.type === 'accessory') {
+        score = prefixIsCatalogBrand ? 12 : 42;
+      } else if (prefixIsCatalogBrand) {
+        score = 48;
+      } else if (explicit) {
+        score = 32;
+      }
+
+      add(phrase,score,'context');
+    }
+  }
+
+  const spaced = original
+    .replace(/[_/\-]+/g,' ')
+    .replace(/([a-zA-Z])(?=\d)/g,'$1 ')
+    .replace(/(\d)(?=[a-zA-Z])/g,'$1 ')
+    .replace(/\s+/g,' ')
+    .trim();
+
+  if (spaced && modelFingerprint(spaced) === fingerprint) {
+    add(spaced,8,'spacing');
+  }
+
+  const ranked = [...suggestions.values()]
+    .sort((a,b) => b.score - a.score || a.phrase.localeCompare(b.phrase,'pl'));
+
+  return [original,...ranked.map(item => item.phrase)].slice(0,3);
+}, candidates = []) {
+  const original = clean(input.model || input.mpn || input.query);
+  if (!original) return [];
+
   const variants = [original];
   const fingerprint = modelFingerprint(original);
   const contextPrefixes = [];
