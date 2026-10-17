@@ -479,8 +479,15 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
     const key = normalizeText(phrase);
     if (!key || key === normalizeText(original)) return;
     const current = suggestions.get(key);
-    if (!current || score > current.score) {
-      suggestions.set(key,{phrase,score,reason});
+    if (!current) {
+      suggestions.set(key,{phrase,score,reason,support:1});
+      return;
+    }
+    current.support = Number(current.support || 1) + 1;
+    if (score > current.score) {
+      current.score = score;
+      current.reason = reason;
+      current.phrase = phrase;
     }
   }
 
@@ -528,6 +535,47 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
     }
   }
 
+
+  const aliasSupport = new Map();
+  for (const candidate of candidates || []) {
+    const relation = classifyCandidateRelation(candidate,input);
+    if (relation.type !== 'accessory') continue;
+
+    const context = extractContextualModelPhrases(candidate?.name || '',original)[0] || '';
+    const contextBrand = clean(context.split(/\s+/)[0]);
+    const explicitBrand = clean(candidate?.brand || candidate?.manufacturer);
+    const brand =
+      contextBrand ||
+      (explicitBrand && !genericBrand(explicitBrand) ? explicitBrand : '');
+
+    const alias = clean(candidate?.model);
+    const aliasFp = modelFingerprint(alias);
+    const aliasTokens = normalizeText(alias).split(' ').filter(Boolean);
+
+    if (
+      !brand ||
+      !alias ||
+      alias.length > 32 ||
+      aliasTokens.length < 2 ||
+      aliasTokens.length > 4 ||
+      !/[a-z]/.test(aliasFp) ||
+      !/\d/.test(aliasFp) ||
+      aliasFp === fingerprint ||
+      aliasFp.includes(fingerprint) ||
+      fingerprint.includes(aliasFp)
+    ) continue;
+
+    const key = modelFingerprint(brand) + '|' + aliasFp;
+    const item = aliasSupport.get(key) || {brand,alias,count:0};
+    item.count += 1;
+    aliasSupport.set(key,item);
+  }
+
+  for (const item of aliasSupport.values()) {
+    if (item.count < 2) continue;
+    add(item.brand + ' ' + item.alias,58 + Math.min(12,(item.count - 2) * 4),'repeated-alias');
+  }
+
   const spaced = original
     .replace(/[_/\-]+/g,' ')
     .replace(/([a-zA-Z])(?=\d)/g,'$1 ')
@@ -540,7 +588,15 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
   }
 
   const ranked = [...suggestions.values()]
-    .sort((a,b) => b.score - a.score || a.phrase.localeCompare(b.phrase,'pl'));
+    .map(item => ({
+      ...item,
+      effectiveScore:item.score + Math.min(16,Math.max(0,Number(item.support || 1) - 1) * 4)
+    }))
+    .sort((a,b) =>
+      b.effectiveScore - a.effectiveScore ||
+      b.score - a.score ||
+      a.phrase.localeCompare(b.phrase,'pl')
+    );
 
   return [original,...ranked.map(item => item.phrase)].slice(0,3);
 }
