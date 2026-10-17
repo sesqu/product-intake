@@ -325,8 +325,108 @@ function hasBrandCollision(ranked,input = {}) {
   return false;
 }
 
+
+function candidateTargetBrand(candidate,input = {}) {
+  const explicit = explicitBrand(candidate);
+  if (candidate?.relation?.type !== 'accessory' && explicit) return explicit;
+
+  const contextual = inferredTargetBrand(candidate,input);
+  if (contextual) return contextual;
+
+  return candidate?.relation?.type !== 'accessory' ? explicit : '';
+}
+
+function inferBrandConsensus(ranked,input = {}) {
+  if (clean(input.brand || input.manufacturer)) return null;
+
+  const support = new Map();
+  for (const candidate of ranked || []) {
+    if (!exactTargetIdentity(candidate,input)) continue;
+
+    const brand = candidateTargetBrand(candidate,input);
+    const key = norm(brand);
+    if (!key) continue;
+    if (['router','monitor','telewizor','drukarka','smartfon','telefon'].includes(key)) continue;
+
+    let weight = candidate?.relation?.type === 'accessory' ? 1 : 2;
+    if (candidate?.trust?.brand === true || candidate?.trust?.manufacturer === true) weight += 1;
+
+    const current = support.get(key) || {brand,weight:0,count:0};
+    current.weight += weight;
+    current.count += 1;
+    support.set(key,current);
+  }
+
+  const rankedBrands = [...support.values()]
+    .sort((a,b) => b.weight - a.weight || b.count - a.count || a.brand.localeCompare(b.brand,'pl'));
+
+  const first = rankedBrands[0];
+  const second = rankedBrands[1];
+  if (!first || first.weight < 4) return null;
+
+  const secondWeight = Number(second?.weight || 0);
+  if (secondWeight && first.weight < secondWeight * 1.6) return null;
+  if (secondWeight && first.weight - secondWeight < 2) return null;
+
+  return {
+    brand:first.brand,
+    key:norm(first.brand),
+    weight:first.weight,
+    count:first.count,
+    runnerUp:second ? {brand:second.brand,weight:second.weight,count:second.count} : null
+  };
+}
+
+function applyBrandConsensus(ranked,input = {}) {
+  const consensus = inferBrandConsensus(ranked,input);
+  if (!consensus) return {ranked,consensus:null};
+
+  const adjusted = ranked.map(candidate => {
+    const brand = candidateTargetBrand(candidate,input);
+    const key = norm(brand);
+    if (!key) return candidate;
+
+    let delta = 0;
+    if (key === consensus.key) {
+      delta = candidate?.relation?.type === 'accessory' ? 4 : 18;
+    } else if (exactTargetIdentity(candidate,input) && candidate?.relation?.type !== 'accessory') {
+      delta = -18;
+    }
+
+    if (!delta) return candidate;
+
+    return {
+      ...candidate,
+      score:Math.max(0,Math.min(100,Math.round(candidate.score + delta))),
+      evidence:[
+        ...(candidate.evidence || []),
+        {
+          field:'brand-consensus',
+          label:'Marka wspierana przez wiele wyników',
+          status:delta > 0 ? 'supporting' : 'conflict',
+          points:delta,
+          trusted:false,
+          value:consensus.brand
+        }
+      ],
+      warnings:delta < 0
+        ? [
+            ...(candidate.warnings || []),
+            {
+              field:'brand-consensus',
+              severity:'warning',
+              message:'Inne wyniki dla tego modelu częściej wskazują markę ' + consensus.brand + '.'
+            }
+          ]
+        : (candidate.warnings || [])
+    };
+  }).sort((a,b) => b.score - a.score || clean(a.name).localeCompare(clean(b.name)));
+
+  return {ranked:adjusted,consensus};
+}
+
 export function analyzeResearchCandidates(products, input = {}, selectedId = '') {
-  const ranked = (Array.isArray(products) ? products : [])
+  const initiallyRanked = (Array.isArray(products) ? products : [])
     .filter(Boolean)
     .map(product => {
       const analysis = rankResearchCandidate(product,input);
@@ -339,6 +439,9 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
       };
     })
     .sort((a,b) => b.score - a.score || clean(a.name).localeCompare(clean(b.name)));
+
+  const brandAdjusted = applyBrandConsensus(initiallyRanked,input);
+  const ranked = brandAdjusted.ranked;
 
   if (!ranked.length) {
     return {
@@ -382,7 +485,8 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
     ambiguity:{
       closeCompetition,
       brandCollision,
-      selectedAccessory
+      selectedAccessory,
+      brandConsensus:brandAdjusted.consensus
     }
   };
 }
