@@ -66,6 +66,7 @@ const ACCESSORY_NOUNS = [
   'mocowanie','front','oslona','toner','beben','chip','slizgacze',
   'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
   'pilot','mop','szmatk','szczotk','worek','worki','akcesori','wklad',
+  'tusz','atrament','kartridz','cartridge','stojan','kontroler','glowka',
   'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
   'kosz','blok zaparzajacy','glosnik rozmow','nausznik','nakladk','folia',
   'mata ochronna','lacznik','noga','stojak','glowica','korpus',
@@ -88,6 +89,7 @@ const HARD_ACCESSORY_NOUNS = [
   'klapka','plyta glowna','plytka','plyta','zasilacz','wyswietl',
   'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
   'pilot','mop','szmatk','szczotk','worek','worki','akcesori','wklad',
+  'tusz','atrament','kartridz','cartridge','stojan','kontroler','glowka',
   'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
   'kosz','blok zaparzajacy','glosnik rozmow','nausznik','nakladk','folia',
   'mata ochronna','lacznik','noga','stojak','glowica','korpus'
@@ -130,6 +132,26 @@ export function classifyCandidateRelation(candidate,input = {}) {
       type:'accessory',
       confidence:'medium',
       reason:noun + ' • model tylko w nazwie'
+    };
+  }
+
+  if (
+    targetIsCandidateIdentity &&
+    noun &&
+    [
+      'etui','futeral','pokrowiec','case','cover','folia','szklo',
+      'pilot','mop','szmatk','szczotk','worek','worki','akcesori',
+      'tusz','atrament','kartridz','cartridge','stojan','kontroler','glowka',
+      'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
+      'kosz','blok zaparzajacy','glosnik rozmow','nausznik','nakladk',
+      'mocowanie','oslona','obudow','korpus','zlacz','buzzer','klapka',
+      'plyta','plytka','zasilacz','wyswietl','ekran','ramka','adapter'
+    ].includes(noun)
+  ) {
+    return {
+      type:'accessory',
+      confidence:'medium',
+      reason:noun + ' • typ produktu'
     };
   }
 
