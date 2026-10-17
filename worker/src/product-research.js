@@ -1,4 +1,8 @@
-import { rankResearchCandidate, modelFingerprint } from './research-ranking-v3.js';
+import {
+  rankResearchCandidate,
+  modelFingerprint,
+  extractContextualModelPhrases
+} from './research-ranking-v3.js';
 const clean = value => String(value ?? '').trim();
 
 function norm(value) {
@@ -294,14 +298,28 @@ function exactTargetIdentity(candidate,input = {}) {
   return Boolean(title && title.includes(target));
 }
 
+function inferredTargetBrand(candidate,input = {}) {
+  const target = clean(input.model || input.mpn || input.query);
+  if (!target) return '';
+  const phrases = extractContextualModelPhrases(candidate?.name || '',target);
+  const first = clean(phrases?.[0]);
+  if (!first) return '';
+  return clean(first.split(/\s+/)[0]);
+}
+
 function hasBrandCollision(ranked,input = {}) {
   const brands = new Set();
   for (const candidate of ranked || []) {
     if (candidate?.relation?.type === 'accessory') continue;
     if (!exactTargetIdentity(candidate,input)) continue;
-    const brand = explicitBrand(candidate);
+
+    const brand = explicitBrand(candidate) || inferredTargetBrand(candidate,input);
     if (!brand) continue;
-    brands.add(norm(brand));
+
+    const key = norm(brand);
+    if (!key || ['router','monitor','telewizor','drukarka','smartfon','telefon'].includes(key)) continue;
+
+    brands.add(key);
     if (brands.size >= 2) return true;
   }
   return false;
