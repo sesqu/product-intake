@@ -83,6 +83,17 @@ const ACCESSORY_CATEGORY_WORDS = [
   'uchwyty','zasilacze','tonery','bebny','kable','ladowarki','wyswietlacze'
 ];
 
+const HARD_ACCESSORY_NOUNS = [
+  'mocowanie','front','oslona','toner','beben','chip','zlacz','buzzer',
+  'klapka','plyta glowna','plytka','plyta','zasilacz','wyswietl',
+  'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
+  'pilot','mop','szmatk','szczotk','worek','worki','akcesori','wklad',
+  'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
+  'kosz','blok zaparzajacy','glosnik rozmow','nausznik','nakladk','folia',
+  'mata ochronna','lacznik','noga','stojak','glowica','korpus'
+];
+
+
 export function classifyCandidateRelation(candidate,input = {}) {
   const name = ' ' + normalizeText(candidate?.name) + ' ';
   const category = normalizeText(candidate?.category);
@@ -91,6 +102,7 @@ export function classifyCandidateRelation(candidate,input = {}) {
   const nameFp = modelFingerprint(candidate?.name);
 
   const noun = ACCESSORY_NOUNS.find(word => name.includes(word)) || '';
+  const hardNoun = HARD_ACCESSORY_NOUNS.find(word => name.includes(word)) || '';
   const relationWord = RELATION_WORDS.find(word => name.includes(word)) || '';
   const accessoryCategory = ACCESSORY_CATEGORY_WORDS.find(word => category.includes(word)) || '';
   const targetMentioned = Boolean(targetFp && nameFp.includes(targetFp));
@@ -129,23 +141,11 @@ export function classifyCandidateRelation(candidate,input = {}) {
     };
   }
 
-  if (
-    targetMentioned &&
-    noun &&
-    [
-      'mocowanie','front','oslona','toner','beben','chip','zlacz','buzzer',
-      'klapka','plyta glowna','plytka','plyta','zasilacz','wyswietl',
-      'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
-      'pilot','mop','szmatk','szczotk','worek','worki','akcesori','wklad',
-      'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
-      'kosz','blok zaparzajacy','glosnik rozmow','nausznik','nakladk','folia',
-      'mata ochronna','lacznik','noga','stojak','glowica','korpus'
-    ].includes(noun)
-  ) {
+  if (targetMentioned && hardNoun) {
     return {
       type:'accessory',
       confidence:'medium',
-      reason:noun
+      reason:hardNoun
     };
   }
 
