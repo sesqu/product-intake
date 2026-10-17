@@ -98,6 +98,8 @@ const ACCESSORY_CATEGORY_WORDS = [
 ];
 
 const HARD_ACCESSORY_NOUNS = [
+  'bateria','akumulator','etui','futeral','pokrowiec','filtr','case','cover',
+  'folia','szklo','tusz','atrament','kartridz','cartridge',
   'mocowanie','front','oslona','toner','beben','chip','zlacz','buzzer',
   'klapka','plyta glowna','plytka','plyta','zasilacz','wyswietl',
   'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
@@ -165,6 +167,18 @@ export function classifyCandidateRelation(candidate,input = {}) {
       type:'accessory',
       confidence:'medium',
       reason:noun + ' • typ produktu'
+    };
+  }
+
+  if (
+    hardNoun &&
+    isProbableModelQuery(input) &&
+    !targetIsCandidateIdentity
+  ) {
+    return {
+      type:'accessory',
+      confidence:'medium',
+      reason:hardNoun + ' • brak zgodnej tożsamości modelu'
     };
   }
 
