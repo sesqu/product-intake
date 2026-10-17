@@ -6,6 +6,8 @@ on:
       - feature/model-ranking-v44b-mpn-benchmark
     paths:
       - 'tests/model-ranking-v44b-hard-debug.mjs'
+      - 'worker/src/research-ranking-v3.js'
+      - 'worker/src/product-research.js'
       - '.github/workflows/model-ranking-v44b-hard-debug.yml'
   workflow_dispatch:
 
