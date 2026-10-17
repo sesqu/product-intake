@@ -1,0 +1,22 @@
+name: v44b product-type query probe
+
+on:
+  push:
+    branches:
+      - feature/model-ranking-v44b-mpn-benchmark
+    paths:
+      - 'tests/model-ranking-v44b-type-probe.mjs'
+      - '.github/workflows/model-ranking-v44b-type-probe.yml'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Probe product-type enriched queries
+        run: node tests/model-ranking-v44b-type-probe.mjs
