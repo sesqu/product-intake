@@ -1,0 +1,70 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const fields={};
+for(const id of [
+  'productName','brand','model','category','parameters','asin','ean','lpn',
+  'confidencePct','sumIdentification','confidenceBar',
+  'eanLabel','eanRequirement','rEan','gpsrStatus','gpsrDetails'
+]){
+  fields[id]={value:'',textContent:'',dataset:{},style:{}};
+}
+fields.lpn.value='LPN-test';
+fields.ean.value='';
+let identified=false;
+let saved=0;
+let history=[];
+const win={};
+const safe=x=>String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+vm.runInNewContext(fs.readFileSync('catalog-lookup.js','utf8'),{
+  window:win,
+  document:{getElementById:id=>fields[id]||null},
+  Date
+});
+const lookup=win.ProductIntakeCatalogLookup;
+lookup.setup({
+  safe,toast(){},
+  setIdentified:value=>{identified=value},
+  saveDraft(){saved++},
+  addHistory:(event,message)=>{history.push({event,message})},
+  quality(){}
+});
+const product={
+  source:'amazon',
+  asin:'B072MQ5BRX',id:'B072MQ5BRX',asinMatched:true,
+  name:'Testowy telefon Amazon',brand:'Samsung',model:'SM-S921B',
+  mpn:'SM-S921B',ean:'',category:'Telefony',
+  image:'https://m.media-amazon.com/images/a.jpg',
+  parameters:[{name:'Kolor',value:'czarny'}]
+};
+const result={
+  source:'amazon',marketplace:'amazon.pl',provider:'serpapi-amazon-product',
+  query:{asin:'B072MQ5BRX',domain:'amazon.pl'},
+  best:product,confidence:null,requiresTesterChoice:true
+};
+assert.equal(lookup.acceptAsinResult(result),true);
+assert.equal(identified,true);
+assert.equal(saved,1);
+assert.equal(fields.productName.value,'Testowy telefon Amazon');
+assert.equal(fields.asin.value,'B072MQ5BRX');
+assert.equal(fields.ean.value,'','Missing Amazon EAN cannot be fabricated');
+assert.equal(fields.brand.value,'Samsung');
+assert.equal(fields.model.value,'SM-S921B');
+assert.equal(fields.confidencePct.textContent,'—','Unknown source confidence is not 0%');
+assert.equal(lookup.getState().confidence,null);
+const state=lookup.getState();
+assert.equal(state.sourceSnapshot.amazon.asin,'B072MQ5BRX');
+assert.equal(state.sourceSnapshot.amazon.provider,'serpapi-amazon-product');
+assert.equal(state.sourceSnapshot.amazon.verifiedByTester,true);
+assert.equal(state.sourceSnapshot.amazon.confidence,null);
+assert.equal(state.sourceSnapshot.allegro,undefined,'Amazon must never be mislabelled Allegro');
+assert.equal(history[0].event,'Tester potwierdził ASIN Amazon');
+assert.equal(state.identification.selectedBy,'tester');
+
+const savedBefore=saved;
+assert.equal(lookup.acceptAsinResult({...result,best:{...product,asinMatched:false}}),false);
+assert.equal(saved,savedBefore,'Unverified catalog ASIN must not be imported');
+assert.equal(lookup.acceptAsinResult({...result,best:{...product,asin:'B072MQ5BRZ'}}),false);
+assert.equal(saved,savedBefore);
+assert.equal(lookup.acceptAsinResult({...result,source:'allegro'}),false);
+console.log('PASS Amazon ASIN master: explicit tester acceptance, source snapshot, EAN safety and unknown confidence.');
