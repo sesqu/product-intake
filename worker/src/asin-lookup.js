@@ -99,7 +99,48 @@ export function mapSerpApiAsinResponse(body,asin,domain){
   return {product,reason:null};
 }
 
-export async function lookupAsinWithSerpApi({asin,domain='amazon.pl',apiKey,kv,force=false}={}){
+
+// Best-effort rate guard for the 250-search free plan. KV is eventually
+// consistent, so this is a safety net (not an atomic billing guarantee).
+async function reserveLookupCredit(kv,clientIp){
+  if(!kv || typeof kv.get!=='function' || typeof kv.put!=='function'){
+    const error=new Error('Magazyn limitu ASIN jest niedostępny. Wyszukiwanie zostało wstrzymane.');
+    error.status=503;throw error;
+  }
+  const month=new Date().toISOString().slice(0,7);
+  const day=new Date().toISOString().slice(0,10);
+  const monthly='asin:serpapi:quota:month:'+month;
+  const hashed=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(clientIp||'anonymous')));
+  const identity=Array.from(new Uint8Array(hashed)).slice(0,12)
+    .map(x=>x.toString(16).padStart(2,'0')).join('');
+  const daily='asin:serpapi:quota:day:'+day+':'+identity;
+  let monthCount,dayCount;
+  try{
+    [monthCount,dayCount]=await Promise.all([kv.get(monthly),kv.get(daily)]);
+  }catch{
+    const error=new Error('Nie udało się sprawdzić limitu bezpłatnych wyszukiwań.');
+    error.status=503;throw error;
+  }
+  if(Number(monthCount||0)>=200) {
+    const error=new Error('Wyczerpano miesięczny limit bezpieczeństwa ASIN (200 zapytań). Pozostałe zapytania SerpApi są chronione.');
+    error.status=429;throw error;
+  }
+  if(Number(dayCount||0)>=20) {
+    const error=new Error('Wykorzystano dzienny limit ASIN dla tego połączenia (20 zapytań).');
+    error.status=429;throw error;
+  }
+  try{
+    await Promise.all([
+      kv.put(monthly,String(Number(monthCount||0)+1),{expirationTtl:40*86400}),
+      kv.put(daily,String(Number(dayCount||0)+1),{expirationTtl:2*86400})
+    ]);
+  }catch{
+    const error=new Error('Nie udało się zarezerwować zapytania SerpApi.');
+    error.status=503;throw error;
+  }
+}
+
+export async function lookupAsinWithSerpApi({asin,domain='amazon.pl',apiKey,kv,force=false,clientIp=''}={}){
   asin=validateAsin(asin);
   domain=validateAmazonDomain(domain);
   if(!apiKey) {
@@ -111,11 +152,12 @@ export async function lookupAsinWithSerpApi({asin,domain='amazon.pl',apiKey,kv,f
   if(!force && kv && typeof kv.get==='function'){
     try {
       const cached=await kv.get(cacheKey,'json');
-      if(cached?.product && cached.asin===asin && cached.domain===domain){
+      if(cached && cached.asin===asin && cached.domain===domain){
         return {...cached,cached:true};
       }
     }catch {}
   }
+  await reserveLookupCredit(kv,clientIp);
   const url=new URL('https://serpapi.com/search.json');
   url.searchParams.set('engine','amazon_product');
   url.searchParams.set('asin',asin);
@@ -155,8 +197,12 @@ export async function lookupAsinWithSerpApi({asin,domain='amazon.pl',apiKey,kv,f
     cached:false,
     fetchedAt:new Date().toISOString()
   };
-  if(result.product && kv && typeof kv.put==='function'){
-    try {await kv.put(cacheKey,JSON.stringify(result),{expirationTtl:86400});}catch {}
+  if(kv && typeof kv.put==='function'){
+    try {
+      await kv.put(cacheKey,JSON.stringify(result),{
+        expirationTtl:result.product ? 86400 : 3600
+      });
+    }catch {}
   }
   return result;
 }
