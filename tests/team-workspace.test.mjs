@@ -60,6 +60,16 @@ async function ask(jwt,method,path,body){
   return {status:r.status,data:await r.json()};
 }
 try{
+  // The email is never trusted from a forged JWT payload. The signature
+  // must be verified using the configured Cloudflare Access public key.
+  const segments=tester.split('.');
+  const forgedPayload=JSON.parse(Buffer.from(segments[1],'base64url').toString());
+  forgedPayload.email='owner@example.test';
+  const forged=segments[0]+'.'+Buffer.from(JSON.stringify(forgedPayload)).toString('base64url')+
+    '.'+segments[2];
+  let forgedResponse=await ask(forged,'GET','/api/team/me');
+  assert.equal(forgedResponse.status,401,'A client cannot impersonate owner by changing JWT email');
+
   let r=await ask(null,'GET','/api/team/me');
   assert.equal(r.status,401,'Anonymous team access must be denied');
   r=await ask(outsider,'GET','/api/team/products');
