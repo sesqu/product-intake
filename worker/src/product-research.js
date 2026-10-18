@@ -1,3 +1,8 @@
+import {
+  rankResearchCandidate,
+  modelFingerprint,
+  extractContextualModelPhrases
+} from './research-ranking-v3.js';
 const clean = value => String(value ?? '').trim();
 
 function norm(value) {
@@ -271,14 +276,180 @@ function identitySignature(candidate) {
     .join('|');
 }
 
+
+function explicitBrand(candidate) {
+  const value = clean(candidate?.brand || candidate?.manufacturer);
+  const key = norm(value).replace(/\s+/g,'');
+  if (!value || ['bezmarki','nieznanyproducent','unknown','unbranded','other'].includes(key)) return '';
+  return value;
+}
+
+function exactTargetIdentity(candidate,input = {}) {
+  const target = modelFingerprint(input.model || input.mpn || input.query);
+  if (!target) return false;
+
+  const direct = [candidate?.model,candidate?.mpn]
+    .map(modelFingerprint)
+    .filter(Boolean);
+
+  if (direct.includes(target)) return true;
+
+  const title = modelFingerprint(candidate?.name);
+  return Boolean(title && title.includes(target));
+}
+
+function inferredTargetBrand(candidate,input = {}) {
+  const target = clean(input.model || input.mpn || input.query);
+  if (!target) return '';
+  const phrases = extractContextualModelPhrases(candidate?.name || '',target);
+  const first = clean(phrases?.[0]);
+  if (!first) return '';
+  return clean(first.split(/\s+/)[0]);
+}
+
+function hasBrandCollision(ranked,input = {}) {
+  const brands = new Set();
+  for (const candidate of ranked || []) {
+    if (candidate?.relation?.type === 'accessory') continue;
+    if (!exactTargetIdentity(candidate,input)) continue;
+
+    const brand = explicitBrand(candidate) || inferredTargetBrand(candidate,input);
+    if (!brand) continue;
+
+    const key = norm(brand);
+    if (!key || ['router','monitor','telewizor','drukarka','smartfon','telefon'].includes(key)) continue;
+
+    brands.add(key);
+    if (brands.size >= 2) return true;
+  }
+  return false;
+}
+
+
+function candidateTargetBrand(candidate,input = {}) {
+  const explicit = explicitBrand(candidate);
+  if (candidate?.relation?.type !== 'accessory' && explicit) return explicit;
+
+  const contextual = inferredTargetBrand(candidate,input);
+  if (contextual) return contextual;
+
+  if (
+    candidate?.relation?.type === 'accessory' &&
+    explicit &&
+    norm(candidate?.name).includes(norm(explicit))
+  ) {
+    return explicit;
+  }
+
+  return candidate?.relation?.type !== 'accessory' ? explicit : '';
+}
+
+function inferBrandConsensus(ranked,input = {}) {
+  if (clean(input.brand || input.manufacturer)) return null;
+
+  const support = new Map();
+  for (const candidate of ranked || []) {
+    if (!exactTargetIdentity(candidate,input)) continue;
+
+    const brand = candidateTargetBrand(candidate,input);
+    const key = norm(brand);
+    if (!key) continue;
+    if (['router','monitor','telewizor','drukarka','smartfon','telefon'].includes(key)) continue;
+
+    let weight = candidate?.relation?.type === 'accessory' ? 1 : 2;
+    if (candidate?.trust?.brand === true || candidate?.trust?.manufacturer === true) weight += 1;
+
+    const current = support.get(key) || {brand,weight:0,count:0};
+    current.weight += weight;
+    current.count += 1;
+    support.set(key,current);
+  }
+
+  const rankedBrands = [...support.values()]
+    .sort((a,b) => b.weight - a.weight || b.count - a.count || a.brand.localeCompare(b.brand,'pl'));
+
+  const first = rankedBrands[0];
+  const second = rankedBrands[1];
+  if (!first || first.weight < 4) return null;
+
+  const secondWeight = Number(second?.weight || 0);
+  if (secondWeight && first.weight < secondWeight * 1.6) return null;
+  if (secondWeight && first.weight - secondWeight < 2) return null;
+
+  return {
+    brand:first.brand,
+    key:norm(first.brand),
+    weight:first.weight,
+    count:first.count,
+    runnerUp:second ? {brand:second.brand,weight:second.weight,count:second.count} : null
+  };
+}
+
+function applyBrandConsensus(ranked,input = {}) {
+  const consensus = inferBrandConsensus(ranked,input);
+  if (!consensus) return {ranked,consensus:null};
+
+  const adjusted = ranked.map(candidate => {
+    const brand = candidateTargetBrand(candidate,input);
+    const key = norm(brand);
+    if (!key) return candidate;
+
+    let delta = 0;
+    if (key === consensus.key) {
+      delta = candidate?.relation?.type === 'accessory' ? 4 : 18;
+    } else if (exactTargetIdentity(candidate,input) && candidate?.relation?.type !== 'accessory') {
+      delta = -18;
+    }
+
+    if (!delta) return candidate;
+
+    return {
+      ...candidate,
+      score:Math.max(0,Math.min(100,Math.round(candidate.score + delta))),
+      evidence:[
+        ...(candidate.evidence || []),
+        {
+          field:'brand-consensus',
+          label:'Marka wspierana przez wiele wyników',
+          status:delta > 0 ? 'supporting' : 'conflict',
+          points:delta,
+          trusted:false,
+          value:consensus.brand
+        }
+      ],
+      warnings:delta < 0
+        ? [
+            ...(candidate.warnings || []),
+            {
+              field:'brand-consensus',
+              severity:'warning',
+              message:'Inne wyniki dla tego modelu częściej wskazują markę ' + consensus.brand + '.'
+            }
+          ]
+        : (candidate.warnings || [])
+    };
+  }).sort((a,b) => b.score - a.score || clean(a.name).localeCompare(clean(b.name)));
+
+  return {ranked:adjusted,consensus};
+}
+
 export function analyzeResearchCandidates(products, input = {}, selectedId = '') {
-  const ranked = (Array.isArray(products) ? products : [])
+  const initiallyRanked = (Array.isArray(products) ? products : [])
     .filter(Boolean)
     .map(product => {
-      const analysis = scoreCandidate(product,input);
-      return {...product,score:analysis.score,evidence:analysis.evidence,warnings:analysis.warnings};
+      const analysis = rankResearchCandidate(product,input);
+      return {
+        ...product,
+        score:analysis.score,
+        evidence:analysis.evidence,
+        warnings:analysis.warnings,
+        relation:analysis.relation
+      };
     })
     .sort((a,b) => b.score - a.score || clean(a.name).localeCompare(clean(b.name)));
+
+  const brandAdjusted = applyBrandConsensus(initiallyRanked,input);
+  const ranked = brandAdjusted.ranked;
 
   if (!ranked.length) {
     return {
@@ -304,13 +475,67 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
     identitySignature(selected) !== identitySignature(runnerUp)
   );
 
+  const brandCollision = !requested && hasBrandCollision(ranked,input);
+  // Short alphanumeric models (e.g. L3250, QC45) may be shared across
+  // manufacturers. Keep the ranking but require tester confirmation when
+  // the brand was not supplied.
+  const queryFingerprint = modelFingerprint(input.model || input.mpn || input.query);
+  const shortModelAmbiguity = Boolean(
+    !requested &&
+    !clean(input.brand || input.manufacturer) &&
+    queryFingerprint.length >= 3 &&
+    queryFingerprint.length <= 5 &&
+    /[a-z]/.test(queryFingerprint) &&
+    /[0-9]/.test(queryFingerprint)
+  );
+  const selectedAccessory = selected?.relation?.type === 'accessory';
+  // Exact catalog model/MPN identity is required before a code-like query
+  // can be treated as unambiguous. A product-family title or a code prefix
+  // alone is not enough to silently accept a particular physical variant.
+  const exactCatalogIdentity = Boolean(
+    queryFingerprint &&
+    [selected?.model,selected?.mpn]
+      .map(modelFingerprint)
+      .some(value => value && value === queryFingerprint)
+  );
+  const identityNeedsReview = Boolean(
+    !requested &&
+    queryFingerprint.length >= 4 &&
+    /[a-z]/.test(queryFingerprint) &&
+    /[0-9]/.test(queryFingerprint) &&
+    !exactCatalogIdentity
+  );
+  const strongestPrimary = ranked.find(item => item?.relation?.type !== 'accessory') || null;
+  const noConfidentProduct = Boolean(
+    selectedAccessory ||
+    selected.score < 35 ||
+    (!strongestPrimary && ranked.length)
+  );
+
   return {
     selected,
     ranked,
     confidence:selected.score,
-    requiresTesterChoice:closeCompetition,
+    requiresTesterChoice:Boolean(
+      closeCompetition ||
+      brandCollision ||
+      shortModelAmbiguity ||
+      identityNeedsReview ||
+      selectedAccessory ||
+      selected.score < 55
+    ),
     selectedBy:requested ? 'tester' : 'ranking',
-    warnings:selected.warnings || []
+    warnings:selected.warnings || [],
+    ambiguity:{
+      closeCompetition,
+      brandCollision,
+      shortModelAmbiguity,
+      identityNeedsReview,
+      selectedAccessory,
+      noConfidentProduct,
+      strongestPrimaryScore:strongestPrimary?.score ?? null,
+      brandConsensus:brandAdjusted.consensus
+    }
   };
 }
 
@@ -379,6 +604,6 @@ export function buildResearchResult(products, input = {}, selectedId = '') {
   return {
     ...analysis,
     description:buildDescription(analysis.selected,input,analysis),
-    confidenceMethod:'product-research-v2'
+    confidenceMethod:'product-research-v3'
   };
 }
