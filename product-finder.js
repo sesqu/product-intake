@@ -97,6 +97,165 @@
     } catch {}
   }
 
+  const AUDIT_KEY = 'productIntake.finderAudit.v1';
+  const AUDIT_LIMIT = 50;
+  let activeSearch = 0;
+
+  function auditEnabled() {
+    return Boolean($('productFinderDiagnosticsToggle')?.checked);
+  }
+
+  function readAudit() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]');
+      return Array.isArray(raw) ? raw.slice(0,AUDIT_LIMIT) : [];
+    } catch { return []; }
+  }
+
+  function shortSnapshot(value) {
+    return {
+      id:clean(value?.id).slice(0,160),
+      name:clean(value?.name).slice(0,300),
+      model:clean(value?.model).slice(0,120),
+      mpn:clean(value?.mpn).slice(0,120),
+      score:Number.isFinite(Number(value?.score)) ? Number(value.score) : null
+    };
+  }
+
+  function comparisonHtml(result) {
+    const safe=requireConfig().safe;
+    const stats=result?.comparison;
+    if (!stats || (!stats.phrase && !stats.mpn)) {
+      return '<p class="muted" style="font-size:12px">Porównanie fraza / MPN będzie widoczne po uruchomieniu nowej wersji API v44b.</p>';
+    }
+    const item=(label,source)=>'<div style="flex:1;min-width:170px;border:1px solid #303947;border-radius:10px;padding:10px">'+
+      '<b>'+safe(label)+'</b>'+
+      '<div class="muted" style="font-size:12px">Wyników: '+safe(source?.count ?? 0)+'</div>'+
+      '<div style="margin-top:6px;font-size:12px">'+safe(source?.best?.name || 'Brak produktu')+'</div>'+
+      '<div class="muted" style="font-size:11px">'+
+        (source?.best ? 'Ocena: '+safe(source.best.score ?? source.confidence ?? '?')+' pkt' : '')+
+      '</div></div>';
+    return '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">'+
+      item('Wyszukiwanie frazowe',stats.phrase)+
+      item('Tryb MPN',stats.mpn)+
+    '</div><div class="muted" style="font-size:11px;margin-top:5px">'+
+      'Ta sama pula zapytań, bez dodatkowych wywołań Allegro. Kandydat może wystąpić w obu grupach.'+
+    '</div>';
+  }
+
+  function auditPanel(result) {
+    if (!auditEnabled() || state.kind !== 'research') return '';
+    const safe=requireConfig().safe;
+    const candidates=candidatesOf(result);
+    const choices=candidates.map(candidate=>
+      '<button type="button" class="btn" data-finder-verify="'+safe(candidate.id || '')+'">'+
+        'Potwierdź: '+safe(candidate.name || 'produkt')+
+      '</button>'
+    ).join('');
+    return '<section class="note" style="margin-top:12px">'+
+      '<b>Test identyfikacji produktu</b>'+
+      '<div class="muted" style="font-size:12px">Porównaj wyniki z fizyczną sztuką. Sam wynik punktowy nie potwierdza zgodności modelu.</div>'+
+      comparisonHtml(result)+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">'+
+        choices+
+        '<button type="button" class="btn" data-finder-verdict="missing">Nie ma właściwego produktu</button>'+
+        '<button type="button" class="btn" data-finder-verdict="uncertain">Nie wiem / do wyjaśnienia</button>'+
+      '</div>'+
+      '<div class="muted" style="font-size:11px;margin-top:10px">Zapisz wynik testu tylko po sprawdzeniu produktu. Nie zmienia to mastera ani aukcji.</div>'+
+    '</section>';
+  }
+
+  function recordAudit(verdict,candidateId='') {
+    if (!auditEnabled() || state.kind !== 'research' || !state.result || !state.input) return false;
+    const candidates=candidatesOf(state.result);
+    const chosen=candidates.find(x=>String(x.id)===String(candidateId))||null;
+    if (verdict==='correct' && !chosen) return false;
+    const first=candidates[0]||null;
+    const compactAttempts=(state.result.searchAttempts||[]).slice(0,3).map(x=>({
+      mode:clean(x.mode) || 'PHRASE',
+      phrase:clean(x.phrase).slice(0,150),
+      foundCount:Number(x.foundCount)||0,
+      uniqueAdded:Number(x.uniqueAdded)||0,
+      error:clean(x.error).slice(0,160)
+    }));
+    const snapshot= {
+      id:String(Date.now())+'-'+Math.random().toString(36).slice(2,9),
+      savedAt:new Date().toISOString(),
+      input:{
+        query:state.input.query.slice(0,150),
+        brand:state.input.brand.slice(0,100),
+        mpn:state.input.mpn.slice(0,100)
+      },
+      method:clean(state.result.confidenceMethod),
+      verdict: verdict==='correct'
+        ? (String(first?.id)===String(chosen.id) ? 'top1' : 'other')
+        : verdict,
+      best:first?shortSnapshot(first):null,
+      chosen:chosen?shortSnapshot(chosen):null,
+      candidates:candidates.map(shortSnapshot),
+      attempts:compactAttempts,
+      comparison:state.result.comparison || null,
+      bestFoundBy:state.result.bestFoundBy || null,
+      requiresTesterChoice:Boolean(state.result.requiresTesterChoice)
+    };
+    try{
+      const all=[snapshot,...readAudit()].slice(0,AUDIT_LIMIT);
+      localStorage.setItem(AUDIT_KEY,JSON.stringify(all));
+    }catch{
+      requireConfig().toast?.('Nie udało się zapisać testu w przeglądarce.');
+      return false;
+    }
+    renderAuditHistory();
+    requireConfig().toast?.('Zapisano ocenę testera w lokalnej historii.');
+    return true;
+  }
+
+  function renderAuditHistory() {
+    const list=$('productFinderAuditList');
+    if (!list) return;
+    const safe=requireConfig().safe;
+    const rows=readAudit();
+    if ($('productFinderAuditCount')) $('productFinderAuditCount').textContent=String(rows.length);
+    const label={
+      top1:'TOP 1 poprawny',
+      other:'Poprawny inny kandydat',
+      missing:'Brak właściwego produktu',
+      uncertain:'Nierozstrzygnięte'
+    };
+    const ok=rows.filter(x=>x.verdict==='top1').length;
+    const other=rows.filter(x=>x.verdict==='other').length;
+    const wrong=rows.filter(x=>x.verdict==='missing').length;
+    list.innerHTML=rows.length
+      ? '<div class="muted" style="margin:8px 0;font-size:12px">TOP1: '+ok+
+        ' · Inny kandydat: '+other+' · Brak: '+wrong+
+        ' · Nierozstrzygnięte: '+(rows.length-ok-other-wrong)+
+        ' (oceny ręczne, nie statystyka całego katalogu)</div>'+
+        rows.slice(0,15).map(x=>'<div style="border-top:1px solid #303947;padding:9px 0">'+
+          '<b>'+safe(x.input?.query || 'Brak modelu')+'</b>'+
+          '<div class="muted" style="font-size:12px">'+safe(label[x.verdict]||'Test')+
+            ' · '+safe(x.savedAt||'')+'</div>'+
+          '<div style="font-size:12px">'+safe(x.chosen?.name || x.best?.name || 'Brak kandydatów')+'</div>'+
+        '</div>').join('')+
+        (rows.length>15 ? '<div class="muted">Pokazano 15 najnowszych; pełne dane w eksporcie JSON.</div>' : '')
+      : '<p class="muted">Brak zapisanych testów.</p>';
+  }
+
+  async function exportAudit() {
+    const rows=readAudit();
+    if (!rows.length){requireConfig().toast?.('Brak testów do skopiowania.');return;}
+    try{
+      await navigator.clipboard.writeText(JSON.stringify({
+        format:'product-intake-finder-audit-v1',
+        storage:'local-only',
+        exportedAt:new Date().toISOString(),
+        tests:rows
+      },null,2));
+      requireConfig().toast?.('Skopiowano raport testów.');
+    }catch {
+      requireConfig().toast?.('Nie udało się skopiować historii.');
+    }
+  }
+
   function scoreOf(candidate,result,index) {
     const raw =
       candidate?.score ??
@@ -266,7 +425,9 @@
       box.style.display = 'block';
       box.innerHTML =
         '<div class="note">Nie znaleziono produktu. Dopisz markę / producenta, MPN albo dodatkową informację i spróbuj ponownie.</div>'+
-        researchTraceHtml(result);
+        researchTraceHtml(result)+
+        auditPanel(result);
+      bindAuditActions(box);
       return;
     }
 
@@ -298,7 +459,8 @@
           : '')+
       '<div style="display:grid;gap:10px;margin-top:12px">'+
         candidates.map((candidate,index) => renderCandidate(candidate,result,index)).join('')+
-      '</div>';
+      '</div>'+
+      auditPanel(result);
 
     $('productFinderRefresh').onclick = () => runSearch({force:true});
 
@@ -307,6 +469,16 @@
     });
     box.querySelectorAll('[data-finder-description]').forEach(button => {
       button.onclick = () => buildDescription(button.dataset.finderDescription);
+    });
+    bindAuditActions(box);
+  }
+
+  function bindAuditActions(box) {
+    box.querySelectorAll('[data-finder-verify]').forEach(button => {
+      button.onclick=()=>recordAudit('correct',button.dataset.finderVerify);
+    });
+    box.querySelectorAll('[data-finder-verdict]').forEach(button => {
+      button.onclick=()=>recordAudit(button.dataset.finderVerdict);
     });
   }
 
@@ -343,6 +515,7 @@
   }
 
   async function runSearch({force=false}={}) {
+    const searchId=++activeSearch;
     const {toast} = requireConfig();
     const input = currentInput();
 
@@ -372,11 +545,13 @@
 
     try {
       const data = await fetchRemote(input);
+      if (searchId !== activeSearch) return;
       state.result = data;
       state.fromCache = false;
       writeCache(input,data);
       renderResult(data);
     } catch (error) {
+      if (searchId !== activeSearch) return;
       if (box) {
         box.innerHTML = '<div class="note">Błąd: '+requireConfig().safe(error.message || 'nie udało się wyszukać produktu')+'</div>';
       }
@@ -450,6 +625,18 @@
     if (!$('productFinderSearch')) return;
 
     $('productFinderSearch').onclick = () => runSearch();
+    $('productFinderDiagnosticsToggle')?.addEventListener('change',()=>{
+      if (state.result) renderResult(state.result,{fromCache:state.fromCache});
+    });
+    if ($('productFinderAuditExport')) $('productFinderAuditExport').onclick=exportAudit;
+    if ($('productFinderAuditClear')) $('productFinderAuditClear').onclick=()=>{
+      if (!readAudit().length) return;
+      if (typeof confirm === 'function' && !confirm('Usunąć lokalną historię testów wyszukiwania?')) return;
+      localStorage.removeItem(AUDIT_KEY);
+      renderAuditHistory();
+      requireConfig().toast?.('Usunięto historię testów.');
+    };
+    renderAuditHistory();
     $('productFinderQuery')?.addEventListener('keydown', event => {
       if (event.key === 'Enter') {
         event.preventDefault();
