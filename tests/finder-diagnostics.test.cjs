@@ -169,7 +169,7 @@ finder.setup({safe:escapeHtml,apiBase:()=> 'https://test.invalid',toast:m=>toast
   payload={best:{id:'normal',name:'Produkt ze zwykłego API'},candidates:[]};
   await finder.runSearch({force:true});
   const normalCall=requestLog[requestLog.length-1];
-  assert.equal(normalCall.url,'https://example.invalid/api/research');
+  assert.equal(normalCall.url,'https://test.invalid/api/research');
   assert(!('x-staging-test-key' in normalCall.opts.headers));
   assert(container.innerHTML.includes('data-finder-use='));
   console.log('PASS integrated Finder: local diagnostics, stage isolation, browser-only key and master protection.');
