@@ -476,6 +476,18 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
   );
 
   const brandCollision = !requested && hasBrandCollision(ranked,input);
+  // Short alphanumeric models (e.g. L3250, QC45) may be shared across
+  // manufacturers. Keep the ranking but require tester confirmation when
+  // the brand was not supplied.
+  const queryFingerprint = modelFingerprint(input.model || input.mpn || input.query);
+  const shortModelAmbiguity = Boolean(
+    !requested &&
+    !clean(input.brand || input.manufacturer) &&
+    queryFingerprint.length >= 3 &&
+    queryFingerprint.length <= 5 &&
+    /[a-z]/.test(queryFingerprint) &&
+    /[0-9]/.test(queryFingerprint)
+  );
   const selectedAccessory = selected?.relation?.type === 'accessory';
   const strongestPrimary = ranked.find(item => item?.relation?.type !== 'accessory') || null;
   const noConfidentProduct = Boolean(
@@ -491,6 +503,7 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
     requiresTesterChoice:Boolean(
       closeCompetition ||
       brandCollision ||
+      shortModelAmbiguity ||
       selectedAccessory ||
       selected.score < 55
     ),
@@ -499,6 +512,7 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
     ambiguity:{
       closeCompetition,
       brandCollision,
+      shortModelAmbiguity,
       selectedAccessory,
       noConfidentProduct,
       strongestPrimaryScore:strongestPrimary?.score ?? null,
