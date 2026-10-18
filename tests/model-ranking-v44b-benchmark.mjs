@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { analyzeResearchCandidates } from '../worker/src/product-research.js';
 import { buildModelQueryVariants } from '../worker/src/research-ranking-v3.js';
 
@@ -94,6 +95,33 @@ function isPrimary(candidate,test){
     !nonFunctional.test(name) &&
     candidate?.relation?.type!=='accessory'
   );
+}
+
+
+const groundTruthTraps = [
+  {
+    query:'14T',brand:'Xiaomi',primary:/smartfon/i,
+    candidate:{name:'Atrapa eksponat prezenter smartfon XIAOMI 14T',brand:'Xiaomi',model:'14T'},
+    expected:false
+  },
+  {
+    query:'DHP484',brand:'Makita',primary:/wiertark|wkrętark/i,
+    candidate:{name:'Makita DLX2180TJ DTD153 DHP484 zestaw wkrętarek',brand:'Makita',model:'DLX2180TJ'},
+    expected:false
+  },
+  {
+    query:'GWS 18V-10',brand:'Bosch',primary:/szlifierk/i,
+    candidate:{name:'Szlifierka Bosch 1000 W 18 V',brand:'Bosch',model:'inne'},
+    expected:false
+  },
+  {
+    query:'GSR 18V-55',brand:'Bosch',primary:/wiertark|wkrętark/i,
+    candidate:{name:'Bosch GSR 18V-55 wiertarko-wkrętarka',brand:'Bosch',model:'GSR 18V-55'},
+    expected:true
+  }
+];
+for (const item of groundTruthTraps) {
+  assert.equal(isPrimary(item.candidate,item),item.expected,'Ground-truth evaluator: '+item.query);
 }
 
 function unique(items){
