@@ -47,12 +47,15 @@
   function detectKind(query) {
     const value = clean(query).replace(/\s+/g,'');
     if (/^\d{8,14}$/.test(value)) return 'ean';
+    if (/^[A-Z0-9]{10}$/i.test(value) && /[A-Z]/i.test(value)) return 'asin';
     return 'research';
   }
 
   function currentInput() {
     return {
-      query:clean($('productFinderQuery')?.value),
+      query:clean($('productFinderAsin')?.value) || clean($('productFinderQuery')?.value),
+      asin:clean($('productFinderAsin')?.value),
+      domain:clean($('productFinderAmazonDomain')?.value) || 'amazon.pl',
       brand:clean($('productFinderBrand')?.value),
       manufacturer:clean($('productFinderBrand')?.value),
       mpn:clean($('productFinderMpn')?.value),
@@ -64,6 +67,8 @@
     return [
       requireConfig().apiBase().replace(/\/$/,''),
       norm(input.query),
+      norm(input.asin),
+      norm(input.domain),
       norm(input.brand),
       norm(input.mpn),
       norm(input.details)
@@ -162,7 +167,7 @@
   }
 
   function auditPanel(result) {
-    if (!auditEnabled() || state.kind !== 'research') return '';
+    if (!auditEnabled() || !['research','asin'].includes(state.kind)) return '';
     const safe=requireConfig().safe;
     const candidates=candidatesOf(result);
     const choices=candidates.map(candidate=>
@@ -184,7 +189,7 @@
   }
 
   function recordAudit(verdict,candidateId='') {
-    if (!auditEnabled() || state.kind !== 'research' || !state.result || !state.input) return false;
+    if (!auditEnabled() || !['research','asin'].includes(state.kind) || !state.result || !state.input) return false;
     const candidates=candidatesOf(state.result);
     const chosen=candidates.find(x=>String(x.id)===String(candidateId))||null;
     if (verdict==='correct' && !chosen) return false;
@@ -202,7 +207,9 @@
       input:{
         query:state.input.query.slice(0,150),
         brand:state.input.brand.slice(0,100),
-        mpn:state.input.mpn.slice(0,100)
+        mpn:state.input.mpn.slice(0,100),
+        asin:(state.input.asin || (state.kind==='asin'?state.input.query:'')).slice(0,15),
+        domain:state.input.domain
       },
       method:clean(state.result.confidenceMethod),
       verdict: verdict==='correct'
@@ -348,8 +355,10 @@
 
   function renderCandidate(candidate,result,index) {
     const safe = requireConfig().safe;
-    const score = scoreOf(candidate,result,index);
-    const quality = qualityLabel(score);
+    const score = state.kind==='asin' ? null : scoreOf(candidate,result,index);
+    const quality = state.kind==='asin'
+      ? {text:'Amazon — do weryfikacji',className:'warn'}
+      : qualityLabel(score);
     const primary = result?.best || candidatesOf(result)[0] || null;
     const variant = variantHint(candidate,primary);
     const warnings = Array.isArray(candidate?.warnings)
@@ -361,6 +370,9 @@
     return '<div class="pi-finder-card" data-finder-candidate="'+safe(candidate.id || '')+'">'+
       '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">'+
         '<div style="min-width:0">'+
+          (state.kind==='asin' && candidate.image
+            ? '<img src="'+safe(candidate.image)+'" alt="" loading="lazy" style="float:right;max-width:95px;max-height:100px;border-radius:8px;margin:0 0 8px 12px">'
+            : '')+
           '<b style="display:block">'+safe(candidate.name || 'Bez nazwy')+'</b>'+
           '<div class="muted" style="font-size:12px;margin-top:4px">'+
             safe([
@@ -376,6 +388,11 @@
         '</div>'+
       '</div>'+
       (variant ? '<div class="note" style="margin-top:9px">'+safe(variant)+'</div>' : '')+
+      (state.kind==='asin'
+        ? '<div class="muted" style="margin-top:9px;font-size:12px">ASIN: '+safe(candidate.asin)+
+          ' · '+safe(result?.marketplace || 'Amazon')+
+          ' · brak automatycznego EAN i potwierdzenia wariantu.</div>'
+        : '')+
       (warnings.length
         ? '<div style="margin-top:8px;font-size:11px" class="warn">'+
             warnings.slice(0,3).map(item => '⚠ '+safe(item.message || item)).join('<br>')+
@@ -385,8 +402,11 @@
       (state.fromStaging
         ? '<div class="muted" style="font-size:12px;margin-top:10px">Tryb testowy — wybierz ocenę poniżej. Import do mastera jest zablokowany.</div>'
         : '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">'+
-          '<button type="button" class="btn primary" data-finder-use="'+safe(candidate.id || '')+'">Użyj tego produktu</button>'+
-          '<button type="button" class="btn" data-finder-description="'+safe(candidate.id || '')+'">Zbuduj opis</button>'+
+          '<button type="button" class="btn primary" data-finder-use="'+safe(candidate.id || '')+'">'+
+            (state.kind==='asin' ? 'Potwierdzam produkt i używam danych Amazon' : 'Użyj tego produktu')+
+          '</button>'+
+          (state.kind==='asin' ? '' :
+            '<button type="button" class="btn" data-finder-description="'+safe(candidate.id || '')+'">Zbuduj opis</button>')+
         '</div>')+
     '</div>';
   }
@@ -444,17 +464,18 @@
     if (!candidates.length) {
       box.style.display = 'block';
       box.innerHTML =
-        '<div class="note">Nie znaleziono produktu. Dopisz markę / producenta, MPN albo dodatkową informację i spróbuj ponownie.</div>'+
+        '<div class="note">'+(state.kind==='asin'
+          ? safe(result?.message || 'Nie znaleziono tego ASIN w wybranym sklepie Amazon.')
+          : 'Nie znaleziono produktu. Dopisz markę / producenta, MPN albo dodatkową informację i spróbuj ponownie.')+'</div>'+
         researchTraceHtml(result)+
         auditPanel(result);
       bindAuditActions(box);
       return;
     }
 
-    const mode =
-      state.kind === 'ean'
-        ? 'EAN / GTIN'
-        : 'model / MPN / fraza';
+    const mode = state.kind === 'ean' ? 'EAN / GTIN'
+      : state.kind === 'asin' ? 'ASIN / Amazon przez SerpApi'
+      : 'model / MPN / fraza';
     const used = Array.isArray(result?.queriesUsed) && result.queriesUsed.length
       ? '<div class="muted" style="font-size:11px;margin-top:5px">Próby: '+safe(result.queriesUsed.join(' → '))+'</div>'
       : '';
@@ -466,6 +487,12 @@
           '<div class="muted">Tryb: '+safe(mode)+' • nic nie wpisujemy do mastera bez Twojego wyboru.</div>'+
           (state.fromStaging ? '<div class="note" style="margin-top:8px">Wyniki z odizolowanego stagingu v44b. Nie można użyć ich do zapisu produktu.</div>' : '')+
           used+
+          (state.kind==='asin'
+            ? '<div class="muted" style="font-size:12px;margin-top:8px">Źródło: SerpApi / '+safe(result?.marketplace || '')+
+              (result?.cached ? ' · wynik z pamięci 24h' : ' · pobrano online')+'</div>'+
+              '<div class="note" style="margin-top:8px">Źródło nieoficjalne. Porównaj ASIN, model i wariant z fizyczną sztuką. Dane Amazon nie mają pierwszeństwa przed innymi źródłami.</div>'+
+              (result?.sourceUrl ? '<a href="'+safe(result.sourceUrl)+'" target="_blank" rel="noopener noreferrer" style="font-size:12px">Otwórz kartę na Amazon ↗</a>' : '')
+            : '')+
           researchTraceHtml(result)+
         '</div>'+
         '<div>'+
@@ -538,10 +565,35 @@
     return data;
   }
 
+  async function fetchAsin(input,useStage=false) {
+    const {apiBase}=requireConfig();
+    const asin=clean(input.asin || input.query).toUpperCase();
+    if (!/^[A-Z0-9]{10}$/.test(asin)) {
+      throw new Error('ASIN musi mieć 10 liter lub cyfr.');
+    }
+    const domain=clean(input.domain)||'amazon.pl';
+    if (!['amazon.pl','amazon.de','amazon.com'].includes(domain)) {
+      throw new Error('Nieobsługiwany region Amazon.');
+    }
+    const key=clean($('productFinderStagingKey')?.value);
+    if(useStage && key.length<20) throw new Error('Wpisz klucz do testowego Workera.');
+    const query=new URLSearchParams({asin,domain});
+    const response=await fetch(
+      (useStage ? STAGING_API : apiBase().replace(/\/$/,''))+'/api/asin?'+query.toString(),{
+        headers:useStage ? {'x-staging-test-key':key} : {},
+        cache:'no-store'
+      }
+    );
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(data.error || 'Nie udało się pobrać danych ASIN.');
+    return data;
+  }
+
   async function fetchRemote(input,candidateId='',useStage=false) {
-    if (useStage && detectKind(input.query) === 'ean') {
+    if (useStage && !input.asin && detectKind(input.query) === 'ean') {
       throw new Error('Testowy tryb MPN wymaga kodu modelu albo frazy, a nie EAN.');
     }
+    if (input.asin || detectKind(input.query)==='asin') return fetchAsin(input,useStage);
     return detectKind(input.query) === 'ean'
       ? fetchEan(input,candidateId)
       : fetchResearch(input,candidateId,useStage);
@@ -553,14 +605,14 @@
     const input = currentInput();
 
     if (!input.query) {
-      toast('Wpisz EAN, model, MPN albo nazwę identyfikującą produkt.');
+      toast('Wpisz EAN, ASIN, model, MPN albo nazwę produktu.');
       $('productFinderQuery')?.focus();
       return;
     }
 
     const useStage=stagingEnabled();
     state.input = input;
-    state.kind = detectKind(input.query);
+    state.kind = input.asin ? 'asin' : detectKind(input.query);
     state.fromStaging=useStage;
     const box = $('productFinderResult');
     if (box) {
@@ -605,6 +657,7 @@
       toast('Wyniku stagingu nie można zapisać do mastera.');
       return;
     }
+    const asinResult=state.kind==='asin';
     const button = [...document.querySelectorAll('[data-finder-use]')]
       .find(item => String(item.dataset.finderUse) === String(candidateId || ''));
     const oldText = button?.textContent;
@@ -614,10 +667,13 @@
     }
 
     try {
-      const data = await selectedResult(candidateId);
-      const ok = state.kind === 'ean'
-        ? catalogLookup.renderRemote(data)
-        : catalogLookup.acceptResearchResult(data);
+      const data = asinResult ? state.result : await selectedResult(candidateId);
+      const ok = asinResult
+        ? (String(data?.best?.id)===String(candidateId) &&
+          catalogLookup.acceptAsinResult?.(data))
+        : state.kind === 'ean'
+          ? catalogLookup.renderRemote(data)
+          : catalogLookup.acceptResearchResult(data);
 
       if (ok !== false) {
         saveDraft?.();
@@ -641,7 +697,7 @@
   }
 
   function buildDescription(candidateId) {
-    if (state.fromStaging) return;
+    if (state.fromStaging || state.kind==='asin') return;
     const candidate = candidateById(candidateId);
     if (!candidate) return;
 
