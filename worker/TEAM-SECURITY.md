@@ -96,7 +96,7 @@ włączać go w publicznej aplikacji przed ukończeniem frontendu i migracji.
 - `GET /api/team/me` — podpisana tożsamość i rola.
 - `GET/POST/PATCH /api/team/members` — zarządzanie pracownikami (owner).
 - `GET /api/team/members/history` — audyt kont (owner).
-- `GET /api/team/products` — lista.
+- `GET /api/team/products?cursor=...` — lista po 100 rekordów z `nextCursor`, bez pomijania starszych produktów.
 - `GET /api/team/products/:lpn` — bieżąca sztuka i wersja.
 - `POST /api/team/products/:lpn/claim` — przejmij / odśwież blokadę.
 - `POST /api/team/products/:lpn/release` — zwolnij blokadę.
