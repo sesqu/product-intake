@@ -179,7 +179,10 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   }
 
   return {
-    products:products.slice(0,40),
+    // Allegro returns at most 30 catalog products per page by default.
+    // Three attempts may each contribute a unique relevant product, so never
+    // truncate to 40 before the combined ranking has inspected the results.
+    products:products.slice(0,90),
     queriesUsed,
     searchAttempts
   };
