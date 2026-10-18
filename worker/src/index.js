@@ -16,7 +16,7 @@ function out(data, status, origin) {
       "cache-control": "no-store",
       "access-control-allow-origin": origin,
       "access-control-allow-methods": "GET,POST,DELETE,OPTIONS",
-      "access-control-allow-headers": "content-type,x-workspace-key"
+      "access-control-allow-headers": "content-type,x-workspace-key,x-staging-test-key"
     }
   });
 }
@@ -492,11 +492,31 @@ async function handle(request, env) {
   if (request.method === "OPTIONS") return out({ ok: true }, 204, origin);
 
   const url = new URL(request.url);
+  const stagingOnly = clean(env.STAGING_ONLY) === "1";
+
+  // The feature staging Worker is intentionally inaccessible without its
+  // dedicated API key. OAuth callback is exempt because Allegro redirects a
+  // browser there and state+PKCE validation happens inside that route.
+  if (stagingOnly && url.pathname.startsWith("/api/") && url.pathname !== "/api/allegro/callback") {
+    const expected = clean(env.STAGING_API_KEY);
+    if (!expected) return out({error:"Staging API key is not configured"},503,origin);
+    const provided = clean(request.headers.get("x-staging-test-key"));
+    if (!provided || provided !== expected) {
+      return out({error:"Staging API key required"},401,origin);
+    }
+  }
+
+  if (stagingOnly && url.pathname === "/staging/oauth") {
+    const result = clean(url.searchParams.get("allegro"));
+    return out({environment:"staging",oauth:result || "unknown"},200,origin);
+  }
 
   if (url.pathname === "/health") {
     return out({
       status: "ok",
       service: "product-intake-api",
+      environment: stagingOnly ? "staging" : "production",
+      appVersion: clean(env.APP_VERSION),
       allegro: {
         configured: Boolean(env.ALLEGRO_CLIENT_ID && env.ALLEGRO_CLIENT_SECRET && env.ALLEGRO_REDIRECT_URI),
         connected: Boolean(await env.AUTH.get("allegro:refresh_token"))
@@ -565,7 +585,9 @@ async function handle(request, env) {
     const code = clean(url.searchParams.get("code"));
     const state = clean(url.searchParams.get("state"));
     const error = clean(url.searchParams.get("error"));
-    const frontend = "https://sesqu.github.io/product-intake/";
+    const frontend = stagingOnly
+      ? new URL("/staging/oauth",url.origin).toString()
+      : "https://sesqu.github.io/product-intake/";
 
     if (error) {
       const target = new URL(frontend);
