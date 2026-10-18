@@ -789,7 +789,9 @@ async function handle(request, env) {
         comparison,
         bestFoundBy:(result.selected?.id && search.firstSeenById?.[result.selected.id]) || null,
         best:result.selected,
-        candidates:(result.ranked || []).slice(0,5),
+        // Offer more ranked alternatives when top matches are misleading
+        // accessories or the correct variant sits below the first five.
+        candidates:(result.ranked || []).slice(0,12),
         confidence:result.confidence,
         confidenceMethod:result.confidenceMethod,
         requiresTesterChoice:result.requiresTesterChoice,
