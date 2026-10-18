@@ -1,4 +1,4 @@
-import { buildModelQueryVariants, modelFingerprint, rankResearchCandidate } from './research-ranking-v3.js';
+import { buildModelQueryVariants, inferProductTypeHint, modelFingerprint, rankResearchCandidate } from './research-ranking-v3.js';
 const AAPI = 'https://api.allegro.pl';
 const clean = value => String(value ?? '').trim();
 const norm = value => clean(value).toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
@@ -243,6 +243,29 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   const mpnPhrase = inferMpnSearchPhrase(input);
   if (mpnPhrase && shouldTryMpnMode(input)) {
     await runPhrase(mpnPhrase,'MPN','mpn');
+  }
+
+  // A device-family alias repeatedly reported by accessories may recover
+  // the actual main product more effectively than another MPN page.
+  // Example: accessories mention "Samsung Galaxy S24" for SM-S921B.
+  // Do not simply prepend "telefon": live checks showed that can produce
+  // only spare parts or no results. Require a distinct corroborated family
+  // alias AND an inferred device type; otherwise retain MPN pagination.
+  if(searchAttempts.length < maxAttempts && !hasStrongPrimary()){
+    const candidateHints=products.map(candidateHint);
+    const typeHints=inferProductTypeHint(candidateHints);
+    if(typeHints){
+      const target=modelFingerprint(rankingInput.model || rankingInput.mpn || rankingInput.query);
+      const suggestions=buildModelQueryVariants(rankingInput,candidateHints);
+      const familyPhrase=suggestions.slice(1).find(phrase=>{
+        const fp=modelFingerprint(phrase);
+        const normalized=norm(phrase);
+        return normalized.includes(norm(typeHints)) &&
+          target && !fp.includes(target) &&
+          phrase.split(/\\s+/).length>=3;
+      });
+      if(familyPhrase) await runPhrase(familyPhrase,'','device-family');
+    }
   }
 
   // When an exact manufacturer-code search returned only accessories, a
