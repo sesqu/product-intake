@@ -4,6 +4,7 @@ import {
   buildResearchResult
 } from './product-research.js';
 import { searchAllegroForResearch } from './research-allegro.js';
+import { stagingConnectPage, stagingConnectScript } from './staging-onboarding.js';
 
 const AAPI = "https://api.allegro.pl";
 const AOAUTH = "https://allegro.pl/auth/oauth";
@@ -504,6 +505,13 @@ async function handle(request, env) {
     if (!provided || provided !== expected) {
       return out({error:"Staging API key required"},401,origin);
     }
+  }
+
+  if (stagingOnly && url.pathname === "/staging/connect") {
+    return stagingConnectPage();
+  }
+  if (stagingOnly && url.pathname === "/staging/connect.js") {
+    return stagingConnectScript();
   }
 
   if (stagingOnly && url.pathname === "/staging/oauth") {
