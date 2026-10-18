@@ -718,12 +718,38 @@ async function handle(request, env) {
 
       const result = buildResearchResult(products,input,candidateId);
 
+      // Compare subsets returned by the same bounded Allegro request plan.
+      // A product appearing in both kinds is included in both rankings;
+      // comparisons do not perform any extra Allegro requests.
+      const perSource = search.foundModesById || {};
+      const rankSubset = (mode) => {
+        const subset = products.filter(p => (perSource[p.id] || []).includes(mode));
+        if (!subset.length) return {count:0,best:null,confidence:null};
+        const ranked = buildResearchResult(subset,input);
+        return {
+          count:subset.length,
+          best:ranked.selected ? {
+            id:ranked.selected.id,
+            name:ranked.selected.name,
+            score:ranked.selected.score ?? ranked.confidence
+          } : null,
+          confidence:ranked.confidence,
+          requiresTesterChoice:ranked.requiresTesterChoice
+        };
+      };
+      const comparison = {
+        phrase:rankSubset('PHRASE'),
+        mpn:rankSubset('MPN'),
+        method:'same-request-plan-deduplicated-overlap'
+      };
+
       return out({
         query:{...input,candidateId},
         source:"allegro",
         provider:"allegro-catalog",
         queriesUsed:search.queriesUsed || [],
         searchAttempts:search.searchAttempts || [],
+        comparison,
         bestFoundBy:(result.selected?.id && search.firstSeenById?.[result.selected.id]) || null,
         best:result.selected,
         candidates:(result.ranked || []).slice(0,5),
