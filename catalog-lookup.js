@@ -188,7 +188,8 @@
   }
 
   function applyConfidence(value) {
-    const number = Number(value);
+    // Missing external-source confidence is unknown, not a fabricated 0%.
+    const number = value == null || String(value).trim() === '' ? NaN : Number(value);
     latestConfidence = Number.isFinite(number)
       ? Math.max(0,Math.min(100,Math.round(number)))
       : null;
