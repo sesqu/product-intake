@@ -136,7 +136,9 @@ const researchSource = fs.readFileSync('product-research.js', 'utf8');
 assert(
   html.includes('id="productFinderQuery"') &&
   html.includes('id="productFinderSearch"') &&
-  html.includes('EAN, modelu, MPN'),
+  html.includes('EAN, ASIN, modelu, MPN') &&
+  html.includes('id="productFinderAsin"') &&
+  html.includes('id="productFinderAmazonDomain"'),
   'Główna identyfikacja nie zawiera uniwersalnego wyszukiwania produktu'
 );
 assert(
