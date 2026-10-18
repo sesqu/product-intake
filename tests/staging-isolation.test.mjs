@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { Script } from 'node:vm';
 import worker from '../worker/src/index.js';
 
 const root = new URL('../worker/',import.meta.url);
@@ -71,7 +72,9 @@ assert(connectHtml.includes('type="password"'));
 assert(!connectHtml.includes(env.STAGING_API_KEY),'Never embed staging secret into browser HTML');
 const connectScript=await worker.fetch(req('/staging/connect.js'),env);
 assert.equal(connectScript.status,200);
-assert((await connectScript.text()).includes("'x-staging-test-key'"));
+const connectJs=await connectScript.text();
+assert(connectJs.includes("'x-staging-test-key'"));
+assert.doesNotThrow(()=>new Script(connectJs),'Onboarding browser script must parse cleanly');
 const feedback=await worker.fetch(req('/staging/oauth?allegro=connected'),env);
 assert.equal((await feedback.json()).environment,'staging');
 
