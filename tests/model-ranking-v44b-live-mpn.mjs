@@ -15,9 +15,43 @@ if (
   base.username || base.password ||
   base.pathname !== '/' ||
   base.search || base.hash ||
-  base.hostname === 'product-intake.sesquu.workers.dev'
+  base.hostname !== 'product-intake-v44b-staging.sesquu.workers.dev'
 ) {
   console.error('BLOCKED: staging must use its own HTTPS origin, not the production Worker.');
+  process.exit(2);
+}
+const stageKey = String(process.env.V44B_STAGING_API_KEY || '').trim();
+if (stageKey.length < 20) {
+  console.error('BLOCKED: V44B_STAGING_API_KEY is missing or too short.');
+  process.exit(2);
+}
+const stageHeaders = {
+  'content-type':'application/json',
+  'x-staging-test-key':stageKey
+};
+async function verifyStagingIdentity(){
+  const healthResponse = await fetch(new URL('/health',base),{
+    headers:{'accept':'application/json'},
+    signal:AbortSignal.timeout(12000)
+  });
+  if(!healthResponse.ok) throw Error('Staging health failed: HTTP '+healthResponse.status);
+  const health = await healthResponse.json();
+  if (health.environment !== 'staging' || health.appVersion !== 'v44b-staging') {
+    throw Error('BLOCKED: wrong deployment identity (expected v44b-staging)');
+  }
+  if (!health.allegro?.configured || !health.allegro?.connected) {
+    throw Error('BLOCKED: staging Allegro OAuth credentials missing or not connected');
+  }
+  const denied = await fetch(new URL('/api/research',base),{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({query:'SM-S921B'}),
+    signal:AbortSignal.timeout(12000)
+  });
+  if(denied.status !== 401) throw Error('BLOCKED: staging API is not rejecting anonymous access');
+}
+try { await verifyStagingIdentity(); } catch(error) {
+  console.error(String(error?.message||error));
   process.exit(2);
 }
 const cases = [
@@ -37,7 +71,7 @@ for (const test of cases) {
     const start = Date.now();
     const response = await fetch(new URL('/api/research',base),{
       method:'POST',
-      headers:{'content-type':'application/json'},
+      headers:stageHeaders,
       body:JSON.stringify({query:test.query}),
       signal:AbortSignal.timeout(20000)
     });
