@@ -71,15 +71,15 @@ async function claim(db,workspace,key,user,release=false){
   const stamp=now();
   const action=release
     ? bind(db,`UPDATE team_products SET locked_by=NULL,lock_expires_at=NULL,
-          updated_by=?,updated_at=?
+          lock_changed_at=?,lock_updated_by=?
         WHERE workspace_id=? AND lpn_key=? AND deleted_at IS NULL
           AND locked_by=? AND lock_expires_at>?`,
-        user.email,stamp,workspace,key,user.email,stamp)
+        stamp,user.email,workspace,key,user.email,stamp)
     : bind(db,`UPDATE team_products SET locked_by=?,lock_expires_at=?,
-          updated_by=?,updated_at=?
+          lock_changed_at=?,lock_updated_by=?
         WHERE workspace_id=? AND lpn_key=? AND deleted_at IS NULL
           AND (locked_by IS NULL OR lock_expires_at<=? OR locked_by=?)`,
-        user.email,stamp+600,user.email,stamp,workspace,key,stamp,user.email);
+        user.email,stamp+600,stamp,user.email,workspace,key,stamp,user.email);
   const change=await action.run();
   if(change.meta?.changes!==1){
     const record=await details(db,workspace,key);
@@ -101,10 +101,10 @@ async function write(db,workspace,key,user,body){
   if(expected===0){
     const inserted=await bind(db,`INSERT INTO team_products
       (workspace_id,lpn_key,lpn,data_json,revision,locked_by,lock_expires_at,
-       updated_by,updated_at,created_by,created_at)
-      VALUES (?,?,?,?,1,?,?,?,?,?,?)
+       lock_changed_at,lock_updated_by,updated_by,updated_at,created_by,created_at)
+      VALUES (?,?,?,?,1,?,?,?,?,?,?,?,?)
       ON CONFLICT(workspace_id,lpn_key) DO NOTHING`,
-      workspace,key,lpn,packed,user.email,stamp+600,
+      workspace,key,lpn,packed,user.email,stamp+600,stamp,user.email,
       user.email,stamp,user.email,stamp).run();
     if(inserted.meta?.changes!==1)problem(409,'Produkt o tym LPN już istnieje. Pobierz jego aktualne dane.');
     return parseProduct(await details(db,workspace,key));
