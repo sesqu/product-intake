@@ -57,6 +57,44 @@ v44 było testowane z symulowanymi wynikami i offline na zapisanej
 próbce rzeczywistych kandydatów. Nie ma jeszcze end-to-end live
 nowego Workera.
 
+## Pomiar na rzeczywistych kandydatach (18.10.2026)
+
+Na produkcyjnym API v43 wykonano dodatkowe zapytania o rodzaj
+urządzenia, a następnie pobrane wyniki przetestowano **lokalnie**
+rankingiem v44 — bez wdrażania nowego backendu. Zachowano 8
+rzeczywistych próbek (24 kandydatów) w
+`tests/fixtures/allegro-live-refined-8.json`.
+
+- `Samsung Galaxy S24 smartfon`: stary katalog stawiał na pierwszym
+  miejscu **atrapę**, nowy ranking podniósł właściwy typ urządzenia,
+  ale **wariant SM-S921B nie jest potwierdzony kodem katalogowym**.
+  Wymagana decyzja testera.
+- `Samsung Galaxy A55 smartfon`: nowy ranking przesunął telefony
+  przed folie ochronne; wariant kodowy do sprawdzenia.
+- `Sony WH-1000XM5 nauszne`: zwrócono kompletne słuchawki.
+- `Makita DHP484 wiertarko-wkrętarka`: zwrócono rzeczywiste
+  wkrętarki; wariant BODY/Z/ZJ lub zestaw wymaga sprawdzenia.
+- `Roborock S8 MaxV Ultra robot odkurzający`: zwrócono pełnego robota.
+- `telefon SM-S921B`: stary backend zwrócił wyłącznie taśmę,
+  co potwierdza potrzebę kolejnego zapytania po rodzinie S24.
+- `Dreame L50 Ultra robot odkurzający`: katalog nie zwrócił wyników.
+- `Xiaomi 14T smartfon`: w TOP5 były wyłącznie atrapy i folie,
+  więc **nie uznajemy żadnego wyniku za kompletny smartfon**.
+
+Najnowszy eksperyment nie mierzy skuteczności pełnego v44.
+**Testowanie na prawdziwym katalogu dotyczy zapytań wykonywanych
+przez obecne API v43.** Testy v44 wykonują ranking na ich wynikach
+lub pracują na kontrolowanych odpowiedziach, bez niezależnego OAuth
+stagingowego Workera.
+
+Log: https://github.com/sesqu/product-intake/actions/runs/39132838759
+
+Zachowano także osobny test konfliktu marki: przy samotnej ofercie
+„Bosch DHP484” oraz dwóch niezależnych częściach Makita do tego
+kodu ostatnia próba kierowana jest na `MAKITA DHP484
+wiertarko-wkrętarka`. Nie zakładamy, że pojedyncza część
+rozstrzyga markę produktu.
+
 ## Zabezpieczenia testera
 
 Wybór kandydata zawsze jest jawny; ranking nie potwierdza rzeczywistej sztuki.
