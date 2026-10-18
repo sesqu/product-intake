@@ -73,6 +73,49 @@ try {
   assert(longQuery.products.some(x=>x.id==='samsung-main'));
   assert(requestLog.length<=3);
 
+  // Live A/B showed "telefon SM-S921B" returned a spare part, whereas a
+  // corroborated Galaxy S24 family name can return the real device. Spend
+  // the third request on the contextual device family only when it is
+  // repeatedly supported by the accessories and the category is clear.
+  requestLog.length=0;
+  const familyAccessory=i=>({
+    id:'family-part-'+i,
+    name:(i%2===0?'Etui':'Bateria')+' do Samsung Galaxy S24 SM-S921B',
+    category:{id:'parts',name:'Części do telefonów'},
+    parameters:[
+      {name:'Model',valuesLabels:['Galaxy S24']},
+      {name:'Marka',valuesLabels:['bez marki']}
+    ]
+  });
+  globalThis.fetch=async url=>{
+    const target=new URL(url);
+    const phrase=target.searchParams.get('phrase')||'';
+    const mode=target.searchParams.get('mode')||'';
+    requestLog.push({phrase,mode,cursor:target.searchParams.get('page.id')});
+    const recovered=/galaxy s24 smartfon/i.test(phrase);
+    return {ok:true,async json(){
+      return {
+        products:recovered?[rawPhone]:Array.from({length:30},(_,i)=>({
+          ...familyAccessory(i),id:mode+'-'+i
+        })),
+        nextPage:mode==='MPN'?{id:'mpn-page-two'}:null
+      };
+    }};
+  };
+  const family=await searchAllegroForResearch({
+    token:'test',input:{query:'telefon SM-S921B'}
+  });
+  assert.equal(requestLog[0].phrase,'telefon SM-S921B');
+  assert.equal(requestLog[1].phrase,'SM-S921B');
+  assert.equal(requestLog[1].mode,'MPN');
+  assert.equal(requestLog.length,3);
+  assert(/galaxy s24 smartfon/i.test(requestLog[2].phrase),
+    'Third attempt should recover a corroborated device family, not another plain phone keyword');
+  assert.equal(family.searchAttempts[2].reason,'device-family');
+  assert(family.products.some(x=>x.id==='samsung-main'));
+  assert(!requestLog.some(x=>x.cursor==='mpn-page-two'),
+    'Do not waste this third call on MPN pagination if family evidence is strong');
+
   // Structured brand + model previously used request #3 on a redundant
   // short phrase, preventing page 2 of the exact MPN search from being read.
   requestLog.length=0;
