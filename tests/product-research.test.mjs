@@ -289,6 +289,12 @@ assert(
 
 globalThis.fetch = originalFetch;
 
+const missingChoice=buildResearchResult([mapped],{model:'GSR 18V-55'},'id-not-returned');
+assert.equal(missingChoice.selected,null,'Missing requested catalog ID must never turn into TOP1');
+assert.equal(missingChoice.selectedBy,'not-found');
+assert.equal(missingChoice.ambiguity.candidateMissing,true);
+assert.equal(missingChoice.requiresTesterChoice,true);
+
 const result = buildResearchResult([mapped],{brand:'Bosch',model:'GSR 18V-55'});
 assert.equal(result.confidenceMethod,'product-research-v3');
 assert(result.description.title.includes('Bosch'));
