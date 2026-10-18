@@ -14,6 +14,7 @@ for(const key of [
   'productFinderResult','productFinderSearch','productFinderDiagnosticsToggle',
   'productFinderAuditList','productFinderAuditCount','productFinderAuditExport',
   'productFinderAuditClear','productFinderRefresh',
+  'productFinderMoreCandidates','productFinderExtraCandidates',
   'productFinderDiagnosticOptions','productFinderStagingToggle',
   'productFinderStagingCredentials','productFinderStagingKey',
   'productFinderAsin','productFinderAmazonDomain'
@@ -239,6 +240,29 @@ finder.setup({safe:escapeHtml,apiBase:()=> 'https://test.invalid',toast:m=>toast
   payload={best:{id:'ean-product',name:'EAN result'},candidates:[]};
   await finder.runSearch({force:true});
   assert(requestLog[requestLog.length-1].url.includes('/api/search?'));
+
+  // Show alternatives 6-12 only on demand, without additional calls.
+  elements.productFinderAsin.value='';
+  elements.productFinderQuery.value='SM-S921B';
+  payload={
+    best:{id:'p0',name:'Model SM-S921B 0',score:90},
+    candidates:Array.from({length:12},(_,i)=>({
+      id:'p'+i,name:'Model SM-S921B '+i,model:'SM-S921B',score:90-i
+    })),
+    requiresTesterChoice:true
+  };
+  await finder.runSearch({force:true});
+  assert(container.innerHTML.includes('Pokaż pozostałe propozycje (7)'));
+  assert(container.innerHTML.includes('id="productFinderExtraCandidates"'));
+  assert(container.innerHTML.includes('Model SM-S921B 11'));
+  const moreButton=elements.productFinderMoreCandidates;
+  const extraCandidates=elements.productFinderExtraCandidates;
+  assert.equal(typeof moreButton.onclick,'function');
+  moreButton.onclick();
+  assert.equal(extraCandidates.style.display,'grid');
+  assert(moreButton.textContent.includes('Ukryj'));
+  moreButton.onclick();
+  assert.equal(extraCandidates.style.display,'none');
 
   console.log('PASS integrated Finder: local diagnostics, stage isolation, browser-only key and master protection.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
