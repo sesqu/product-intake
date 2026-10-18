@@ -262,7 +262,7 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
         const normalized=norm(phrase);
         return normalized.includes(norm(typeHints)) &&
           target && !fp.includes(target) &&
-          phrase.split(/\\s+/).length>=3;
+          phrase.trim().split(' ').filter(Boolean).length>=3;
       });
       if(familyPhrase) await runPhrase(familyPhrase,'','device-family');
     }
