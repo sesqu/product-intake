@@ -680,6 +680,12 @@ async function handle(request, env) {
         .filter(Boolean);
 
       const result = buildResearchResult(products,input,candidateId);
+      if(candidateId && (!result.selected || result.selected.id !== candidateId)){
+        return out({
+          error:'Wybrany kandydat nie jest już dostępny w wynikach Allegro. Wyszukaj ponownie, aby uniknąć błędnej identyfikacji.',
+          reason:'candidate-not-found'
+        },409,origin);
+      }
 
       // Reuse collected candidate evidence. Comparison performs zero extra
       // Allegro calls; the same catalog ID may occur in both search modes.
