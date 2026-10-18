@@ -27,6 +27,26 @@ function restricted(user,allowed){
 }
 function bind(db,sql,...args){return db.prepare(sql).bind(...args);}
 function parseProduct(x){if(!x)return null;return {...x,data:JSON.parse(x.data_json),data_json:undefined};}
+function encodeCursor(row){
+  const data=JSON.stringify({at:row.updated_at,key:row.lpn_key});
+  const bytes=new TextEncoder().encode(data);
+  const base=btoa(String.fromCharCode(...bytes));
+  return base.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'');
+}
+function parseCursor(value){
+  if(!value)return null;
+  if(typeof value!=='string'||value.length>1000||!/^[A-Za-z0-9_-]+$/.test(value))
+    problem(400,'Nieprawidłowy wskaźnik strony');
+  try{
+    const bytes=Uint8Array.from(atob(value.replace(/-/g,'+').replace(/_/g,'/')
+      .padEnd(Math.ceil(value.length/4)*4,'=')),c=>c.charCodeAt(0));
+    const obj=JSON.parse(new TextDecoder().decode(bytes));
+    if(!Number.isSafeInteger(obj.at)||obj.at<0||
+       typeof obj.key!=='string'||obj.key.length>90)
+      problem(400,'Nieprawidłowy wskaźnik strony');
+    return obj;
+  }catch{problem(400,'Nieprawidłowy wskaźnik strony');}
+}
 function checkVersion(raw){
   if(!Number.isSafeInteger(raw)||raw<0)problem(428,'Wymagana aktualna wersja produktu (expectedRevision)');
   return raw;
@@ -184,11 +204,21 @@ export async function handleTeamApi(request,env){
       return result({email,role,active:Boolean(active)});
     }
     if(route==='/products'&&request.method==='GET'){
-      const list=await bind(db,`SELECT lpn,revision,updated_by,updated_at,
+      const cursor=parseCursor(url.searchParams.get('cursor'));
+      const sql=`SELECT lpn,lpn_key,revision,updated_by,updated_at,
         locked_by,lock_expires_at FROM team_products
-        WHERE workspace_id=? AND deleted_at IS NULL
-        ORDER BY updated_at DESC,lpn_key LIMIT 100`,workspace).all();
-      return result({products:list.results||[],limit:100});
+        WHERE workspace_id=? AND deleted_at IS NULL`+
+        (cursor?' AND (updated_at<? OR (updated_at=? AND lpn_key>?))':'')+
+        ' ORDER BY updated_at DESC,lpn_key ASC LIMIT 101';
+      const args=cursor
+        ? [workspace,cursor.at,cursor.at,cursor.key]
+        : [workspace];
+      const list=await bind(db,sql,...args).all();
+      const items=list.results||[];
+      const page=items.slice(0,100);
+      const nextCursor=items.length>100?encodeCursor(page[page.length-1]):null;
+      return result({products:page.map(({lpn_key,...row})=>row),
+        limit:100,nextCursor});
     }
     const match=route.match(/^\/products\/([^/]+)(?:\/(claim|release|history))?$/);
     if(!match)problem(404,'Nieznany endpoint zespołu');
