@@ -88,6 +88,44 @@ testowej aplikacji Allegro. Callback zapisze tokeny **tylko** w nowym KV.
 Sprawdzić, czy `/health` pokazuje `configured=true` i `connected=true`.
 Do testu można użyć odrębnego konta Allegro, jeśli dostępne.
 
+## Test MPN z przeglądarki (bez terminala)
+
+Po potwierdzeniu połączenia testowego Allegro otworzyć:
+
+`https://product-intake-v44b-staging.sesquu.workers.dev/staging/probe`
+
+To przyszły adres testowego Workera; będzie dostępny dopiero po wdrożeniu.
+Wprowadzić `V44B_STAGING_API_KEY` i użyć przycisku **Sprawdź 8 modeli**.
+Ekran sprawdza nazwę wdrożenia i aktywny OAuth zanim wykona zapytania
+do katalogu Allegro. Wyświetla wynik każdej próby, liczbę nowych wyników
+MPN oraz źródło najlepszego kandydata. Dla każdego produktu tester powinien
+wybrać: **Właściwy / Błędny / Brak produktu / Nie wiem**.
+
+Po ocenie kliknąć **Kopiuj raport JSON**. Raport zawiera odpowiedzi i oceny,
+ale nie zawiera klucza stagingu ani tokenów Allegro. Nie wklejać raportu do
+publicznych issue, jeśli nazwy produktów są poufne. Można zachować go
+w prywatnych materiałach testowych.
+
+**Uwaga:** osiem udanych odpowiedzi HTTP nie oznacza ośmiu poprawnych produktów.
+Skuteczność powinna być mierzona wyłącznie po sprawdzeniu fizycznej sztuki.
+
+## Nieprodukcyjne kompilacje Cloudflare
+
+Zewnętrzna kontrola GitHub `Workers Builds: product-intake` bywa czerwona
+na gałęzi v44b, niezależnie od pomyślnych testów GitHub Actions. Bez logu
+w Cloudflare Dashboard nie znamy konkretnej przyczyny.
+
+Cloudflare dokumentuje kompilacje preview dla gałęzi nieprodukcyjnych.
+Jeśli dotychczasowy produkcyjny Worker `product-intake` nie powinien
+budować eksperymentalnych gałęzi, należy sprawdzić ustawienie:
+Cloudflare → Workers & Pages → `product-intake` → Settings → Build →
+Branch control → **Enable Preview Builds** i rozważyć jego wyłączenie.
+Nie zmienia to logiki naszego oddzielnego staging deploy, lecz jest
+ustawieniem produkcyjnego Workera: zmienia je wyłącznie właściciel.
+Nie przełączać produkcyjnego branch na gałąź v44b.
+
+Dokumentacja: https://developers.cloudflare.com/workers/ci-cd/builds/build-branches/
+
 ## Test MPN na realnym stagingu
 
 Workflow `.github/workflows/model-ranking-v44b-live-mpn.yml` wykorzystuje
