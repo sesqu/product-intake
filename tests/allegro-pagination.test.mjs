@@ -116,6 +116,63 @@ try {
   assert(!requestLog.some(x=>x.cursor==='mpn-page-two'),
     'Do not waste this third call on MPN pagination if family evidence is strong');
 
+  // Real production results for DHP484 contained a full drill incorrectly
+  // labelled Bosch alongside multiple Makita spare parts. That is evidence
+  // to run a third Makita search, not proof that Bosch is the right product.
+  requestLog.length=0;
+  const bogusBosch={
+    id:'bosch-wrong-brand',name:'Bosch DHP484 cordless drill driver',
+    category:{id:'drill',name:'Wiertarko-wkrętarki'},
+    parameters:[{name:'Model',valuesLabels:['DHP484']},
+      {name:'Marka',valuesLabels:['Bosch']}]
+  };
+  const makitaPart=(i)=>({
+    id:'makita-part-'+i,
+    name:'MAKITA DHP484 OBUDOWA '+(i===0?'KOMPLET ORYGINAŁ':'TYLNA ORYGINAŁ'),
+    category:{name:'Części do wiertarko-wkrętarek'},
+    parameters:[{name:'Model',valuesLabels:['183L79-9']}]
+  });
+  const makitaDrill={
+    id:'makita-correct',name:'Wiertarko-wkrętarka udarowa Makita DHP484 18V 54Nm BODY',
+    category:{id:'drill',name:'Wiertarko-wkrętarki'},
+    parameters:[{name:'Model',valuesLabels:['DHP484']},
+      {name:'Marka',valuesLabels:['Makita']}]
+  };
+  globalThis.fetch=async url=>{
+    const u=new URL(url);
+    const phrase=u.searchParams.get('phrase')||'';
+    const mode=u.searchParams.get('mode')||'';
+    requestLog.push({phrase,mode,cursor:u.searchParams.get('page.id')});
+    const products=/^makita dhp484 wiertarko-wkrętarka$/i.test(phrase)
+      ? [makitaDrill] : [bogusBosch,makitaPart(0),makitaPart(1)];
+    return {ok:true,async json(){return {products};}};
+  };
+  const disputed=await searchAllegroForResearch({
+    token:'test',input:{query:'DHP484'}
+  });
+  assert.equal(requestLog.length,3,'Never exceed 3 Allegro calls when brands conflict');
+  assert.equal(requestLog[2].mode,'');
+  assert.equal(requestLog[2].phrase,'MAKITA DHP484 wiertarko-wkrętarka');
+  assert.equal(disputed.searchAttempts[2].reason,'brand-review');
+  assert(disputed.products.some(p=>p.id==='makita-correct'),
+    'Third call must recover a correctly branded complete drill');
+  const selected=buildResearchResult(disputed.products.map(mapAllegroResearchProduct),{query:'DHP484'});
+  assert.equal(selected.selected?.id,'makita-correct',
+    'Corroborated branded primary should outrank a mislabelled catalog device');
+
+  // One accessory alone is insufficient evidence to overturn a plausible
+  // main device; do not turn every matching part into manufacturer proof.
+  requestLog.length=0;
+  globalThis.fetch=async url=>{
+    const u=new URL(url);
+    requestLog.push({phrase:u.searchParams.get('phrase'),mode:u.searchParams.get('mode')||''});
+    return {ok:true,async json(){return {products:[bogusBosch,makitaPart(0)]};}};
+  };
+  const singlePart=await searchAllegroForResearch({token:'test',input:{query:'DHP484'}});
+  assert(singlePart.products.some(p=>p.id==='bosch-wrong-brand'));
+  assert(!singlePart.searchAttempts.some(a=>a.reason==='brand-review'),
+    'A single accessory cannot establish another manufacturer');
+
   // Structured brand + model previously used request #3 on a redundant
   // short phrase, preventing page 2 of the exact MPN search from being read.
   requestLog.length=0;
