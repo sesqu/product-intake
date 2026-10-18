@@ -1,4 +1,4 @@
-import { buildModelQueryVariants, rankResearchCandidate } from './research-ranking-v3.js';
+import { buildModelQueryVariants, modelFingerprint, rankResearchCandidate } from './research-ranking-v3.js';
 const AAPI = 'https://api.allegro.pl';
 const clean = value => String(value ?? '').trim();
 const norm = value => clean(value).toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
@@ -123,9 +123,17 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   const nextPageByMode = new Map();
   const maxAttempts = 3;
   function hasStrongPrimary() {
+    const target=modelFingerprint(input?.mpn || input?.model || input?.query);
+    const codeLike=target.length>=4 && /[a-z]/.test(target) && /[0-9]/.test(target);
     return products.some(product => {
-      const ranked=rankResearchCandidate(candidateHint(product),input);
-      return ranked.relation?.type !== 'accessory' && ranked.score >= 55;
+      const candidate=candidateHint(product);
+      const ranked=rankResearchCandidate(candidate,input);
+      if(ranked.relation?.type === 'accessory' || ranked.score < 55) return false;
+      if(!codeLike) return true;
+      // A high score for another version of the same product family must
+      // not prevent searching the next MPN page for an exact model identity.
+      return [candidate.model,candidate.mpn].map(modelFingerprint).includes(target) ||
+        modelFingerprint(candidate.name).includes(target);
     });
   }
 
