@@ -285,6 +285,34 @@
     }
 
 
+    if (sources.amazon) {
+      const source=sources.amazon;
+      output.amazon={
+        fetchedAt,
+        query,
+        id:source.asin || '',
+        asin:source.asin || '',
+        ean:source.ean || '',
+        name:source.name || '',
+        brand:source.brand || '',
+        model:source.model || '',
+        mpn:source.mpn || '',
+        category:source.category || '',
+        image:source.image || '',
+        images:Array.isArray(source.images)?source.images.slice(0,8):[],
+        parameters:Array.isArray(source.parameters)?source.parameters.slice(0,45):[],
+        provider:'serpapi-amazon-product',
+        marketplace:data?.marketplace || 'amazon.pl',
+        productUrl:source.url || '',
+        asinMatched:Boolean(source.asinMatched),
+        selectedBy:'tester',
+        confidenceMethod:'amazon-asin-manual-verification',
+        confidence:null,
+        verifiedByTester:true,
+        note:'Wartości Amazon są informacjami zewnętrznymi, nie stanowią automatycznego potwierdzenia tożsamości produktu.'
+      };
+    }
+
     return Object.keys(output).length ? output : null;
   }
 
@@ -663,6 +691,44 @@
     return true;
   }
 
+  function acceptAsinResult(result) {
+    const {toast,saveDraft,addHistory,setIdentified,quality} = requireConfig();
+    const best=result?.best || null;
+    const requested=String(result?.query?.asin || '').toUpperCase();
+    if (result?.source!=='amazon' || !best || !requested ||
+        String(best.asin || '').toUpperCase()!==requested ||
+        !best.asinMatched) {
+      toast('Amazon nie potwierdził podanego ASIN. Nie zapisuję danych produktu.');
+      return false;
+    }
+    const data={
+      query:result.query,
+      marketplace:result.marketplace,
+      sources:{amazon:best},
+      best,
+      confidence:null,
+      completeness:0,
+      confidenceMethod:'amazon-asin-manual-verification',
+      selectedBy:'tester',
+      requiresTesterChoice:false,
+      conflicts:[],
+      hardConflictDetails:[],
+      categoryMeta:null,
+      gpsr:null,
+      sourceConsensus:{available:false,matched:0,compared:0,label:'Amazon — SerpApi'}
+    };
+    latestIdentification=identificationSnapshot(data);
+    latestConflictResolutions={};
+    latestSourceSnapshot=buildSourceSnapshot(data);
+    populateMaster(best,data);
+    setIdentified(true); // Explicit confirmation was required in the Finder.
+    quality();
+    saveDraft();
+    addHistory('Tester potwierdził ASIN Amazon',
+      ($('lpn')?.value || '')+' • '+best.asin+' • '+(best.name || ''));
+    return true;
+  }
+
   async function fetchLookup(candidateId='') {
     const {keys,defaultApiBase} = requireConfig();
     const base = (
@@ -760,6 +826,7 @@
     applyConfidence,
     renderRemote,
     acceptResearchResult,
+    acceptAsinResult,
     lookup
   };
 })();
