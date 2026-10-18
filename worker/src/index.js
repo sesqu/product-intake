@@ -709,6 +709,7 @@ async function handle(request, env) {
         provider:"allegro-catalog",
         queriesUsed:search.queriesUsed || [],
         searchAttempts:search.searchAttempts || [],
+        bestFoundBy:(result.selected?.id && search.firstSeenById?.[result.selected.id]) || null,
         best:result.selected,
         candidates:(result.ranked || []).slice(0,5),
         confidence:result.confidence,
