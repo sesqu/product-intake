@@ -65,6 +65,34 @@ try {
   assert(!requestLog.some(x=>x.cursor),'Do not spend paging calls when strong full device already exists');
 
   requestLog.length=0;
+  const wrongPhone={
+    ...rawPhone,id:'samsung-wrong',
+    name:'Smartfon Samsung Galaxy S24 Ultra SM-S928B 256 GB',
+    parameters:rawPhone.parameters.map(x=>
+      x.name==='Model'||x.name==='Kod producenta'
+        ? {...x,valuesLabels:['SM-S928B']}
+        : x
+    )
+  };
+  globalThis.fetch=async url=>{
+    const target=new URL(url);
+    const mode=target.searchParams.get('mode')||'';
+    const cursor=target.searchParams.get('page.id');
+    requestLog.push({mode,cursor});
+    return {ok:true,async json(){return {
+      products:cursor?[rawPhone]:[wrongPhone],
+      nextPage:cursor?null:{id:'exact-variant-on-page-2'}
+    };}};
+  };
+  const variantResult=await searchAllegroForResearch({
+    token:'test',input:{query:'SM-S921B'}
+  });
+  assert(requestLog.some(x=>x.cursor==='exact-variant-on-page-2'),
+    'A high-scoring but different model must not block exact MPN page 2');
+  assert(variantResult.products.some(x=>x.id==='samsung-main'));
+  assert(requestLog.length<=3);
+
+  requestLog.length=0;
   const vacuumAccessory=i=>({
     id:'filter-'+i,name:'Filtr zamienny do odkurzacza bezprzewodowego',
     category:{name:'Akcesoria do odkurzaczy'},parameters:[]
