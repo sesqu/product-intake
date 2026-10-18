@@ -67,7 +67,9 @@ try{
   assert(!JSON.stringify(first).includes(key),'Secret must never leak into response');
   assert(!JSON.stringify([...store.values()]).includes(key),'Secret must never leak into KV');
   assert.equal(first.product.source,'amazon');
-  assert.equal(store.size,1);
+  assert.equal([...store.keys()].filter(x=>x.startsWith('asin:serpapi:v1:')).length,1);
+  assert([...store.keys()].some(x=>x.includes('asin:serpapi:quota:month:')));
+  assert([...store.keys()].some(x=>x.includes('asin:serpapi:quota:day:')));
   const missing=await worker.fetch(new Request('https://test.example/api/asin?asin=B072MQ5BRX'),{
     AUTH:kv,
     SERPAPI_API_KEY:key,
