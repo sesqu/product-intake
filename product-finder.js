@@ -4,8 +4,10 @@
     input:null,
     kind:'',
     result:null,
-    fromCache:false
+    fromCache:false,
+    fromStaging:false
   };
+  const STAGING_API = 'https://product-intake-v44b-staging.sesquu.workers.dev';
 
   // Upgrade the cache whenever the matching algorithm changes. Otherwise
   // prior v43/v44 cached results can shadow the improved v44b search.
@@ -60,6 +62,7 @@
 
   function cacheKey(input) {
     return [
+      requireConfig().apiBase().replace(/\/$/,''),
       norm(input.query),
       norm(input.brand),
       norm(input.mpn),
@@ -103,6 +106,21 @@
 
   function auditEnabled() {
     return Boolean($('productFinderDiagnosticsToggle')?.checked);
+  }
+  function stagingEnabled() {
+    return auditEnabled() && Boolean($('productFinderStagingToggle')?.checked);
+  }
+  function resetActiveResult() {
+    ++activeSearch;
+    state.result=null;
+    state.input=null;
+    state.fromCache=false;
+    state.fromStaging=false;
+    const box=$('productFinderResult');
+    if(box){
+      box.style.display='block';
+      box.innerHTML='<div class="muted">Zmieniono źródło wyszukiwania. Kliknij Szukaj, aby sprawdzić aktualny backend.</div>';
+    }
   }
 
   function readAudit() {
@@ -364,10 +382,12 @@
           '</div>'
         : '')+
       evidenceHtml(candidate,result,index)+
-      '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">'+
-        '<button type="button" class="btn primary" data-finder-use="'+safe(candidate.id || '')+'">Użyj tego produktu</button>'+
-        '<button type="button" class="btn" data-finder-description="'+safe(candidate.id || '')+'">Zbuduj opis</button>'+
-      '</div>'+
+      (state.fromStaging
+        ? '<div class="muted" style="font-size:12px;margin-top:10px">Tryb testowy — wybierz ocenę poniżej. Import do mastera jest zablokowany.</div>'
+        : '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">'+
+          '<button type="button" class="btn primary" data-finder-use="'+safe(candidate.id || '')+'">Użyj tego produktu</button>'+
+          '<button type="button" class="btn" data-finder-description="'+safe(candidate.id || '')+'">Zbuduj opis</button>'+
+        '</div>')+
     '</div>';
   }
 
@@ -444,6 +464,7 @@
       '<div class="lookupTop">'+
         '<div><b>Znalezione produkty</b>'+
           '<div class="muted">Tryb: '+safe(mode)+' • nic nie wpisujemy do mastera bez Twojego wyboru.</div>'+
+          (state.fromStaging ? '<div class="note" style="margin-top:8px">Wyniki z odizolowanego stagingu v44b. Nie można użyć ich do zapisu produktu.</div>' : '')+
           used+
           researchTraceHtml(result)+
         '</div>'+
@@ -496,11 +517,20 @@
     return data;
   }
 
-  async function fetchResearch(input,candidateId='') {
+  async function fetchResearch(input,candidateId='',useStage=false) {
     const {apiBase} = requireConfig();
-    const response = await fetch(apiBase().replace(/\/$/,'') + '/api/research', {
+    const credentials=clean($('productFinderStagingKey')?.value);
+    if (useStage && credentials.length < 20) {
+      throw new Error('Wpisz klucz do testowego Workera (minimum 20 znaków).');
+    }
+    const response = await fetch(
+      (useStage ? STAGING_API : apiBase().replace(/\/$/,''))+'/api/research', {
       method:'POST',
-      headers:{'content-type':'application/json'},
+      cache:'no-store',
+      headers:{
+        'content-type':'application/json',
+        ...(useStage ? {'x-staging-test-key':credentials} : {})
+      },
       body:JSON.stringify({...input,candidateId})
     });
     const data = await response.json().catch(() => ({}));
@@ -508,10 +538,13 @@
     return data;
   }
 
-  async function fetchRemote(input,candidateId='') {
+  async function fetchRemote(input,candidateId='',useStage=false) {
+    if (useStage && detectKind(input.query) === 'ean') {
+      throw new Error('Testowy tryb MPN wymaga kodu modelu albo frazy, a nie EAN.');
+    }
     return detectKind(input.query) === 'ean'
       ? fetchEan(input,candidateId)
-      : fetchResearch(input,candidateId);
+      : fetchResearch(input,candidateId,useStage);
   }
 
   async function runSearch({force=false}={}) {
@@ -525,15 +558,17 @@
       return;
     }
 
+    const useStage=stagingEnabled();
     state.input = input;
     state.kind = detectKind(input.query);
+    state.fromStaging=useStage;
     const box = $('productFinderResult');
     if (box) {
       box.style.display = 'block';
       box.innerHTML = '<div class="muted">Szukam kandydatów i porównuję dane…</div>';
     }
 
-    if (!force) {
+    if (!force && !useStage) {
       const cached = readCache(input);
       if (cached) {
         state.result = cached;
@@ -544,11 +579,11 @@
     }
 
     try {
-      const data = await fetchRemote(input);
+      const data = await fetchRemote(input,'',useStage);
       if (searchId !== activeSearch) return;
       state.result = data;
       state.fromCache = false;
-      writeCache(input,data);
+      if (!useStage) writeCache(input,data);
       renderResult(data);
     } catch (error) {
       if (searchId !== activeSearch) return;
@@ -560,11 +595,16 @@
 
   async function selectedResult(candidateId) {
     if (!state.input) throw new Error('Brak aktywnego wyszukiwania');
-    return fetchRemote(state.input,candidateId);
+    if (state.fromStaging) throw new Error('Zapis produktu jest wyłączony dla testowego Workera.');
+    return fetchRemote(state.input,candidateId,false);
   }
 
   async function useCandidate(candidateId) {
     const {catalogLookup,toast,saveDraft,quality} = requireConfig();
+    if (state.fromStaging){
+      toast('Wyniku stagingu nie można zapisać do mastera.');
+      return;
+    }
     const button = [...document.querySelectorAll('[data-finder-use]')]
       .find(item => String(item.dataset.finderUse) === String(candidateId || ''));
     const oldText = button?.textContent;
@@ -601,6 +641,7 @@
   }
 
   function buildDescription(candidateId) {
+    if (state.fromStaging) return;
     const candidate = candidateById(candidateId);
     if (!candidate) return;
 
@@ -626,7 +667,23 @@
 
     $('productFinderSearch').onclick = () => runSearch();
     $('productFinderDiagnosticsToggle')?.addEventListener('change',()=>{
-      if (state.result) renderResult(state.result,{fromCache:state.fromCache});
+      const on=auditEnabled();
+      const options=$('productFinderDiagnosticOptions');
+      if(options) options.style.display=on?'block':'none';
+      if (!on && $('productFinderStagingToggle')) {
+        $('productFinderStagingToggle').checked=false;
+        if ($('productFinderStagingKey')) $('productFinderStagingKey').value='';
+        resetActiveResult();
+      }else if (state.result){
+        renderResult(state.result,{fromCache:state.fromCache});
+      }
+    });
+    $('productFinderStagingToggle')?.addEventListener('change',()=>{
+      const on=stagingEnabled();
+      const credentials=$('productFinderStagingCredentials');
+      if(credentials) credentials.style.display=on?'block':'none';
+      if(!on && $('productFinderStagingKey')) $('productFinderStagingKey').value='';
+      resetActiveResult();
     });
     if ($('productFinderAuditExport')) $('productFinderAuditExport').onclick=exportAudit;
     if ($('productFinderAuditClear')) $('productFinderAuditClear').onclick=()=>{
