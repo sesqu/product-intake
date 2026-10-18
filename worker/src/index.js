@@ -3,7 +3,7 @@ import {
   mapAllegroResearchProduct,
   buildResearchResult
 } from './product-research.js';
-import { searchAllegroForResearch } from './research-allegro.js';
+import { searchAllegroForResearch, scoringInputForQuery } from './research-allegro.js';
 
 const AAPI = "https://api.allegro.pl";
 const AOAUTH = "https://allegro.pl/auth/oauth";
@@ -679,7 +679,8 @@ async function handle(request, env) {
         .map(mapAllegroResearchProduct)
         .filter(Boolean);
 
-      const result = buildResearchResult(products,input,candidateId);
+      const scoringInput=scoringInputForQuery(input);
+      const result = buildResearchResult(products,scoringInput,candidateId);
       if(candidateId && (!result.selected || result.selected.id !== candidateId)){
         return out({
           error:'Wybrany kandydat nie jest już dostępny w wynikach Allegro. Wyszukaj ponownie, aby uniknąć błędnej identyfikacji.',
@@ -693,7 +694,7 @@ async function handle(request, env) {
       const rankSubset=mode=>{
         const subset=products.filter(item=>(sources[item.id]||[]).includes(mode));
         if(!subset.length) return {count:0,best:null,confidence:null};
-        const ranked=buildResearchResult(subset,input);
+        const ranked=buildResearchResult(subset,scoringInput);
         return {
           count:subset.length,
           best:ranked.selected ? {
@@ -712,6 +713,7 @@ async function handle(request, env) {
         provider:"allegro-catalog",
         queriesUsed:search.queriesUsed || [],
         searchAttempts:search.searchAttempts || [],
+        identifiedModel:scoringInput.model || input.mpn || null,
         comparison:{
           phrase:rankSubset('PHRASE'),
           mpn:rankSubset('MPN'),
