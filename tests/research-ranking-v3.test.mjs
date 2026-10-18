@@ -480,4 +480,32 @@ for (const fixture of accessoryNotBundles) {
   );
 }
 
+
+// English accessories and categories must behave like their Polish names.
+const englishAccessories = [
+  {name:'Replacement Battery for Sony WH-1000XM5',category:'Batteries',model:'WH-1000XM5',query:'WH1000XM5'},
+  {name:'Charging port for Samsung SM-S921B',category:'Spare Parts',model:'SM-S921B',query:'SM-S921B'},
+  {name:'Screen protector for Samsung SM-S921B',category:'Accessories',model:'SM-S921B',query:'SM-S921B'},
+  {name:'Replacement screen for Samsung Galaxy S24 SM-S921B',category:'Replacement Parts',model:'Galaxy S24',query:'SM-S921B'}
+];
+for (const item of englishAccessories) {
+  assert.equal(classifyCandidateRelation(item,{query:item.query}).type,'accessory',item.name);
+}
+const shortCodeMain = {
+  id:'epson-l3250',
+  name:'Epson EcoTank L3250 drukarka',
+  category:'Drukarki atramentowe',
+  brand:'Epson',
+  model:'L3250',
+  trust:{model:true,brand:true}
+};
+const shortCodeNoBrand = analyzeResearchCandidates([shortCodeMain],{query:'L3250'});
+assert.equal(shortCodeNoBrand.selected.id,'epson-l3250');
+assert.equal(shortCodeNoBrand.requiresTesterChoice,true,'Short code without brand needs tester choice');
+assert.equal(shortCodeNoBrand.ambiguity.shortModelAmbiguity,true);
+const shortCodeWithBrand = analyzeResearchCandidates([shortCodeMain],{query:'L3250',brand:'Epson'});
+assert.equal(shortCodeWithBrand.ambiguity.shortModelAmbiguity,false);
+const shortCodeConfirmed = analyzeResearchCandidates([shortCodeMain],{query:'L3250'},'epson-l3250');
+assert.equal(shortCodeConfirmed.ambiguity.shortModelAmbiguity,false);
+
 console.log('PASS Research ranking v3: model fingerprint, primary-product ranking, accessory penalties, brand handling and query recovery.');
