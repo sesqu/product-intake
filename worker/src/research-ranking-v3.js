@@ -191,6 +191,13 @@ export function classifyCandidateRelation(candidate,input = {}) {
   const accessoryCategory = ACCESSORY_CATEGORY_WORDS.find(word => category.includes(word)) || '';
   const targetMentioned = Boolean(targetFp && nameFp.includes(targetFp));
 
+  // Product identity in a matching device category outweighs unrelated
+  // words like "ekspres DO kawy" when accessories are included in the box.
+  // Real parts still lose: this guard does not cover spare-part nouns/categories.
+  if (targetMentioned && isClearPrimaryDevice(candidate,noun)) {
+    return {type:'product',confidence:'medium',reason:'produkt główny z wyposażeniem'};
+  }
+
   if (targetMentioned && noun && (relationWord || accessoryCategory)) {
     return {
       type:'accessory',
@@ -208,12 +215,6 @@ export function classifyCandidateRelation(candidate,input = {}) {
       targetFp === candidateMpnFp
     )
   );
-
-  // An accessory included IN the box is not the entire product's type.
-  // Keep this below the explicit accessory relationship/category rule.
-  if (targetMentioned && isClearPrimaryDevice(candidate,noun)) {
-    return {type:'product',confidence:'medium',reason:'produkt główny z wyposażeniem'};
-  }
 
   if (targetMentioned && noun && !targetIsCandidateIdentity) {
     return {
