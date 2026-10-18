@@ -829,7 +829,24 @@
     const {toast} = requireConfig();
 
     if (!$('ean').value.trim()) {
-      toast('Podaj EAN / GTIN. Wyszukiwanie po modelu działa w osobnym module Research.');
+      const asin=String($('asin')?.value || '').trim().toUpperCase();
+      if(asin){
+        if(!/^[A-Z0-9]{10}$/.test(asin)){
+          toast('ASIN musi składać się z 10 liter i cyfr.');
+          return;
+        }
+        const finderAsin=$('productFinderAsin');
+        if(finderAsin){
+          finderAsin.value=asin;
+          // Reuse the same Product Intake finder instead of sending ASIN to
+          // the EAN-only Allegro endpoint.
+          window.ProductIntakeProductFinder?.runSearch?.({force:true});
+          return;
+        }
+        toast('Wyszukiwanie ASIN wymaga aktualizacji aplikacji do wersji v44.');
+        return;
+      }
+      toast('Podaj EAN / GTIN lub ASIN. Możesz też wyszukać model w Znajdź produkt.');
       return;
     }
 
