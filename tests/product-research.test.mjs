@@ -200,7 +200,40 @@ assert.equal(
   'phone-main',
   'Wynik MPN z produktem głównym powinien wygrać z częścią kompatybilną'
 );
+
 assert.equal(phoneRanked.requiresTesterChoice,false);
+
+// Regression: a correct phone can arrive late in the MPN batch. In the old
+// 40-item limit, 30 generic accessories + 25 MPN accessories hid this phone.
+globalThis.fetch = async url => {
+  const parsed = new URL(String(url));
+  const mode = parsed.searchParams.get('mode') || '';
+  const phrase = parsed.searchParams.get('phrase') || '';
+  const products = mode === 'MPN'
+    ? [
+        ...Array.from({length:25},(_,i)=>({...rawPort,id:'mpn-noise-'+i})),
+        {...rawPhone,id:'phone-found-late'}
+      ]
+    : phrase === 'SM-S921B'
+      ? Array.from({length:30},(_,i)=>({...rawPort,id:'phrase-noise-'+i}))
+      : [];
+  return {ok:true,async json(){return {products};}};
+};
+const latePhone = await searchAllegroForResearch({
+  token:'test',
+  userAgent:'test',
+  input:{query:'SM-S921B'}
+});
+assert(latePhone.products.length > 40, 'Search must retain candidates beyond the old 40-item limit');
+assert(latePhone.products.some(p=>p.id==='phone-found-late'),
+  'The late MPN candidate cannot be truncated before ranking');
+assert(latePhone.searchAttempts.length <= 3, 'Search remains bounded to three requests');
+const latePhoneRanked = buildResearchResult(
+  latePhone.products.map(mapAllegroResearchProduct),
+  {query:'SM-S921B'}
+);
+assert.equal(latePhoneRanked.selected?.id,'phone-found-late',
+  'Late MPN candidate must participate in final ranking');
 globalThis.fetch = async url => {
   const parsed = new URL(String(url));
   const mode = parsed.searchParams.get('mode');
