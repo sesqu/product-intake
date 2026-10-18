@@ -11,6 +11,7 @@ on:
       - 'worker/wrangler.staging.jsonc'
       - 'tests/staging-isolation.test.mjs'
       - 'tests/staging-mpn-integration.test.mjs'
+      - 'tests/staging-probe-browser.test.mjs'
       - 'worker/src/index.js'
       - 'product-research.js'
       - 'product-finder.js'
@@ -37,6 +38,7 @@ on:
       - 'worker/wrangler.staging.jsonc'
       - 'tests/staging-isolation.test.mjs'
       - 'tests/staging-mpn-integration.test.mjs'
+      - 'tests/staging-probe-browser.test.mjs'
       - 'worker/src/index.js'
       - 'product-research.js'
       - 'product-finder.js'
@@ -68,6 +70,8 @@ jobs:
         run: node tests/research-ranking-v3.test.mjs
       - name: Test staging config, OAuth and API isolation
         run: node tests/staging-isolation.test.mjs
+      - name: Test browser MPN probe and tester report privacy
+        run: node tests/staging-probe-browser.test.mjs
       - name: Test staged MPN API request plan end to end
         run: node tests/staging-mpn-integration.test.mjs
       - name: Test frontend syntax and wiring
