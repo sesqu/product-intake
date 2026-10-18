@@ -1,0 +1,23 @@
+name: v44b live MPN staging validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_base_url:
+        description: Dedicated v44b Worker HTTPS URL (NOT production; requires isolated auth)
+        required: true
+        type: string
+
+jobs:
+  validate-mpn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate MPN end-to-end on separate Worker
+        env:
+          V44B_STAGING_BASE_URL: ${{ inputs.staging_base_url }}
+        run: node tests/model-ranking-v44b-live-mpn.mjs
