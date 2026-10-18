@@ -55,6 +55,12 @@ try {
   const body=await response.json();
   assert.equal(body.best?.id,'mock-phone-main','Actual phone must outrank spare part');
   assert.equal(body.bestFoundBy?.mode,'MPN','Source provenance must identify the MPN request');
+  assert.equal(body.comparison?.phrase?.best?.id,'mock-phone-part',
+    'Ordinary phrase ranking must be computed on phrase candidates');
+  assert.equal(body.comparison?.mpn?.best?.id,'mock-phone-main',
+    'MPN comparison must rank the actual MPN candidates');
+  assert.equal(body.comparison?.phrase?.count,1);
+  assert.equal(body.comparison?.mpn?.count,1);
   assert.equal(body.searchAttempts?.length,3,'The entire request plan remains bounded to 3 attempts');
   const mpn=body.searchAttempts.find(x=>x.mode==='MPN');
   assert.equal(mpn?.foundCount,1);
