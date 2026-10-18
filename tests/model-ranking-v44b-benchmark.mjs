@@ -153,6 +153,7 @@ for(let i=0;i<cases.length;i++){
 const summary={
   benchmarkSource:'production-v43-candidates+local-v44b-ranking',
   validatesLiveMpn:false,
+  commit:process.env.GITHUB_SHA || 'local',
   total:rows.length,
   baselineTop1:rows.filter(x=>x.baseline.correct).length,
   v44bTop1:rows.filter(x=>x.v44b.correct).length,
