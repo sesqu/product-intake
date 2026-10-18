@@ -56,5 +56,14 @@ try{
   assert.equal(urls[1].searchParams.get('phrase'),'SM-S921B');
   assert.equal(urls[1].searchParams.get('mode'),'MPN');
   assert(!Object.keys(data).includes('asin'));
+  const missing=await worker.fetch(new Request(origin+'/api/research',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({query:'Samsung SM-S921B',candidateId:'catalog-disappeared'})
+  }),env);
+  assert.equal(missing.status,409,'Selected ID not in fresh results must fail, never switch to another product');
+  const failure=await missing.json();
+  assert.equal(failure.reason,'candidate-not-found');
+
   console.log('PASS Allegro-only API: exact MPN, 12 candidates, three-call budget and provenance.');
 }finally{globalThis.fetch=nativeFetch;}
