@@ -80,8 +80,14 @@ export function inferMpnSearchPhrase(input = {}) {
   // phrase may still be a useful MPN lookup, though it is not exact identity.
   const compact=query.replace(/[^A-Za-z0-9]/g,'');
   const parts=query.split(/\s+/).filter(Boolean);
+  const meaningfulNumber=parts.some(part=>{
+    const code=part.replace(/[^A-Za-z0-9]/g,'');
+    if(/^\d{1,2}$/.test(code)) return true; // e.g. Flip 6
+    return /[A-Za-z]/.test(code) && /\d/.test(code) &&
+      !/^\d+(?:GB|TB|MB|KB|MHZ|GHZ|HZ|W|V|CM|MM|ML|KG)$/i.test(code);
+  });
   return parts.length<=3 && compact.length>=4 && compact.length<=28 &&
-    /[A-Za-z]/.test(compact) && /\d/.test(compact) ? query : '';
+    meaningfulNumber ? query : '';
 }
 
 export function shouldTryMpnMode(input = {}) {
