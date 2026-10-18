@@ -493,6 +493,23 @@ async function handle(request, env) {
 
   const url = new URL(request.url);
 
+  // Staging MUST remain inaccessible without its own test key. The OAuth
+  // callback is exempt because Allegro redirects the browser to it, but its
+  // one-time state/PKCE verifier is checked by the callback itself.
+  if (env.STAGING_ONLY === '1' &&
+      url.pathname.startsWith('/api/') &&
+      url.pathname !== '/api/allegro/callback') {
+    const provided=clean(request.headers.get('x-v44-stage-key'));
+    const expected=clean(env.V44_STAGE_KEY);
+    if(expected.length<32) {
+      return out({error:'Izolowane środowisko v44 nie ma skonfigurowanego klucza.'},503,origin);
+    }
+    const [a,b]=await Promise.all([sha256Hex(provided),sha256Hex(expected)]);
+    if(!provided || a!==b) {
+      return out({error:'Brak autoryzacji testowego Workera.'},401,origin);
+    }
+  }
+
   if (url.pathname === "/health") {
     return out({
       status: "ok",
