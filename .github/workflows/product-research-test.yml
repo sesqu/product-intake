@@ -8,6 +8,7 @@ on:
       - 'worker/src/research-allegro.js'
       - 'worker/src/asin-lookup.js'
       - 'tests/asin-lookup.test.mjs'
+      - 'tests/catalog-asin-accept.test.cjs'
       - 'worker/src/staging-onboarding.js'
       - 'worker/src/staging-probe.js'
       - 'worker/wrangler.staging.jsonc'
@@ -38,6 +39,7 @@ on:
       - 'worker/src/research-allegro.js'
       - 'worker/src/asin-lookup.js'
       - 'tests/asin-lookup.test.mjs'
+      - 'tests/catalog-asin-accept.test.cjs'
       - 'worker/src/staging-onboarding.js'
       - 'worker/src/staging-probe.js'
       - 'worker/wrangler.staging.jsonc'
@@ -76,6 +78,8 @@ jobs:
         run: node tests/research-ranking-v3.test.mjs
       - name: Test free-tier Amazon ASIN lookup via SerpApi
         run: node tests/asin-lookup.test.mjs
+      - name: Test explicit Amazon ASIN acceptance and source audit
+        run: node tests/catalog-asin-accept.test.cjs
       - name: Test staging config, OAuth and API isolation
         run: node tests/staging-isolation.test.mjs
       - name: Test browser MPN probe and tester report privacy
