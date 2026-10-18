@@ -51,6 +51,28 @@ try {
   const ranked=buildResearchResult(result.products.map(mapAllegroResearchProduct),{query:'SM-S921B'});
   assert.equal(ranked.selected?.id,'samsung-main','Complete product on second page must beat compatible parts');
 
+  // A full user phrase should query MPN using the actual manufacturer's
+  // code, not an entire title containing brand, capacity and model family.
+  requestLog.length=0;
+  globalThis.fetch=async url=>{
+    const target=new URL(url);
+    const phrase=target.searchParams.get('phrase');
+    const mode=target.searchParams.get('mode')||'';
+    requestLog.push({phrase,mode,cursor:target.searchParams.get('page.id')});
+    return {ok:true,async json(){
+      return {products:mode==='MPN'?[rawPhone]:[port('full-phrase-accessory')]};
+    }};
+  };
+  const longQuery=await searchAllegroForResearch({
+    token:'test',
+    input:{query:'Samsung Galaxy S24 SM-S921B 256GB'}
+  });
+  assert.equal(requestLog[0].phrase,'Samsung Galaxy S24 SM-S921B 256GB');
+  assert.equal(requestLog[1].phrase,'SM-S921B');
+  assert.equal(requestLog[1].mode,'MPN');
+  assert(longQuery.products.some(x=>x.id==='samsung-main'));
+  assert(requestLog.length<=3);
+
   // Structured brand + model previously used request #3 on a redundant
   // short phrase, preventing page 2 of the exact MPN search from being read.
   requestLog.length=0;
