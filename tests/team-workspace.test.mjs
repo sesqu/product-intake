@@ -156,6 +156,26 @@ try{
   assert.equal(r.status,403,'Legacy key-based endpoints MUST be disabled in team mode');
   r=await ask(owner,'GET','/api/team/products');
   assert.equal(r.data.products.length,1);
+  // >100 products must all be visible through stable cursor pagination,
+  // rather than silently disappearing from the warehouse list.
+  for(let i=0;i<101;i++){
+    const lpn='BATCH-'+String(i).padStart(3,'0');
+    const create=await ask(owner,'PUT','/api/team/products/'+lpn,{
+      expectedRevision:0,product:{lpn,productName:'Test item '+i}
+    });
+    assert.equal(create.status,201);
+  }
+  const firstPage=await ask(owner,'GET','/api/team/products');
+  assert.equal(firstPage.status,200);
+  assert.equal(firstPage.data.products.length,100);
+  assert(firstPage.data.nextCursor,'More products must provide nextCursor');
+  const page2=await ask(owner,'GET','/api/team/products?cursor='+
+    encodeURIComponent(firstPage.data.nextCursor));
+  assert.equal(page2.status,200);
+  assert.equal(page2.data.products.length,2);
+  assert.equal(page2.data.nextCursor,null);
+  assert.equal(new Set([...firstPage.data.products,...page2.data.products]
+    .map(x=>x.lpn)).size,102,'No repeated or missing products across pages');
   env.TEAM_MODE='0';
   r=await ask(owner,'GET','/api/team/me');
   assert.equal(r.status,404,'Team API hidden on old production deployments');
