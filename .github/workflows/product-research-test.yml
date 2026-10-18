@@ -21,6 +21,7 @@ on:
       - 'tests/research-ranking-v3.test.mjs'
       - 'tests/allegro-api-v44.test.mjs'
       - 'tests/allegro-live-fixture-rerank.mjs'
+      - 'tests/allegro-suggestion-offline.mjs'
       - 'tests/fixtures/allegro-live-v43-10.json'
       - 'tests/finder-allegro-v44.test.cjs'
       - 'tests/research-live.test.mjs'
@@ -46,6 +47,7 @@ on:
       - 'tests/research-ranking-v3.test.mjs'
       - 'tests/allegro-api-v44.test.mjs'
       - 'tests/allegro-live-fixture-rerank.mjs'
+      - 'tests/allegro-suggestion-offline.mjs'
       - 'tests/fixtures/allegro-live-v43-10.json'
       - 'tests/finder-allegro-v44.test.cjs'
       - 'tests/frontend-syntax.test.cjs'
@@ -70,6 +72,8 @@ jobs:
         run: node tests/allegro-api-v44.test.mjs
       - name: Differential check on fifty real v43 catalog candidates
         run: node tests/allegro-live-fixture-rerank.mjs
+      - name: Inspect recovery query suggestions from live fixture
+        run: node tests/allegro-suggestion-offline.mjs
       - name: Test integrated Finder display and escaping
         run: node tests/finder-allegro-v44.test.cjs
       - name: Test frontend syntax and wiring
