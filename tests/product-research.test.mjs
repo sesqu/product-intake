@@ -227,6 +227,11 @@ const latePhone = await searchAllegroForResearch({
 assert(latePhone.products.length > 40, 'Search must retain candidates beyond the old 40-item limit');
 assert(latePhone.products.some(p=>p.id==='phone-found-late'),
   'The late MPN candidate cannot be truncated before ranking');
+const mpnAttempt = latePhone.searchAttempts.find(item => item.mode === 'MPN');
+assert.equal(mpnAttempt?.foundCount,26,'MPN diagnostic must count returned results');
+assert.equal(mpnAttempt?.uniqueAdded,26,'MPN diagnostic must count unique new candidates');
+assert.equal(latePhone.firstSeenById?.['phone-found-late']?.mode,'MPN',
+  'Correct late phone must retain its MPN discovery provenance');
 assert(latePhone.searchAttempts.length <= 3, 'Search remains bounded to three requests');
 const latePhoneRanked = buildResearchResult(
   latePhone.products.map(mapAllegroResearchProduct),
