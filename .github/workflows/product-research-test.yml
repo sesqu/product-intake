@@ -27,6 +27,7 @@ on:
       - 'tests/research-live.test.mjs'
       - 'tests/frontend-syntax.test.cjs'
       - 'tests/finder-mpn-audit.test.cjs'
+      - 'tests/finder-diagnostics.test.cjs'
       - '.github/workflows/product-research-test.yml'
   pull_request:
     paths:
@@ -53,6 +54,7 @@ on:
       - 'tests/research-ranking-v3.test.mjs'
       - 'tests/frontend-syntax.test.cjs'
       - 'tests/finder-mpn-audit.test.cjs'
+      - 'tests/finder-diagnostics.test.cjs'
       - '.github/workflows/product-research-test.yml'
   workflow_dispatch:
 
@@ -78,6 +80,8 @@ jobs:
         run: node tests/frontend-syntax.test.cjs
       - name: Test Finder MPN audit UI and output escaping
         run: node tests/finder-mpn-audit.test.cjs
+      - name: Test integrated Finder manual verification and local history
+        run: node tests/finder-diagnostics.test.cjs
       - name: Live production model research smoke test
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: node tests/research-live.test.mjs
