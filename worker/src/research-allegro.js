@@ -200,18 +200,20 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     await runPhrase(mpnPhrase,'MPN','mpn');
   }
 
-  // Structured brand+model input can still use the normal second phrase.
-  if (queries[1] && searchAttempts.length < maxAttempts) {
-    await runPhrase(queries[1],'','fallback');
-  }
-
-  // Allegro uses cursor-based pagination (page.id), not limit+offset here.
-  // Spend the last request on page 2 of an exact MPN search ONLY when page 1
-  // offers no credible complete product. Do not run another page if a strong
-  // primary product has already been found.
+  // When an exact manufacturer-code search returned only accessories, a
+  // second MPN page is more useful than spending the last request repeating
+  // a shortened phrase. This matters especially for brand+model form input,
+  // whose third attempt previously always consumed the pagination budget.
+  // The next-page cursor is valid only for the same original phrase + mode.
   const mpnPage=nextPageByMode.get('MPN');
   if(mpnPage && searchAttempts.length < maxAttempts && !hasStrongPrimary()){
     await runPhrase(mpnPage.phrase,'MPN','mpn-page',mpnPage.cursor);
+  }
+
+  // Structured brand+model input can still use the shorter phrase when no
+  // MPN page is available or the previous search has been sufficient.
+  if (queries[1] && searchAttempts.length < maxAttempts) {
+    await runPhrase(queries[1],'','fallback');
   }
 
   // Generic finder input may recover the canonical spelling / brand context
