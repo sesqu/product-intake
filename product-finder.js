@@ -47,7 +47,9 @@
   function detectKind(query) {
     const value = clean(query).replace(/\s+/g,'');
     if (/^\d{8,14}$/.test(value)) return 'ean';
-    if (/^[A-Z0-9]{10}$/i.test(value) && /[A-Z]/i.test(value)) return 'asin';
+    // Auto-detect common Amazon ASINs only, not arbitrary 10-char model codes.
+    // Other ASIN formats are supported by the dedicated advanced ASIN field.
+    if (/^B[A-Z0-9]{9}$/i.test(value) && /\d/.test(value)) return 'asin';
     return 'research';
   }
 
