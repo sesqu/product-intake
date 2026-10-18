@@ -65,7 +65,16 @@ np. aktualizacji konfiguracji stagingowej. Żaden workflow nie wdraża na `main`
 ## Autoryzacja testowej aplikacji Allegro
 
 Po wdrożeniu otworzyć `/health` i upewnić się, że `environment=staging`.
-W celu rozpoczęcia OAuth wykonać **prywatnie** (nie logować klucza API):
+
+**Najłatwiej z telefonu lub komputera:** otworzyć adres
+`https://product-intake-v44b-staging.sesquu.workers.dev/staging/connect`,
+wpisać prywatny `V44B_STAGING_API_KEY` w polu hasła i wybrać
+**Połącz testowe Allegro**. Formularz wysyła klucz tylko w nagłówku
+jednego żądania; nie zapisuje go ani nie dołącza do adresu strony.
+Po autoryzacji przeglądarka wróci na stagingową stronę statusu.
+
+Alternatywnie można pobrać URL OAuth prywatnym żądaniem HTTP,
+bez ujawniania klucza w logach:
 
 ```bash
 read -rs V44B_STAGE_KEY
