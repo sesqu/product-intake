@@ -193,6 +193,7 @@ const summary={
   benchmarkSource:'production-v43-candidates+local-v44b-ranking',
   validatesLiveMpn:false,
   exactIdentityTesterGate:true,
+  primaryProductBundleGuard:true,
   commit:process.env.GITHUB_SHA || 'local',
   total:rows.length,
   baselineTop1:rows.filter(x=>x.baseline.correct).length,
