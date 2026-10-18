@@ -7,7 +7,7 @@
     fromCache:false
   };
 
-  const CACHE_KEY = 'productIntake.finderCache.v1';
+  const CACHE_KEY = 'productIntake.finderCache.allegro-v44';
   const CACHE_TTL = 24 * 60 * 60 * 1000;
   const $ = id => document.getElementById(id);
 
@@ -157,7 +157,7 @@
     if (best && !list.some(item => String(item.id) === String(best.id))) {
       list.unshift(best);
     }
-    return list.slice(0,5);
+    return list.slice(0,12);
   }
 
   function renderCandidate(candidate,result,index) {
@@ -203,6 +203,40 @@
     '</div>';
   }
 
+  function researchTraceHtml(result) {
+    const attempts=Array.isArray(result?.searchAttempts)
+      ? result.searchAttempts.slice(0,3):[];
+    if(!attempts.length) return '';
+    const safe=requireConfig().safe;
+    const first=result?.bestFoundBy;
+    const foundVia=first
+      ? (first.mode==='MPN'?'MPN':'fraza')+
+        (first.reason?.endsWith('-page')?' (kolejna strona)':'')
+      : 'nieustalone';
+    const rows=attempts.map((x,i)=>
+      '<div style="padding:6px 0;border-top:1px solid #303947">'+
+        '<b>'+safe(i+1)+'. '+(x.mode==='MPN'?'MPN':'fraza')+
+          (x.page>1?' · strona '+safe(x.page):'')+'</b> '+
+        safe(x.phrase || '')+
+        '<div class="muted" style="font-size:11px">Wyniki: '+
+          safe(x.foundCount??'?')+' · nowe: '+safe(x.uniqueAdded??'?')+'</div>'+
+        (x.error?'<div class="warn">'+safe(x.error)+'</div>':'')+
+      '</div>'
+    ).join('');
+    const cmp=result?.comparison;
+    const comparison=cmp
+      ? '<div class="muted" style="font-size:12px;margin:6px 0">'+
+          'Najlepszy z frazy: '+safe(cmp.phrase?.best?.name||'brak')+
+          ' · z MPN: '+safe(cmp.mpn?.best?.name||'brak')+
+        '</div>'
+      : '';
+    return '<details class="note" style="margin:10px 0">'+
+      '<summary style="cursor:pointer">Jak Allegro wyszukało produkty ('+safe(attempts.length)+' zapytania)</summary>'+
+      '<div class="muted" style="font-size:12px;margin-top:7px">Źródło TOP 1: '+safe(foundVia)+
+      '. Dopasowanie nadal wymaga sprawdzenia fizycznego produktu.</div>'+
+      comparison+rows+'</details>';
+  }
+
   function renderResult(result,{fromCache=false}={}) {
     const safe = requireConfig().safe;
     const box = $('productFinderResult');
@@ -212,7 +246,8 @@
     if (!candidates.length) {
       box.style.display = 'block';
       box.innerHTML =
-        '<div class="note">Nie znaleziono produktu. Dopisz markę / producenta, MPN albo dodatkową informację i spróbuj ponownie.</div>';
+        '<div class="note">Nie znaleziono produktu. Dopisz markę / producenta, MPN albo dodatkową informację i spróbuj ponownie.</div>'+
+        researchTraceHtml(result);
       return;
     }
 
@@ -230,20 +265,39 @@
         '<div><b>Znalezione produkty</b>'+
           '<div class="muted">Tryb: '+safe(mode)+' • nic nie wpisujemy do mastera bez Twojego wyboru.</div>'+
           used+
+          researchTraceHtml(result)+
         '</div>'+
         '<div>'+
           (fromCache ? '<span class="badge">pamięć 24h</span> ' : '')+
           '<button id="productFinderRefresh" type="button" class="btn">Odśwież</button>'+
         '</div>'+
       '</div>'+
-      (result?.requiresTesterChoice
-        ? '<div class="note" style="margin-top:10px">Wyniki są zbyt podobne, żeby wybierać automatycznie. Porównaj model, MPN i wariant.</div>'
-        : '')+
+      (result?.ambiguity?.noConfidentProduct
+        ? '<div class="note" style="margin-top:10px">Nie znaleziono jeszcze wiarygodnego urządzenia głównego. Najlepsze wyniki mogą być częściami lub akcesoriami. Sprawdź kolejne propozycje i doprecyzuj model.</div>'
+        : result?.requiresTesterChoice
+          ? '<div class="note" style="margin-top:10px">Wyniki są niejednoznaczne. Porównaj model, MPN i wariant.</div>'
+          : '')+
       '<div style="display:grid;gap:10px;margin-top:12px">'+
-        candidates.map((candidate,index) => renderCandidate(candidate,result,index)).join('')+
-      '</div>';
+        candidates.slice(0,5).map((candidate,index) => renderCandidate(candidate,result,index)).join('')+
+      '</div>'+
+      (candidates.length>5
+        ? '<button class="btn" type="button" id="productFinderMoreCandidates" style="margin-top:10px">'+
+            'Pokaż pozostałe propozycje ('+safe(candidates.length-5)+')</button>'+
+          '<div id="productFinderExtraCandidates" style="display:none;gap:10px;margin-top:12px">'+
+            candidates.slice(5).map((candidate,index)=>renderCandidate(candidate,result,index+5)).join('')+
+          '</div>'
+        :'');
 
     $('productFinderRefresh').onclick = () => runSearch({force:true});
+    const more=$('productFinderMoreCandidates');
+    const extra=$('productFinderExtraCandidates');
+    if(more && extra) more.onclick=()=>{
+      const show=extra.style.display==='none';
+      extra.style.display=show?'grid':'none';
+      more.textContent=show
+        ? 'Ukryj pozostałe propozycje'
+        : 'Pokaż pozostałe propozycje ('+(candidates.length-5)+')';
+    };
 
     box.querySelectorAll('[data-finder-use]').forEach(button => {
       button.onclick = () => useCandidate(button.dataset.finderUse);
