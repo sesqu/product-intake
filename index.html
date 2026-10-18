@@ -4,6 +4,17 @@
     <input type="checkbox" id="productFinderDiagnosticsToggle" style="width:auto">
     <span><b>Tryb testowania wyszukiwania</b><span class="muted" style="display:block;font-size:12px">Porównuj zwykłą frazę i MPN, zapisuj ocenę testera.</span></span>
   </label>
+  <div id="productFinderDiagnosticOptions" style="display:none;padding:10px 0">
+    <label style="display:flex;gap:10px;align-items:center;cursor:pointer">
+      <input type="checkbox" id="productFinderStagingToggle" style="width:auto">
+      <span>Testuj wyszukiwanie na osobnym Workerze v44b</span>
+    </label>
+    <div id="productFinderStagingCredentials" style="display:none;margin-top:8px">
+      <label for="productFinderStagingKey">Klucz dostępu do stagingu (tylko na czas testu)</label>
+      <input type="password" id="productFinderStagingKey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Klucz z ustawień GitHub — nie zapisujemy go">
+      <div class="muted" style="font-size:12px;margin-top:5px">Testowy Worker musi być wcześniej wdrożony i połączony z Allegro. Wyników stagingu nie można wprowadzać do mastera.</div>
+    </div>
+  </div>
   <details id="productFinderAuditHistory" style="margin-top:10px">
     <summary style="cursor:pointer">Historia testów na tym urządzeniu (<span id="productFinderAuditCount">0</span>)</summary>
     <p class="muted" style="font-size:12px">Zapisywana lokalnie w tej przeglądarce. Nie synchronizuje się z produktami ani między urządzeniami.</p>
