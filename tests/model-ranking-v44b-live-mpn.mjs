@@ -86,7 +86,16 @@ for (const test of cases) {
     }
     rows.push({
       query:test.query,
-      attempts:attempts.map(x=>({phrase:x.phrase,mode:x.mode,reason:x.reason})),
+      attempts:attempts.map(x=>({
+        phrase:x.phrase,mode:x.mode,reason:x.reason,
+        foundCount:x.foundCount??null,
+        uniqueAdded:x.uniqueAdded??null
+      })),
+      mpnFoundCount:attempts.filter(x=>x.mode==='MPN')
+        .reduce((sum,x)=>sum+Number(x.foundCount||0),0),
+      mpnUniqueAdded:attempts.filter(x=>x.mode==='MPN')
+        .reduce((sum,x)=>sum+Number(x.uniqueAdded||0),0),
+      bestFoundBy:result.bestFoundBy||null,
       best:result.best?.name||null,
       score:result.confidence??0,
       needsReview:Boolean(result.requiresTesterChoice),
@@ -100,8 +109,16 @@ for (const test of cases) {
     console.error('MPN_CASE '+JSON.stringify({status:'failed',...rows[rows.length-1]}));
   }
 }
+const successful=rows.filter(item=>!item.error);
 console.log('MPN_SUMMARY '+JSON.stringify({
   staging:base.origin,total:cases.length,passed:cases.length-failed,
-  failed,rows
+  failed,
+  mpnWithMatches:successful.filter(item=>item.mpnFoundCount>0).length,
+  mpnWithNewCandidates:successful.filter(item=>item.mpnUniqueAdded>0).length,
+  selectedFirstViaMpn:successful.filter(item=>item.bestFoundBy?.mode==='MPN').length,
+  needsTesterReview:successful.filter(item=>item.needsReview).length,
+  // Transport success is not ground-truth product-identity validation.
+  groundTruthVerified:false,
+  rows
 }));
 if (failed) process.exitCode = 1;
