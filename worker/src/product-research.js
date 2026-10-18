@@ -464,8 +464,26 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
 
   const requested = clean(selectedId);
   const selected = requested
-    ? ranked.find(item => clean(item.id) === requested) || ranked[0]
+    ? ranked.find(item => clean(item.id) === requested) || null
     : ranked[0];
+
+  // Never silently substitute TOP1 when a user clicked a different product
+  // in a previous search and that ID is no longer returned by Allegro.
+  if(requested && !selected) {
+    return {
+      selected:null,
+      ranked,
+      confidence:null,
+      requiresTesterChoice:true,
+      selectedBy:'not-found',
+      warnings:[{
+        field:'selection',
+        severity:'critical',
+        message:'Wybrany produkt nie występuje już w bieżących wynikach Allegro. Wyszukaj ponownie.'
+      }],
+      ambiguity:{candidateMissing:true}
+    };
+  }
 
   const runnerUp = ranked.find(item => item.id !== selected.id);
   const closeCompetition = Boolean(
