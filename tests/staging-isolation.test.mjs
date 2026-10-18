@@ -62,10 +62,22 @@ assert.equal(missingKey.status,503,'Never silently disable the staging key guard
 const callback=await worker.fetch(req('/api/allegro/callback'),env);
 assert.equal(callback.status,302);
 assert.equal(new URL(callback.headers.get('location')).pathname,'/staging/oauth');
+const connect=await worker.fetch(req('/staging/connect'),env);
+assert.equal(connect.status,200);
+assert(connect.headers.get('content-type')?.includes('text/html'));
+assert(connect.headers.get('content-security-policy')?.includes("script-src 'self'"));
+const connectHtml=await connect.text();
+assert(connectHtml.includes('type="password"'));
+assert(!connectHtml.includes(env.STAGING_API_KEY),'Never embed staging secret into browser HTML');
+const connectScript=await worker.fetch(req('/staging/connect.js'),env);
+assert.equal(connectScript.status,200);
+assert((await connectScript.text()).includes("'x-staging-test-key'"));
 const feedback=await worker.fetch(req('/staging/oauth?allegro=connected'),env);
 assert.equal((await feedback.json()).environment,'staging');
 
 const prodEnv={...production.vars,AUTH:fakeKv};
+const prodStagePage=await worker.fetch(req('/staging/connect'),prodEnv);
+assert.equal(prodStagePage.status,404,'Production must never expose staging onboarding');
 const prodCallback=await worker.fetch(req('/api/allegro/callback'),prodEnv);
 assert.equal(new URL(prodCallback.headers.get('location')).origin,'https://sesqu.github.io');
 const cors=await worker.fetch(req('/api/research',{
