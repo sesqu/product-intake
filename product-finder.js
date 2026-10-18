@@ -143,7 +143,8 @@
       name:clean(value?.name).slice(0,300),
       model:clean(value?.model).slice(0,120),
       mpn:clean(value?.mpn).slice(0,120),
-      score:Number.isFinite(Number(value?.score)) ? Number(value.score) : null
+      score:value?.score == null || String(value.score).trim()==='' ? null
+        : Number.isFinite(Number(value.score)) ? Number(value.score) : null
     };
   }
 
