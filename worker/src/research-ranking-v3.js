@@ -130,7 +130,7 @@ const HARD_ACCESSORY_NOUNS = [
 const PRIMARY_DEVICE_SIGNALS = [
   {category:/drukark|urzadzen.{0,12}wielofunkcyj/, title:/drukark|\bmfp\b|urzadzen.{0,12}wielofunkcyj|\blaserjet\b|\becotank\b/},
   {category:/wiertark|wkretark|elektronarzedz/, title:/wiertark|wkretark|\bdrill driver\b/},
-  {category:/odkurzacz|robot sprzataj/, title:/odkurzacz|robot sprzataj/},
+  {category:/odkurzacz|robot sprzataj/, title:/odkurzacz|odkurzaj|robot sprzataj/},
   {category:/telewizor/, title:/telewizor|\btv\b/},
   {category:/smartfon|telefon/, title:/smartfon|telefon/},
   {category:/ekspres/, title:/ekspres/}
