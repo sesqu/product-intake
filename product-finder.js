@@ -203,6 +203,50 @@
     '</div>';
   }
 
+  function researchTraceHtml(result) {
+    const attempts = Array.isArray(result?.searchAttempts)
+      ? result.searchAttempts.slice(0,3)
+      : [];
+    if (!attempts.length) return '';
+
+    const safe = requireConfig().safe;
+    const mpn = attempts.find(item => item?.mode === 'MPN');
+    const first = result?.bestFoundBy || null;
+    const discoveredVia = first?.mode === 'MPN'
+      ? 'MPN'
+      : first?.mode === 'PHRASE'
+        ? 'wyszukiwanie frazowe'
+        : 'nieustalone (starsza wersja API)';
+    const items = attempts.map((attempt,index) => {
+      const mode = attempt?.mode === 'MPN' ? 'MPN' : 'fraza';
+      const found = Number.isFinite(Number(attempt?.foundCount))
+        ? String(Math.max(0,Number(attempt.foundCount)))
+        : '?';
+      const added = Number.isFinite(Number(attempt?.uniqueAdded))
+        ? String(Math.max(0,Number(attempt.uniqueAdded)))
+        : '?';
+      const error = attempt?.error
+        ? '<div class="warn">Błąd próby: '+safe(attempt.error)+'</div>'
+        : '';
+      return '<div style="padding:7px 0;border-top:1px solid #303847">'+
+        '<b>'+safe(index+1)+'. '+safe(mode)+'</b> — '+safe(attempt?.phrase || '')+
+        '<div class="muted" style="font-size:11px">'+
+          'Wyniki: '+safe(found)+' · nowe: '+safe(added)+
+        '</div>'+error+
+      '</div>';
+    }).join('');
+
+    return '<details class="note" style="margin-top:10px">'+
+      '<summary style="cursor:pointer">Szczegóły wyszukiwania'+
+        (mpn ? ' · sprawdzono MPN' : '')+
+      '</summary>'+
+      '<div style="margin-top:8px;font-size:12px">Źródło pierwszego odnalezienia wybranego wyniku: '+
+        '<b>'+safe(discoveredVia)+'</b>.'+
+        '<div class="muted">To nie jest potwierdzenie zgodności z fizycznym produktem.</div>'+
+      '</div>'+items+
+    '</details>';
+  }
+
   function renderResult(result,{fromCache=false}={}) {
     const safe = requireConfig().safe;
     const box = $('productFinderResult');
@@ -212,7 +256,8 @@
     if (!candidates.length) {
       box.style.display = 'block';
       box.innerHTML =
-        '<div class="note">Nie znaleziono produktu. Dopisz markę / producenta, MPN albo dodatkową informację i spróbuj ponownie.</div>';
+        '<div class="note">Nie znaleziono produktu. Dopisz markę / producenta, MPN albo dodatkową informację i spróbuj ponownie.</div>'+
+        researchTraceHtml(result);
       return;
     }
 
@@ -230,6 +275,7 @@
         '<div><b>Znalezione produkty</b>'+
           '<div class="muted">Tryb: '+safe(mode)+' • nic nie wpisujemy do mastera bez Twojego wyboru.</div>'+
           used+
+          researchTraceHtml(result)+
         '</div>'+
         '<div>'+
           (fromCache ? '<span class="badge">pamięć 24h</span> ' : '')+
