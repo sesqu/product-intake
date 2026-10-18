@@ -326,6 +326,38 @@ function hasBrandCollision(ranked,input = {}) {
 }
 
 
+// Repeated accessories that explicitly reference a different product brand
+// are corroborating evidence of an identification conflict. They cannot
+// establish the correct device alone, but they MUST block silent acceptance
+// of a contradictory catalog device.
+function conflictingBrandEvidence(ranked,selected,input = {}) {
+  if(clean(input.brand || input.manufacturer) || !selected) return null;
+  const target=modelFingerprint(input.model || input.mpn || input.query);
+  if(target.length<4 || !/[a-z]/.test(target) || !/[0-9]/.test(target))
+    return null;
+  const selectedBrand=norm(candidateTargetBrand(selected,input));
+  if(!selectedBrand || selectedBrand.length<3) return null;
+  const rivals=new Map();
+  for(const candidate of ranked){
+    if(candidate.id===selected.id || !exactTargetIdentity(candidate,input))continue;
+    const raw=clean(candidateTargetBrand(candidate,input));
+    const key=norm(raw);
+    if(!key || key===selectedBrand || key.length<3 ||
+       !/[a-z]/.test(key) || /^[0-9]/.test(key)) continue;
+    const previous=rivals.get(key) || {brand:raw,count:0};
+    previous.count+=1;
+    rivals.set(key,previous);
+  }
+  const rivalsRanked=[...rivals.values()].filter(x=>x.count>=2)
+    .sort((a,b)=>b.count-a.count);
+  const rival=rivalsRanked[0];
+  return rival ? {
+    selectedBrand,
+    rivalBrand:rival.brand,
+    supportingResults:rival.count
+  } : null;
+}
+
 function candidateTargetBrand(candidate,input = {}) {
   const explicit = explicitBrand(candidate);
   if (candidate?.relation?.type !== 'accessory' && explicit) return explicit;
@@ -494,6 +526,7 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
   );
 
   const brandCollision = !requested && hasBrandCollision(ranked,input);
+  const brandDisagreement = !requested ? conflictingBrandEvidence(ranked,selected,input) : null;
   // Short alphanumeric models (e.g. L3250, QC45) may be shared across
   // manufacturers. Keep the ranking but require tester confirmation when
   // the brand was not supplied.
@@ -537,16 +570,26 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
     requiresTesterChoice:Boolean(
       closeCompetition ||
       brandCollision ||
+      Boolean(brandDisagreement) ||
       shortModelAmbiguity ||
       identityNeedsReview ||
       selectedAccessory ||
       selected.score < 55
     ),
     selectedBy:requested ? 'tester' : 'ranking',
-    warnings:selected.warnings || [],
+    warnings:[
+      ...(selected.warnings || []),
+      ...(brandDisagreement ? [{
+        field:'brand-conflict',
+        severity:'warning',
+        message:'Uwaga: katalog zawiera kilka produktów wskazujących inną markę ('+
+          brandDisagreement.rivalBrand+'). Sprawdź markę urządzenia.'
+      }] : [])
+    ],
     ambiguity:{
       closeCompetition,
       brandCollision,
+      brandDisagreement,
       shortModelAmbiguity,
       identityNeedsReview,
       selectedAccessory,
