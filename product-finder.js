@@ -353,7 +353,7 @@
     if (best && !list.some(item => String(item.id) === String(best.id))) {
       list.unshift(best);
     }
-    return list.slice(0,5);
+    return list.slice(0,12);
   }
 
   function renderCandidate(candidate,result,index) {
@@ -509,11 +509,27 @@
           ? '<div class="note" style="margin-top:10px">Wyniki są niejednoznaczne — nie wybieram automatycznie. Porównaj model, markę, MPN i wariant.</div>'
           : '')+
       '<div style="display:grid;gap:10px;margin-top:12px">'+
-        candidates.map((candidate,index) => renderCandidate(candidate,result,index)).join('')+
+        candidates.slice(0,5).map((candidate,index) => renderCandidate(candidate,result,index)).join('')+
       '</div>'+
+      (candidates.length>5
+        ? '<button type="button" class="btn" id="productFinderMoreCandidates" style="margin-top:12px">'+
+            'Pokaż pozostałe propozycje ('+safe(candidates.length-5)+')</button>'+
+          '<div id="productFinderExtraCandidates" style="display:none;gap:10px;margin-top:12px">'+
+            candidates.slice(5).map((candidate,index)=>renderCandidate(candidate,result,index+5)).join('')+
+          '</div>'
+        : '')+
       auditPanel(result);
 
     $('productFinderRefresh').onclick = () => runSearch({force:true});
+    const more=$('productFinderMoreCandidates');
+    const extra=$('productFinderExtraCandidates');
+    if(more && extra) more.onclick=()=>{
+      const opening=extra.style.display==='none';
+      extra.style.display=opening?'grid':'none';
+      more.textContent=opening
+        ? 'Ukryj pozostałe propozycje'
+        : 'Pokaż pozostałe propozycje ('+(candidates.length-5)+')';
+    };
 
     box.querySelectorAll('[data-finder-use]').forEach(button => {
       button.onclick = () => useCandidate(button.dataset.finderUse);
