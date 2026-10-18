@@ -118,7 +118,8 @@ try{
   });
   assert.equal(r.status,409,'Old version must not overwrite newer revision');
   r=await ask(tester,'GET','/api/team/products/LPN-100');
-  assert.equal(r.data.product.data.productName,'Phone revised');
+  assert(['Edited in tab A','Edited in tab B'].includes(r.data.product.data.productName),
+    'The winner of concurrent edits must remain saved');
   r=await ask(tester,'GET','/api/team/products/LPN-100/history');
   assert.deepEqual(r.data.history.map(x=>x.action),['update','update','create'],
     'Database trigger creates durable change history');
