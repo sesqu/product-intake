@@ -427,4 +427,57 @@ const dummyPhone = classifyCandidateRelation({
 },{query:'Galaxy S24'});
 assert.equal(dummyPhone.type,'accessory','Display dummy must not rank as the real phone');
 
+
+ 
+// v44b regression: an included consumable/tool accessory must not turn a
+// full product into an accessory, even if the catalog adds a brand to model.
+const primaryBundleFixtures = [
+  {
+    name:'MFP laserowe Brother DCP-L2622DW Duplex WiFi Kabel USB',
+    brand:'Brother',model:'Brother DCP-L2622DW',
+    category:'Urządzenia wielofunkcyjne',
+    query:'DCP-L2622DW'
+  },
+  {
+    name:'Drukarka Epson EcoTank L3250 + zapasowy tusz',
+    brand:'Epson',model:'EcoTank L3250',
+    category:'Drukarki atramentowe',
+    query:'L3250'
+  },
+  {
+    name:'Wiertarko-wkrętarka Makita DHP484 z akumulatorem',
+    brand:'Makita',model:'Makita DHP484',
+    category:'Wiertarko-wkrętarki',
+    query:'DHP484'
+  },
+  {
+    name:'Robot odkurzający Dreame L50 Ultra ze szczotką',
+    brand:'Dreame',model:'Dreame L50 Ultra',
+    category:'Odkurzacze automatyczne',
+    query:'L50 Ultra'
+  }
+];
+for (const fixture of primaryBundleFixtures) {
+  assert.equal(
+    classifyCandidateRelation(fixture,{query:fixture.query}).type,
+    'product',
+    'Full device bundle should be product: ' + fixture.name
+  );
+}
+const accessoryNotBundles = [
+  {name:'Toner do drukarki Brother DCP-L2622DW',
+    model:'Brother DCP-L2622DW',category:'Tonery i bębny',query:'DCP-L2622DW'},
+  {name:'Silnik do odkurzacza Dreame L50 Ultra',
+    model:'Dreame L50 Ultra',category:'Części do odkurzaczy',query:'L50 Ultra'},
+  {name:'Bateria do wiertarko-wkrętarki Makita DHP484',
+    model:'Makita DHP484',category:'Akumulatory',query:'DHP484'}
+];
+for (const fixture of accessoryNotBundles) {
+  assert.equal(
+    classifyCandidateRelation(fixture,{query:fixture.query}).type,
+    'accessory',
+    'Spare part must stay accessory: ' + fixture.name
+  );
+}
+
 console.log('PASS Research ranking v3: model fingerprint, primary-product ranking, accessory penalties, brand handling and query recovery.');
