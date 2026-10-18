@@ -7,6 +7,7 @@ import {
 } from '../worker/src/product-research.js';
 import {
   buildAllegroResearchQueries,
+  inferMpnSearchPhrase,
   shouldTryMpnMode,
   searchAllegroForResearch
 } from '../worker/src/research-allegro.js';
@@ -32,6 +33,15 @@ assert.equal(shouldTryMpnMode({query:'WH-1000XM5'}),true);
 assert.equal(shouldTryMpnMode({query:'Flip 6'}),true);
 assert.equal(shouldTryMpnMode({query:'słuchawki sony'}),false);
 assert.equal(shouldTryMpnMode({mpn:'06019H5200'}),true);
+assert.equal(inferMpnSearchPhrase({query:'Samsung Galaxy S24 SM-S921B 256GB'}),'SM-S921B');
+assert.equal(inferMpnSearchPhrase({query:'Sony WH-1000XM5 czarne'}),'WH-1000XM5');
+assert.equal(inferMpnSearchPhrase({query:'Bosch GSR 18V-55 06019H5200'}),'GSR 18V-55');
+assert.equal(inferMpnSearchPhrase({query:'Makita DHP484 akumulator 18V'}),'DHP484');
+assert.equal(inferMpnSearchPhrase({query:'Philips EP2220/10 ekspres'}),'EP2220/10');
+assert.equal(inferMpnSearchPhrase({query:'Słuchawki bluetooth 256GB'}),'');
+assert.equal(inferMpnSearchPhrase({mpn:'06019H5200',query:'Bosch GSR 18V-55'}),'06019H5200');
+assert.equal(shouldTryMpnMode({query:'Samsung Galaxy S24 SM-S921B 256GB'}),true);
+
 
 const raw = {
   id:'p1',
