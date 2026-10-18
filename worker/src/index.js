@@ -6,6 +6,7 @@ import {
 import { searchAllegroForResearch } from './research-allegro.js';
 import { stagingConnectPage, stagingConnectScript, stagingOAuthStatusPage } from './staging-onboarding.js';
 import { stagingProbePage, stagingProbeScript } from './staging-probe.js';
+import { lookupAsinWithSerpApi } from './asin-lookup.js';
 
 const AAPI = "https://api.allegro.pl";
 const AOAUTH = "https://allegro.pl/auth/oauth";
@@ -539,7 +540,8 @@ async function handle(request, env) {
       research: {
         active: true,
         provider: "allegro-catalog",
-        searchBy: ["model","brand+model","mpn"]
+        searchBy: ["model","brand+model","mpn","asin"],
+        asinProvider:env.SERPAPI_API_KEY ? "serpapi-amazon-product" : "unconfigured"
       }
     }, 200, origin);
   }
@@ -685,6 +687,40 @@ async function handle(request, env) {
       configured: Boolean(env.ALLEGRO_CLIENT_ID && env.ALLEGRO_CLIENT_SECRET && env.ALLEGRO_REDIRECT_URI),
       connected: Boolean(await env.AUTH.get("allegro:refresh_token"))
     }, 200, origin);
+  }
+
+  if (url.pathname === "/api/asin" && request.method === "GET") {
+    try {
+      const asin = clean(url.searchParams.get("asin"));
+      const domain = clean(url.searchParams.get("domain")) || "amazon.pl";
+      const lookup = await lookupAsinWithSerpApi({
+        asin,
+        domain,
+        apiKey:env.SERPAPI_API_KEY,
+        kv:env.AUTH
+      });
+      const best = lookup.product || null;
+      return out({
+        source:"amazon",
+        provider:lookup.provider,
+        marketplace:lookup.domain,
+        query:{asin:lookup.asin,domain:lookup.domain},
+        best,
+        candidates:best ? [best] : [],
+        confidence:null,
+        requiresTesterChoice:true,
+        selectedBy:"none",
+        asinMatched:Boolean(best?.asinMatched),
+        cached:Boolean(lookup.cached),
+        fetchedAt:lookup.fetchedAt,
+        sourceUrl:best?.url || "https://www."+lookup.domain+"/dp/"+lookup.asin,
+        warnings:best?.warnings || [],
+        message:lookup.reason || "Porównaj dane Amazon z fizycznym produktem przed użyciem."
+      },200,origin);
+    }catch(error){
+      return out({error:error.message || "Nie udało się wyszukać ASIN"},
+        error.status || (/ASIN|Obsługiwane sklepy/.test(error.message || "") ? 400:502),origin);
+    }
   }
 
   if (url.pathname === "/api/research" && request.method === "POST") {
