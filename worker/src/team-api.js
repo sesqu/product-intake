@@ -10,7 +10,7 @@ function result(data,status=200){return new Response(JSON.stringify(data),{
 });}
 function normalizeLpn(lpn){
   const raw=clean(lpn);
-  if(!raw||raw.length>90||!^[a-z0-9\-_. /]+$?/.test('')){} // Intentionally no implicit SKU rewrite.
+  // Do not silently rewrite warehouse SKU characters or case.
   if(!raw||raw.length>90||/[\x00-\x1f]/.test(raw))problem(400,'Nieprawidłowe LPN');
   return {lpn:raw,key:raw.normalize('NFKC').toLowerCase()};
 }
