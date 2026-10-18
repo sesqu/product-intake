@@ -31,6 +31,7 @@ const html = `<!doctype html>
     </form>
     <output id="status" role="status" aria-live="polite"></output>
     <p><small>Klucz jest używany tylko w nagłówku jednego żądania. Nie zapisujemy go w przeglądarce ani w adresie strony.</small></p>
+    <p><a href="/staging/probe" style="color:#8cb8ff">Przejdź do testów MPN (po połączeniu)</a></p>
   </main>
 </body>
 </html>`;
@@ -86,6 +87,33 @@ export function stagingConnectScript(){
       'cache-control':'no-store',
       'x-content-type-options':'nosniff',
       'referrer-policy':'no-referrer'
+    }
+  });
+}
+
+
+export function stagingOAuthStatusPage(outcome=''){
+  const connected = outcome === 'connected';
+  const title = connected ? 'Testowe Allegro zostało połączone' : 'Nie połączono testowego Allegro';
+  const message = connected
+    ? 'Tokeny zostały zapisane wyłącznie w testowym magazynie KV. Możesz przejść do pomiaru MPN.'
+    : 'Sprawdź konfigurację testowej aplikacji Allegro i spróbuj ponownie.';
+  const body='<!doctype html><html lang="pl"><head><meta charset="utf-8">'+
+    '<meta name="viewport" content="width=device-width,initial-scale=1">'+
+    '<title>Product Intake v44b — status Allegro</title>'+
+    '<style>:root{color-scheme:dark}body{font:16px system-ui;background:#10151f;color:#f5f7fb;'+
+    'max-width:650px;margin:8vh auto;padding:24px;line-height:1.6}a{color:#9cc4ff}</style></head><body>'+
+    '<h1>'+title+'</h1><p>'+message+'</p>'+
+    '<a href="/staging/probe">Uruchom testy MPN</a> · '+
+    '<a href="/staging/connect">Połącz ponownie</a></body></html>';
+  return new Response(body,{
+    status:200,
+    headers:{
+      'content-type':'text/html; charset=utf-8',
+      'cache-control':'no-store',
+      'x-content-type-options':'nosniff',
+      'referrer-policy':'no-referrer',
+      'content-security-policy':"default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'"
     }
   });
 }
