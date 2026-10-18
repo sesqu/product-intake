@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS team_products (
  revision INTEGER NOT NULL CHECK(revision>0),
  locked_by TEXT,
  lock_expires_at INTEGER,
+ lock_changed_at INTEGER,
+ lock_updated_by TEXT,
  updated_by TEXT NOT NULL,
  updated_at INTEGER NOT NULL,
  created_by TEXT NOT NULL,
@@ -65,5 +67,9 @@ BEGIN
         WHEN NEW.revision>OLD.revision THEN 'update'
         WHEN NEW.locked_by IS NULL THEN 'release'
         ELSE 'claim' END,
-   NEW.updated_by,NEW.updated_at,NEW.data_json);
+   CASE WHEN NEW.revision>OLD.revision OR NEW.deleted_at IS NOT OLD.deleted_at
+        THEN NEW.updated_by ELSE NEW.lock_updated_by END,
+   CASE WHEN NEW.revision>OLD.revision OR NEW.deleted_at IS NOT OLD.deleted_at
+        THEN NEW.updated_at ELSE NEW.lock_changed_at END,
+   NEW.data_json);
 END;
