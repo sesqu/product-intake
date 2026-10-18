@@ -76,11 +76,29 @@ const connectJs=await connectScript.text();
 assert(connectJs.includes("'x-staging-test-key'"));
 assert.doesNotThrow(()=>new Script(connectJs),'Onboarding browser script must parse cleanly');
 const feedback=await worker.fetch(req('/staging/oauth?allegro=connected'),env);
-assert.equal((await feedback.json()).environment,'staging');
+assert(feedback.headers.get('content-type')?.includes('text/html'));
+assert((await feedback.text()).includes('Testowe Allegro zostało połączone'));
+
+const probe=await worker.fetch(req('/staging/probe'),env);
+assert.equal(probe.status,200);
+assert(probe.headers.get('content-type')?.includes('text/html'));
+assert(probe.headers.get('content-security-policy')?.includes("script-src 'self'"));
+const probeHtml=await probe.text();
+assert(probeHtml.includes('type="password"'));
+assert(probeHtml.includes('Sprawdź 8 modeli'));
+assert(!probeHtml.includes(env.STAGING_API_KEY));
+const probeScript=await worker.fetch(req('/staging/probe.js'),env);
+assert.equal(probeScript.status,200);
+const probeJs=await probeScript.text();
+assert(probeJs.includes("'x-staging-test-key'"));
+assert(probeJs.includes('testerVerdict'));
+assert.doesNotThrow(()=>new Script(probeJs),'Staging browser probe script must parse cleanly');
 
 const prodEnv={...production.vars,AUTH:fakeKv};
 const prodStagePage=await worker.fetch(req('/staging/connect'),prodEnv);
 assert.equal(prodStagePage.status,404,'Production must never expose staging onboarding');
+const prodProbePage=await worker.fetch(req('/staging/probe'),prodEnv);
+assert.equal(prodProbePage.status,404,'Production must never expose staging MPN probe');
 const prodCallback=await worker.fetch(req('/api/allegro/callback'),prodEnv);
 assert.equal(new URL(prodCallback.headers.get('location')).origin,'https://sesqu.github.io');
 const cors=await worker.fetch(req('/api/research',{
