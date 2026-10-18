@@ -15,9 +15,11 @@ for(const key of [
   'productFinderAuditList','productFinderAuditCount','productFinderAuditExport',
   'productFinderAuditClear','productFinderRefresh',
   'productFinderDiagnosticOptions','productFinderStagingToggle',
-  'productFinderStagingCredentials','productFinderStagingKey'
+  'productFinderStagingCredentials','productFinderStagingKey',
+  'productFinderAsin','productFinderAmazonDomain'
 ])elements[key]=element();
 elements.productFinderQuery.value='SM-S921B';
+elements.productFinderAmazonDomain.value='amazon.pl';
 elements.productFinderDiagnosticsToggle.checked=true;
 const container=elements.productFinderResult;
 let cachedHtml='';
@@ -60,10 +62,12 @@ let payload={
 };
 let clipboard='';
 let requestLog=[];
+let usedAmazon=null;
 const context={
   window:{},document:{
     getElementById:id=>elements[id]||null,
-    querySelectorAll:()=>[]
+    querySelectorAll:()=>[],
+    querySelector:()=>null
   },
   localStorage:{
     getItem:k=>storage[k]??null,
@@ -81,7 +85,7 @@ const context={
 vm.runInNewContext(fs.readFileSync('product-finder.js','utf8'),context);
 let toasts=[];
 const finder=context.window.ProductIntakeProductFinder;
-finder.setup({safe:escapeHtml,apiBase:()=> 'https://test.invalid',toast:m=>toasts.push(m),catalogLookup:{}});
+finder.setup({safe:escapeHtml,apiBase:()=> 'https://test.invalid',toast:m=>toasts.push(m),catalogLookup:{acceptAsinResult:data=>{usedAmazon=data;return true;}}});
 (async()=>{
   await finder.runSearch({force:true});
   assert(container.innerHTML.includes('Tryb MPN'),'comparison card must render');
@@ -172,5 +176,50 @@ finder.setup({safe:escapeHtml,apiBase:()=> 'https://test.invalid',toast:m=>toast
   assert.equal(normalCall.url,'https://test.invalid/api/research');
   assert(!('x-staging-test-key' in normalCall.opts.headers));
   assert(container.innerHTML.includes('data-finder-use='));
+
+  // Exact ASIN must use Amazon SerpApi endpoint rather than Allegro research.
+  elements.productFinderStagingToggle.checked=false;
+  elements.productFinderAsin.value='B072MQ5BRX';
+  elements.productFinderAmazonDomain.value='amazon.de';
+  payload={
+    source:'amazon',provider:'serpapi-amazon-product',marketplace:'amazon.de',
+    query:{asin:'B072MQ5BRX',domain:'amazon.de'},
+    best:{
+      id:'B072MQ5BRX',asin:'B072MQ5BRX',asinMatched:true,
+      name:'Samsung Produkt po ASIN',brand:'Samsung',model:'SM-S921B',
+      score:null,ean:'',source:'amazon',
+      image:'https://m.media-amazon.com/images/test.jpg'
+    },
+    candidates:[],
+    confidence:null,requiresTesterChoice:true,sourceUrl:'https://www.amazon.de/dp/B072MQ5BRX'
+  };
+  await finder.runSearch({force:true});
+  const asinCall=requestLog[requestLog.length-1];
+  assert(asinCall.url.includes('/api/asin?'));
+  assert(asinCall.url.includes('domain=amazon.de'));
+  assert(asinCall.url.includes('asin=B072MQ5BRX'));
+  assert(!asinCall.url.includes('/api/research'));
+  assert(container.innerHTML.includes('Amazon — do weryfikacji'));
+  assert(container.innerHTML.includes('Potwierdzam produkt i używam danych Amazon'));
+  assert(container.innerHTML.includes('www.amazon.de/dp/B072MQ5BRX'));
+  assert(!container.innerHTML.includes('data-finder-description='));
+  assert(!container.innerHTML.includes('100%'), 'ASIN must not be treated as 100% physical match');
+  container.querySelectorAll('[data-finder-use]')[0].onclick();
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.equal(usedAmazon?.source,'amazon');
+  assert.equal(usedAmazon?.best?.asin,'B072MQ5BRX');
+
+  // The ASIN can also be pasted into the primary finder field.
+  elements.productFinderAsin.value='';
+  elements.productFinderQuery.value='B072MQ5BRX';
+  await finder.runSearch({force:true});
+  assert(requestLog[requestLog.length-1].url.includes('/api/asin?'));
+
+  // Numeric EAN stays an Allegro query: do not confuse with a 10-digit ASIN.
+  elements.productFinderQuery.value='5901234123457';
+  payload={best:{id:'ean-product',name:'EAN result'},candidates:[]};
+  await finder.runSearch({force:true});
+  assert(requestLog[requestLog.length-1].url.includes('/api/search?'));
+
   console.log('PASS integrated Finder: local diagnostics, stage isolation, browser-only key and master protection.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
