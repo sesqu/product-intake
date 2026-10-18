@@ -7,8 +7,17 @@
     fromCache:false
   };
 
-  const CACHE_KEY = 'productIntake.finderCache.v1';
+  // Upgrade the cache whenever the matching algorithm changes. Otherwise
+  // prior v43/v44 cached results can shadow the improved v44b search.
+  const CACHE_KEY = 'productIntake.finderCache.v44b';
   const CACHE_TTL = 24 * 60 * 60 * 1000;
+  const UNCERTAIN_CACHE_TTL = 15 * 60 * 1000;
+  function ttlFor(result) {
+    return result?.requiresTesterChoice || result?.ambiguity?.noConfidentProduct ||
+      (!result?.best && !result?.selected && !result?.candidates?.length)
+      ? UNCERTAIN_CACHE_TTL
+      : CACHE_TTL;
+  }
   const $ = id => document.getElementById(id);
 
   function setup(options) {
@@ -62,7 +71,7 @@
     try {
       const all = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
       const hit = all[cacheKey(input)];
-      if (!hit || Date.now() - Number(hit.savedAt || 0) > CACHE_TTL) return null;
+      if (!hit || Date.now() - Number(hit.savedAt || 0) > ttlFor(hit.data)) return null;
       return hit.data || null;
     } catch {
       return null;
@@ -74,7 +83,7 @@
       const all = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
       const now = Date.now();
       for (const [key,value] of Object.entries(all)) {
-        if (now - Number(value?.savedAt || 0) > CACHE_TTL) delete all[key];
+        if (now - Number(value?.savedAt || 0) > ttlFor(value?.data)) delete all[key];
       }
       all[cacheKey(input)] = {savedAt:now,data};
       const keys = Object.keys(all);
@@ -278,7 +287,7 @@
           researchTraceHtml(result)+
         '</div>'+
         '<div>'+
-          (fromCache ? '<span class="badge">pamięć 24h</span> ' : '')+
+          (fromCache ? '<span class="badge">'+(ttlFor(result) === UNCERTAIN_CACHE_TTL ? 'pamięć 15 min' : 'pamięć 24h')+'</span> ' : '')+
           '<button id="productFinderRefresh" type="button" class="btn">Odśwież</button>'+
         '</div>'+
       '</div>'+
