@@ -5,6 +5,7 @@ import {
 } from './product-research.js';
 import { searchAllegroForResearch } from './research-allegro.js';
 import { stagingConnectPage, stagingConnectScript } from './staging-onboarding.js';
+import { stagingProbePage, stagingProbeScript } from './staging-probe.js';
 
 const AAPI = "https://api.allegro.pl";
 const AOAUTH = "https://allegro.pl/auth/oauth";
@@ -512,6 +513,13 @@ async function handle(request, env) {
   }
   if (stagingOnly && url.pathname === "/staging/connect.js") {
     return stagingConnectScript();
+  }
+
+  if (stagingOnly && url.pathname === "/staging/probe") {
+    return stagingProbePage();
+  }
+  if (stagingOnly && url.pathname === "/staging/probe.js") {
+    return stagingProbeScript();
   }
 
   if (stagingOnly && url.pathname === "/staging/oauth") {
