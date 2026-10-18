@@ -29,4 +29,5 @@ jobs:
       - name: Validate MPN end-to-end on separate Worker
         env:
           V44B_STAGING_BASE_URL: ${{ inputs.staging_base_url || vars.V44B_STAGING_BASE_URL }}
+          V44B_STAGING_API_KEY: ${{ secrets.V44B_STAGING_API_KEY }}
         run: node tests/model-ranking-v44b-live-mpn.mjs
