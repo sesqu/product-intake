@@ -178,8 +178,12 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     const target=modelFingerprint(identity);
     if(target.length<4 || !/[a-z]/.test(target) || !/\d/.test(target))return null;
     const selectedInfo=candidateHint(selected);
-    const selectedBrand=normalizeText(selectedInfo.brand || selectedInfo.manufacturer ||
-      clean(selectedInfo.name).split(/\s+/)[0]);
+    const selectedContext=extractContextualModelPhrases(selectedInfo.name,identity);
+    const selectedBrand=normalizeText(
+      selectedInfo.brand || selectedInfo.manufacturer ||
+      clean(selectedContext[0]?.split(/\s+/)[0]) ||
+      clean(selectedInfo.name).split(/\s+/)[0]
+    );
     if(!selectedBrand || ['bez marki','unknown','other'].includes(selectedBrand))return null;
     const support=new Map();
     for(const raw of products){
@@ -206,6 +210,15 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
       const candidate=candidateHint(product);
       const ranked=rankResearchCandidate(candidate,rankingInput);
       if(ranked.relation?.type==='accessory' || ranked.score<55)return false;
+      const wantedBrand=normalizeText(input?.brand || input?.manufacturer);
+      if(wantedBrand){
+        const context=extractContextualModelPhrases(candidate.name,
+          rankingInput.model || rankingInput.mpn || rankingInput.query);
+        const actualBrand=normalizeText(candidate.brand || candidate.manufacturer ||
+          clean(context[0]?.split(/\s+/)[0]));
+        if(actualBrand && actualBrand!==wantedBrand &&
+           !normalizeText(candidate.name).includes(wantedBrand))return false;
+      }
       if(!codeLike)return true;
       return [candidate.model,candidate.mpn].map(modelFingerprint).includes(target) ||
         modelFingerprint(candidate.name).includes(target);
