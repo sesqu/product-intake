@@ -24,6 +24,39 @@ Ta gałąź pochodzi bezpośrednio z `main` (publicznego v43).
 - Szczegóły wyszukiwania podają tryb, stronę i liczbę nowych kandydatów.
   Porównanie fraza vs MPN jest liczone bez dodatkowych wywołań API.
 
+## Dlaczego nie dopisujemy zawsze „telefon”?
+
+Read-only testy przeciw obecnie działającemu API Allegro v43
+(18 października 2026) pokazały, że:
+
+- `SM-S921B` zwraca części do telefonu;
+- `telefon SM-S921B` także zwraca część (taśmę);
+- `smartfon Samsung SM-S921B` może nie zwrócić niczego;
+- `Samsung Galaxy S24 smartfon` potrafi znaleźć prawdziwy telefon,
+  ale również atrapę wystawową, którą ranking musi odrzucić;
+- `Makita DHP484 wiertarko-wkrętarka` znalazła urządzenie,
+  gdy sam `DHP484` zwrócił błędnie opisanego Boscha;
+- `Roborock S8 MaxV Ultra robot odkurzający` znalazł robot,
+  gdy sam model zwrócił mopy.
+
+Wniosek: nie istnieje jedna magiczna kolejność słów. Stosujemy
+**adaptacyjne odzyskiwanie wyników**: oryginalna fraza, dokładny
+MPN, a potem odpowiednio dobrana trzecia próba. Gdy lista wskazuje
+wiarygodny powtarzalny alias rodziny i rodzaj sprzętu, można
+spróbować np. `Samsung Galaxy S24 smartfon`; w przeciwnym razie
+sprawdzamy następną stronę MPN. Nie przekraczamy trzech prób.
+Fraza służy do znalezienia kandydatów; punktowanie zawsze opiera
+się na wyodrębnionym kodzie `SM-S921B`, nie na całym „telefon SM-S921B”.
+
+Pełne logi aktualnej publicznej wersji API:
+https://github.com/sesqu/product-intake/actions/runs/39131354189
+i https://github.com/sesqu/product-intake/actions/runs/39131571533
+
+**Uwaga:** to testy rzeczywistego starego API v43. Nowe odgałęzienie
+v44 było testowane z symulowanymi wynikami i offline na zapisanej
+próbce rzeczywistych kandydatów. Nie ma jeszcze end-to-end live
+nowego Workera.
+
 ## Zabezpieczenia testera
 
 Wybór kandydata zawsze jest jawny; ranking nie potwierdza rzeczywistej sztuki.
