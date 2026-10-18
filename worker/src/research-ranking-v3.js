@@ -136,11 +136,21 @@ const PRIMARY_DEVICE_SIGNALS = [
   {category:/ekspres/, title:/ekspres/}
 ];
 
-function isClearPrimaryDevice(candidate) {
+const BUNDLE_ITEM_NOUNS = new Set([
+  'bateria','akumulator','tusz','atrament','toner','kabel','przewod',
+  'ladowarka','adapter','filtr','szczotk','mop','pilot','battery','charger'
+]);
+const REPAIR_ONLY_NOUNS = [
+  'wyswietl','ekran','plyta glowna','buzzer','charging port',
+  'replacement screen','screen protector','spare part','kontroler','stojan'
+];
+
+function isClearPrimaryDevice(candidate,noun) {
   const category = normalizeText(candidate?.category);
   const title = normalizeText(candidate?.name);
-  if (!category || !title) return false;
+  if (!category || !title || !BUNDLE_ITEM_NOUNS.has(noun)) return false;
   if (ACCESSORY_CATEGORY_WORDS.some(word => category.includes(normalizeText(word)))) return false;
+  if (REPAIR_ONLY_NOUNS.some(word => hasNormalizedTerm(title,word))) return false;
   const opening = title.split(' ').slice(0,7).join(' ');
   return PRIMARY_DEVICE_SIGNALS.some(rule =>
     rule.category.test(category) && rule.title.test(opening)
@@ -196,7 +206,7 @@ export function classifyCandidateRelation(candidate,input = {}) {
 
   // An accessory included IN the box is not the entire product's type.
   // Keep this below the explicit accessory relationship/category rule.
-  if (targetMentioned && isClearPrimaryDevice(candidate)) {
+  if (targetMentioned && isClearPrimaryDevice(candidate,noun)) {
     return {type:'product',confidence:'medium',reason:'produkt główny z wyposażeniem'};
   }
 
