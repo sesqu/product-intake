@@ -71,20 +71,31 @@ function brandMatch(candidate,brand){
   const text=normalize(candidate?.name||'').replace(/[^a-z0-9]+/g,'');
   return text.includes(expected);
 }
+const nonFunctional=/\batrapa\b|\beksponat\b|\bprezenter\b|\bdummy\b|display dummy|display unit|nonfunctional/i;
 function isPrimary(candidate,test){
   const name=String(candidate?.name||'');
   const corpus=[name,candidate?.category||''].filter(Boolean).join(' ');
-  const nameCompact=normalize(name).replace(/[^a-z0-9]+/g,'');
-  const queryCompact=normalize(test.query).replace(/[^a-z0-9]+/g,'');
+  const compact=value=>normalize(value).replace(/[^a-z0-9]+/g,'');
+  const nameCompact=compact(name);
+  const queryCompact=compact(test.query);
+  const structured=[candidate?.model,candidate?.mpn].map(compact).filter(Boolean);
+  const exactStructured=structured.includes(queryCompact);
   const identityInName=Boolean(queryCompact && nameCompact.includes(queryCompact));
+  const conflictingStructured=Boolean(
+    structured.length && !exactStructured &&
+    structured.every(value=>!value.includes(queryCompact) && !queryCompact.includes(value))
+  );
+  const hasIdentity=exactStructured || (identityInName && !conflictingStructured);
   return Boolean(
-    name &&
-    (test.primary.test(corpus) || identityInName) &&
+    name && hasIdentity &&
+    (test.primary.test(corpus) || exactStructured) &&
     brandMatch(candidate,test.brand) &&
     !accessory.test(name) &&
+    !nonFunctional.test(name) &&
     candidate?.relation?.type!=='accessory'
   );
 }
+
 function unique(items){
   const seen=new Set();
   return (items||[]).filter(item=>{
