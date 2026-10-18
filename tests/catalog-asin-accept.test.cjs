@@ -5,7 +5,7 @@ const fields={};
 for(const id of [
   'productName','brand','model','category','parameters','asin','ean','lpn',
   'confidencePct','sumIdentification','confidenceBar',
-  'eanLabel','eanRequirement','rEan','gpsrStatus','gpsrDetails'
+  'eanLabel','eanRequirement','rEan','gpsrStatus','gpsrDetails','productFinderAsin'
 ]){
   fields[id]={value:'',textContent:'',dataset:{},style:{}};
 }
@@ -99,4 +99,22 @@ assert.equal(fields.productName.value,'Amazon chce zmienić nazwę',
   'Tester can explicitly choose Amazon value without losing other existing fields');
 assert.equal(fields.brand.value,'Zaufana marka');
 assert.equal(lookup.getState().sourceSnapshot.amazon.fieldChoices.name.selected,'amazon');
-console.log('PASS Amazon ASIN master: explicit tester acceptance, source snapshot, EAN safety and unknown confidence.');
+(async()=>{
+  // The legacy "Sprawdź produkt" button must not route ASIN to EAN-only Allegro.
+  let delegated=0;
+  win.ProductIntakeProductFinder={runSearch:async({force})=>{
+    assert.equal(force,true);
+    delegated++;
+  }};
+  fields.ean.value='';
+  fields.asin.value='B072MQ5BRX';
+  await win.lookup();
+  assert.equal(delegated,1);
+  assert.equal(fields.productFinderAsin.value,'B072MQ5BRX');
+
+  fields.productFinderAsin.value='';
+  fields.asin.value='wrong';
+  await win.lookup();
+  assert.equal(delegated,1,'Invalid ASIN must never invoke search');
+  console.log('PASS Amazon ASIN master: explicit tester acceptance, conflict controls, and legacy ASIN button route.');
+})().catch(error=>{console.error(error);process.exitCode=1;});
