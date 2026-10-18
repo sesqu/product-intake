@@ -113,6 +113,36 @@ const HARD_ACCESSORY_NOUNS = [
 ];
 
 
+/**
+ * Catalog titles often include an accessory supplied WITH the full product
+ * (e.g. "Drukarka ... + toner", "Wiertarko-wkrętarka ... + akumulator").
+ * A matching primary-device category and a main-device noun near the start
+ * of the title prevent such bundles being classified as spare parts.
+ *
+ * This deliberately does not override explicit "do modelu" accessory wording
+ * or accessory categories, both handled with higher priority.
+ */
+const PRIMARY_DEVICE_SIGNALS = [
+  {category:/drukark|urzadzen.{0,12}wielofunkcyj/, title:/drukark|\\bmfp\\b|urzadzen.{0,12}wielofunkcyj|\\blaserjet\\b|\\becotank\\b/},
+  {category:/wiertark|wkretark|elektronarzedz/, title:/wiertark|wkretark|\\bdrill driver\\b/},
+  {category:/odkurzacz|robot sprzataj/, title:/odkurzacz|robot sprzataj/},
+  {category:/telewizor/, title:/telewizor|\\btv\\b/},
+  {category:/smartfon|telefon/, title:/smartfon|telefon/},
+  {category:/ekspres/, title:/ekspres/}
+];
+
+function isClearPrimaryDevice(candidate) {
+  const category = normalizeText(candidate?.category);
+  const title = normalizeText(candidate?.name);
+  if (!category || !title) return false;
+  if (ACCESSORY_CATEGORY_WORDS.some(word => category.includes(normalizeText(word)))) return false;
+  const opening = title.split(' ').slice(0,7).join(' ');
+  return PRIMARY_DEVICE_SIGNALS.some(rule =>
+    rule.category.test(category) && rule.title.test(opening)
+  );
+}
+
+
 export function classifyCandidateRelation(candidate,input = {}) {
   const name = ' ' + normalizeText(candidate?.name) + ' ';
   const category = normalizeText(candidate?.category);
@@ -158,6 +188,12 @@ export function classifyCandidateRelation(candidate,input = {}) {
       targetFp === candidateMpnFp
     )
   );
+
+  // An accessory included IN the box is not the entire product's type.
+  // Keep this below the explicit accessory relationship/category rule.
+  if (targetMentioned && isClearPrimaryDevice(candidate)) {
+    return {type:'product',confidence:'medium',reason:'produkt główny z wyposażeniem'};
+  }
 
   if (targetMentioned && noun && !targetIsCandidateIdentity) {
     return {
