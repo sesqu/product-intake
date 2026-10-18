@@ -1,4 +1,4 @@
-import { buildModelQueryVariants } from './research-ranking-v3.js';
+import { buildModelQueryVariants, rankResearchCandidate } from './research-ranking-v3.js';
 const AAPI = 'https://api.allegro.pl';
 const clean = value => String(value ?? '').trim();
 const norm = value => clean(value).toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
@@ -78,10 +78,11 @@ export function buildAllegroResearchQueries(input = {}) {
   ]).slice(0,2);
 }
 
-async function requestProducts(token, userAgent, phrase, mode = '') {
+async function requestProducts(token, userAgent, phrase, mode = '', pageId = '') {
   const url = new URL(AAPI + '/sale/products');
   url.searchParams.set('phrase', phrase);
   if (mode) url.searchParams.set('mode', mode);
+  if (pageId) url.searchParams.set('page.id',pageId);
   url.searchParams.set('language', 'pl-PL');
 
   const response = await fetch(url, {
@@ -100,7 +101,10 @@ async function requestProducts(token, userAgent, phrase, mode = '') {
     throw error;
   }
 
-  return Array.isArray(body.products) ? body.products : [];
+  return {
+    products:Array.isArray(body.products) ? body.products : [],
+    nextPageId:clean(body?.nextPage?.id).slice(0,1024)
+  };
 }
 
 export async function searchAllegroForResearch({token,userAgent,input} = {}) {
@@ -116,21 +120,32 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   const firstSeenById = Object.create(null);
   const foundModesById = Object.create(null);
   const seenRequests = new Set();
+  const nextPageByMode = new Map();
   const maxAttempts = 3;
+  function hasStrongPrimary() {
+    return products.some(product => {
+      const ranked=rankResearchCandidate(candidateHint(product),input);
+      return ranked.relation?.type !== 'accessory' && ranked.score >= 55;
+    });
+  }
 
-  async function runPhrase(phrase, mode = '', reason = 'phrase') {
+  async function runPhrase(phrase, mode = '', reason = 'phrase', pageId = '') {
     const phraseKey = norm(phrase);
-    const requestKey = [mode || 'PHRASE', phraseKey].join('|');
+    const requestKey = [mode || 'PHRASE', phraseKey, pageId].join('|');
     if (!phraseKey || seenRequests.has(requestKey) || searchAttempts.length >= maxAttempts) return;
 
     seenRequests.add(requestKey);
     queriesUsed.push(mode ? phrase + ' [' + mode + ']' : phrase);
-    const attempt = {phrase,mode:mode || '',reason,foundCount:0,uniqueAdded:0};
+    const attempt = {
+      phrase,mode:mode || '',reason,
+      page:pageId ? 2 : 1,
+      foundCount:0,uniqueAdded:0
+    };
     searchAttempts.push(attempt);
 
     let found = [];
     try {
-      found = await requestProducts(token,userAgent,phrase,mode);
+      found = await requestProducts(token,userAgent,phrase,mode,pageId);
     } catch (error) {
       if (mode === 'MPN' && [400,422].includes(Number(error?.status))) {
         attempt.error = clean(error?.message || 'MPN search rejected');
@@ -139,8 +154,13 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
       throw error;
     }
 
-    attempt.foundCount = found.length;
-    for (const product of found) {
+    attempt.foundCount = found.products.length;
+    if(found.nextPageId && !pageId){
+      nextPageByMode.set(mode || 'PHRASE',{
+        phrase,mode,cursor:found.nextPageId
+      });
+    }
+    for (const product of found.products) {
       const id = clean(product?.id);
       const productKey = id || norm(product?.name);
       if (!productKey) continue;
@@ -177,6 +197,15 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     await runPhrase(queries[1],'','fallback');
   }
 
+  // Allegro uses cursor-based pagination (page.id), not limit+offset here.
+  // Spend the last request on page 2 of an exact MPN search ONLY when page 1
+  // offers no credible complete product. Do not run another page if a strong
+  // primary product has already been found.
+  const mpnPage=nextPageByMode.get('MPN');
+  if(mpnPage && searchAttempts.length < maxAttempts && !hasStrongPrimary()){
+    await runPhrase(mpnPage.phrase,'MPN','mpn-page',mpnPage.cursor);
+  }
+
   // Generic finder input may recover the canonical spelling / brand context
   // from the first candidates, but never exceeds the 3-request budget.
   const recovered = (
@@ -192,6 +221,13 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   for (const phrase of recovered) {
     if (searchAttempts.length >= maxAttempts) break;
     await runPhrase(phrase,'','recovered');
+  }
+
+  // If the recovered query did not use the remaining budget, try page 2 of
+  // the primary phrase before concluding that only accessories exist.
+  const phrasePage=nextPageByMode.get('PHRASE');
+  if(phrasePage && searchAttempts.length < maxAttempts && !hasStrongPrimary()){
+    await runPhrase(phrasePage.phrase,'','phrase-page',phrasePage.cursor);
   }
 
   return {
