@@ -113,7 +113,8 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   const searchAttempts = [];
   const products = [];
   const seen = new Set();
-  const firstSeenById = {};
+  const firstSeenById = Object.create(null);
+  const foundModesById = Object.create(null);
   const seenRequests = new Set();
   const maxAttempts = 3;
 
@@ -142,7 +143,13 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     for (const product of found) {
       const id = clean(product?.id);
       const productKey = id || norm(product?.name);
-      if (!productKey || seen.has(productKey)) continue;
+      if (!productKey) continue;
+      if (id) {
+        if (!foundModesById[id]) foundModesById[id] = [];
+        const modeTag = mode === 'MPN' ? 'MPN' : 'PHRASE';
+        if (!foundModesById[id].includes(modeTag)) foundModesById[id].push(modeTag);
+      }
+      if (seen.has(productKey)) continue;
       seen.add(productKey);
       products.push(product);
       attempt.uniqueAdded += 1;
@@ -194,6 +201,7 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     products:products.slice(0,90),
     queriesUsed,
     searchAttempts,
-    firstSeenById
+    firstSeenById,
+    foundModesById
   };
 }
