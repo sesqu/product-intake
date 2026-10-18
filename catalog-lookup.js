@@ -718,10 +718,53 @@
       gpsr:null,
       sourceConsensus:{available:false,matched:0,compared:0,label:'Amazon — SerpApi'}
     };
-    latestIdentification=identificationSnapshot(data);
+    // A matching ASIN is not authority over values entered by the tester.
+    // On every differing populated field ask explicitly which source to keep.
+    // The original Amazon data remains intact in sourceSnapshot for audit.
+    const applied={...best};
+    const fieldChoices={};
+    const checks=[
+      ['name','productName','Nazwa produktu'],
+      ['brand','brand','Marka'],
+      ['model','model','Model'],
+      ['category','category','Kategoria'],
+      ['asin','asin','ASIN']
+    ];
+    for(const [key,inputId,label] of checks){
+      const oldValue=String($(inputId)?.value || '').trim();
+      const newValue=String(best[key] || '').trim();
+      if(!oldValue || !newValue ||
+         oldValue.toLowerCase()===newValue.toLowerCase()) continue;
+      const useAmazon=typeof confirm==='function' && confirm(
+        'Konflikt źródeł: '+label+'\\n'+
+        'W formularzu: '+oldValue+'\\n'+
+        'Amazon: '+newValue+'\\n\\n'+
+        'OK = użyj Amazon, Anuluj = zachowaj dotychczasowe dane'
+      );
+      fieldChoices[key]={
+        existing:oldValue,
+        amazon:newValue,
+        selected:useAmazon?'amazon':'existing'
+      };
+      if(!useAmazon) applied[key]=oldValue;
+      if(useAmazon && key==='asin' && $(inputId)) $(inputId).value=newValue;
+    }
+    if($('parameters')?.value.trim() && Array.isArray(best.parameters) && best.parameters.length){
+      const useAmazon=typeof confirm==='function' && confirm(
+        'W formularzu są już parametry. OK = zastąp je danymi Amazon, Anuluj = zachowaj wpisane parametry.'
+      );
+      fieldChoices.parameters={selected:useAmazon?'amazon':'existing'};
+      if(!useAmazon) applied.parameters=null;
+    }
+
+    latestIdentification={
+      ...identificationSnapshot(data),
+      fieldChoices
+    };
     latestConflictResolutions={};
     latestSourceSnapshot=buildSourceSnapshot(data);
-    populateMaster(best,data);
+    if(latestSourceSnapshot?.amazon) latestSourceSnapshot.amazon.fieldChoices=fieldChoices;
+    populateMaster(applied,data);
     setIdentified(true); // Explicit confirmation was required in the Finder.
     quality();
     saveDraft();
