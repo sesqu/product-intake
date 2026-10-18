@@ -1,0 +1,86 @@
+name: Deploy isolated v44b staging Worker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: product-intake-v44b-staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/feature/model-ranking-v44b-mpn-benchmark'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_V44B_DEPLOY_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      V44B_STAGING_KV_ID: ${{ vars.V44B_STAGING_KV_ID }}
+      V44B_STAGING_ALLEGRO_CLIENT_ID: ${{ secrets.V44B_STAGING_ALLEGRO_CLIENT_ID }}
+      V44B_STAGING_ALLEGRO_CLIENT_SECRET: ${{ secrets.V44B_STAGING_ALLEGRO_CLIENT_SECRET }}
+      V44B_STAGING_API_KEY: ${{ secrets.V44B_STAGING_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail closed if isolated staging credentials are missing
+        run: |
+          node --input-type=module -e '
+            import {readFileSync,writeFileSync} from "node:fs";
+            const env=process.env;
+            const required=[
+              "CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID",
+              "V44B_STAGING_KV_ID",
+              "V44B_STAGING_ALLEGRO_CLIENT_ID",
+              "V44B_STAGING_ALLEGRO_CLIENT_SECRET",
+              "V44B_STAGING_API_KEY"
+            ];
+            for(const key of required){
+              if(!env[key] || !env[key].trim()) throw Error("Missing staging configuration: "+key);
+            }
+            if(env.V44B_STAGING_API_KEY.length<20) throw Error("Staging API key too short");
+            const prod=JSON.parse(readFileSync("worker/wrangler.jsonc","utf8"));
+            const stagePath="worker/wrangler.staging.jsonc";
+            const cfg=JSON.parse(readFileSync(stagePath,"utf8"));
+            if(cfg.name!=="product-intake-v44b-staging" ||
+               cfg.vars?.STAGING_ONLY!=="1" ||
+               cfg.routes || cfg.route) throw Error("Refusing unsafe staging deploy config");
+            if(env.V44B_STAGING_ALLEGRO_CLIENT_ID===prod.vars.ALLEGRO_CLIENT_ID)
+              throw Error("Staging Allegro client cannot be production client");
+            if(env.V44B_STAGING_KV_ID===prod.kv_namespaces[0].id)
+              throw Error("Staging KV cannot be production KV");
+            if(!/^[a-f0-9]{32}$/i.test(env.V44B_STAGING_KV_ID))
+              throw Error("Invalid staging KV namespace ID");
+            cfg.kv_namespaces=[{binding:"AUTH",id:env.V44B_STAGING_KV_ID}];
+            writeFileSync(stagePath,JSON.stringify(cfg,null,2)+"\n");
+          '
+      - name: Test feature staging isolation
+        run: node tests/staging-isolation.test.mjs
+      - name: Install Wrangler
+        working-directory: worker
+        run: npm install --no-audit --no-fund
+      - name: Deploy staging Worker only
+        working-directory: worker
+        run: npx wrangler deploy --config wrangler.staging.jsonc
+      - name: Provision separate stage-only Worker secrets
+        working-directory: worker
+        run: |
+          printf '%s' "$V44B_STAGING_ALLEGRO_CLIENT_ID" | npx wrangler secret put ALLEGRO_CLIENT_ID --config wrangler.staging.jsonc
+          printf '%s' "$V44B_STAGING_ALLEGRO_CLIENT_SECRET" | npx wrangler secret put ALLEGRO_CLIENT_SECRET --config wrangler.staging.jsonc
+          printf '%s' "$V44B_STAGING_API_KEY" | npx wrangler secret put STAGING_API_KEY --config wrangler.staging.jsonc
+      - name: Validate public health identity after deployment
+        run: |
+          node --input-type=module -e '
+            const url="https://product-intake-v44b-staging.sesquu.workers.dev/health";
+            const response=await fetch(url,{signal:AbortSignal.timeout(15000)});
+            if(!response.ok) throw Error("Staging health HTTP "+response.status);
+            const info=await response.json();
+            if(info.environment!=="staging" || info.appVersion!=="v44b-staging")
+              throw Error("Wrong Worker at staging URL");
+            console.log("Stage deployed; Allegro configured:",Boolean(info.allegro?.configured));
+            console.log("Stage OAuth connected:",Boolean(info.allegro?.connected));
+          '
