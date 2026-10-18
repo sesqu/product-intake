@@ -6,6 +6,7 @@ on:
       - feature/allegro-search-quality-v44
     paths:
       - 'tests/allegro-current-production-audit.mjs'
+      - 'tests/allegro-phrase-ab-live.mjs'
       - '.github/workflows/allegro-current-live-audit.yml'
   workflow_dispatch:
 
@@ -24,3 +25,5 @@ jobs:
           node-version: '22'
       - name: Read-only production API sample — 10 models
         run: node tests/allegro-current-production-audit.mjs
+      - name: Read-only test of product-type refined phrases
+        run: node tests/allegro-phrase-ab-live.mjs
