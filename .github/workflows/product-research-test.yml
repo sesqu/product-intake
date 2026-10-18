@@ -5,6 +5,7 @@ on:
     paths:
       - 'worker/src/product-research.js'
       - 'worker/src/research-allegro.js'
+      - 'worker/src/research-ranking-v3.js'
       - 'worker/src/index.js'
       - 'product-research.js'
       - 'product-finder.js'
@@ -16,6 +17,10 @@ on:
       - 'sw.js'
       - 'version.json'
       - 'tests/product-research.test.mjs'
+      - 'tests/allegro-pagination.test.mjs'
+      - 'tests/research-ranking-v3.test.mjs'
+      - 'tests/allegro-api-v44.test.mjs'
+      - 'tests/finder-allegro-v44.test.cjs'
       - 'tests/research-live.test.mjs'
       - 'tests/frontend-syntax.test.cjs'
       - '.github/workflows/product-research-test.yml'
@@ -23,6 +28,7 @@ on:
     paths:
       - 'worker/src/product-research.js'
       - 'worker/src/research-allegro.js'
+      - 'worker/src/research-ranking-v3.js'
       - 'worker/src/index.js'
       - 'product-research.js'
       - 'product-finder.js'
@@ -34,6 +40,10 @@ on:
       - 'sw.js'
       - 'version.json'
       - 'tests/product-research.test.mjs'
+      - 'tests/allegro-pagination.test.mjs'
+      - 'tests/research-ranking-v3.test.mjs'
+      - 'tests/allegro-api-v44.test.mjs'
+      - 'tests/finder-allegro-v44.test.cjs'
       - 'tests/frontend-syntax.test.cjs'
       - '.github/workflows/product-research-test.yml'
   workflow_dispatch:
@@ -48,6 +58,14 @@ jobs:
           node-version: '22'
       - name: Test product research engine
         run: node tests/product-research.test.mjs
+      - name: Test Allegro pagination and exact model recovery
+        run: node tests/allegro-pagination.test.mjs
+      - name: Test model and accessory ranking
+        run: node tests/research-ranking-v3.test.mjs
+      - name: Test Allegro API comparison and multiple candidates
+        run: node tests/allegro-api-v44.test.mjs
+      - name: Test integrated Finder display and escaping
+        run: node tests/finder-allegro-v44.test.cjs
       - name: Test frontend syntax and wiring
         run: node tests/frontend-syntax.test.cjs
       - name: Live production model research smoke test
