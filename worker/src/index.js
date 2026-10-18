@@ -681,17 +681,44 @@ async function handle(request, env) {
 
       const result = buildResearchResult(products,input,candidateId);
 
+      // Reuse collected candidate evidence. Comparison performs zero extra
+      // Allegro calls; the same catalog ID may occur in both search modes.
+      const sources=search.foundModesById || {};
+      const rankSubset=mode=>{
+        const subset=products.filter(item=>(sources[item.id]||[]).includes(mode));
+        if(!subset.length) return {count:0,best:null,confidence:null};
+        const ranked=buildResearchResult(subset,input);
+        return {
+          count:subset.length,
+          best:ranked.selected ? {
+            id:ranked.selected.id,
+            name:ranked.selected.name,
+            score:ranked.selected.score ?? ranked.confidence
+          }:null,
+          confidence:ranked.confidence,
+          requiresTesterChoice:ranked.requiresTesterChoice
+        };
+      };
+
       return out({
         query:{...input,candidateId},
         source:"allegro",
         provider:"allegro-catalog",
         queriesUsed:search.queriesUsed || [],
+        searchAttempts:search.searchAttempts || [],
+        comparison:{
+          phrase:rankSubset('PHRASE'),
+          mpn:rankSubset('MPN'),
+          method:'same-request-plan-deduplicated-overlap'
+        },
+        bestFoundBy:(result.selected?.id && search.firstSeenById?.[result.selected.id]) || null,
         best:result.selected,
-        candidates:(result.ranked || []).slice(0,5),
+        candidates:(result.ranked || []).slice(0,12),
         confidence:result.confidence,
         confidenceMethod:result.confidenceMethod,
         requiresTesterChoice:result.requiresTesterChoice,
         selectedBy:result.selectedBy,
+        ambiguity:result.ambiguity || null,
         warnings:result.warnings || [],
         description:result.description || null,
         searchMode:input.query ? "query" : (input.mpn ? "mpn" : "model")
