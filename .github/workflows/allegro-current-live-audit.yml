@@ -7,6 +7,7 @@ on:
     paths:
       - 'tests/allegro-current-production-audit.mjs'
       - 'tests/allegro-phrase-ab-live.mjs'
+      - 'tests/allegro-family-live.mjs'
       - '.github/workflows/allegro-current-live-audit.yml'
   workflow_dispatch:
 
@@ -27,3 +28,5 @@ jobs:
         run: node tests/allegro-current-production-audit.mjs
       - name: Read-only test of product-type refined phrases
         run: node tests/allegro-phrase-ab-live.mjs
+      - name: Read-only test of Galaxy-family and catalog device-type queries
+        run: node tests/allegro-family-live.mjs
