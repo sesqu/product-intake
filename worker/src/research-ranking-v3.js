@@ -123,10 +123,10 @@ const HARD_ACCESSORY_NOUNS = [
  * or accessory categories, both handled with higher priority.
  */
 const PRIMARY_DEVICE_SIGNALS = [
-  {category:/drukark|urzadzen.{0,12}wielofunkcyj/, title:/drukark|\\bmfp\\b|urzadzen.{0,12}wielofunkcyj|\\blaserjet\\b|\\becotank\\b/},
-  {category:/wiertark|wkretark|elektronarzedz/, title:/wiertark|wkretark|\\bdrill driver\\b/},
+  {category:/drukark|urzadzen.{0,12}wielofunkcyj/, title:/drukark|\bmfp\b|urzadzen.{0,12}wielofunkcyj|\blaserjet\b|\becotank\b/},
+  {category:/wiertark|wkretark|elektronarzedz/, title:/wiertark|wkretark|\bdrill driver\b/},
   {category:/odkurzacz|robot sprzataj/, title:/odkurzacz|robot sprzataj/},
-  {category:/telewizor/, title:/telewizor|\\btv\\b/},
+  {category:/telewizor/, title:/telewizor|\btv\b/},
   {category:/smartfon|telefon/, title:/smartfon|telefon/},
   {category:/ekspres/, title:/ekspres/}
 ];
