@@ -151,6 +151,8 @@ for(let i=0;i<cases.length;i++){
 }
 
 const summary={
+  benchmarkSource:'production-v43-candidates+local-v44b-ranking',
+  validatesLiveMpn:false,
   total:rows.length,
   baselineTop1:rows.filter(x=>x.baseline.correct).length,
   v44bTop1:rows.filter(x=>x.v44b.correct).length,
@@ -164,3 +166,10 @@ const summary={
   missingTop3:rows.filter(x=>!x.v44b.top3Correct).map(x=>({query:x.query,name:x.v44b.name,score:x.v44b.score,testerChoice:x.v44b.testerChoice}))
 };
 console.log('SUMMARY_JSON '+JSON.stringify(summary));
+if (summary.regressed.length || summary.falseConfident.length) {
+  console.error('BENCH_GATE_FAIL '+JSON.stringify({
+    regressions:summary.regressed,
+    falseConfident:summary.falseConfident
+  }));
+  process.exitCode = 1;
+}
