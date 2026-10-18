@@ -1,6 +1,12 @@
 name: v44b live MPN staging validation
 
 on:
+  push:
+    branches:
+      - feature/model-ranking-v44b-mpn-benchmark
+    paths:
+      - 'tests/model-ranking-v44b-live-mpn.mjs'
+      - '.github/workflows/model-ranking-v44b-live-mpn.yml'
   workflow_dispatch:
     inputs:
       staging_base_url:
@@ -10,6 +16,9 @@ on:
 
 jobs:
   validate-mpn:
+    # The feature-only workflow can run on push once a dedicated staging URL
+    # is configured as a repository Actions variable. No production fallback.
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.V44B_STAGING_BASE_URL != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -19,5 +28,5 @@ jobs:
           node-version: '22'
       - name: Validate MPN end-to-end on separate Worker
         env:
-          V44B_STAGING_BASE_URL: ${{ inputs.staging_base_url }}
+          V44B_STAGING_BASE_URL: ${{ inputs.staging_base_url || vars.V44B_STAGING_BASE_URL }}
         run: node tests/model-ranking-v44b-live-mpn.mjs
