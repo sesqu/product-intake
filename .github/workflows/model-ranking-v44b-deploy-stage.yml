@@ -1,6 +1,12 @@
 name: Deploy isolated v44b staging Worker
 
 on:
+  push:
+    branches:
+      - feature/model-ranking-v44b-mpn-benchmark
+    paths:
+      - 'worker/wrangler.staging.jsonc'
+      - '.github/workflows/model-ranking-v44b-deploy-stage.yml'
   workflow_dispatch:
 
 permissions:
@@ -12,7 +18,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/feature/model-ranking-v44b-mpn-benchmark'
+    if: github.ref == 'refs/heads/feature/model-ranking-v44b-mpn-benchmark' && vars.V44B_STAGING_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
