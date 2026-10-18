@@ -1,0 +1,150 @@
+{
+  "sourceRun": "https://github.com/sesqu/product-intake/actions/runs/39132838759",
+  "details": "Real current-v43 production catalog TOP5 from context-enriched search phrases; old backend retrieval only, not a validation of v44 end-to-end.",
+  "captured": "2026-10-18",
+  "items": [
+    {
+      "query": "Samsung Galaxy S24 smartfon",
+      "model": "SM-S921B",
+      "oldTop1": "Atrapa eksponat wystawa prezenter smartfon Samsung Galaxy S24",
+      "candidates": [
+        {
+          "name": "Smartfon Samsung Galaxy S24 12 GB / 512 GB 5G żółty"
+        },
+        {
+          "name": "Atrapa eksponat wystawa prezenter smartfon Samsung Galaxy S24"
+        },
+        {
+          "name": "Atrapa eksponat wystawa prezenter smartfon Samsung Galaxy S24+"
+        },
+        {
+          "name": "Etui magnetyczne z klapką na Telefon Smartfon Samsung Galaxy S24 Ultra 5G"
+        },
+        {
+          "name": "NOWA Atrapa eksponat wystawa prezenter smartfon Samsung Galaxy S24 FE"
+        }
+      ],
+      "expectMainDevice": true,
+      "expectManualReview": false
+    },
+    {
+      "query": "Makita DHP484 wiertarko-wkrętarka",
+      "model": "DHP484",
+      "oldTop1": "Wiertarko-wkrętarka udarowa Makita DHP484 18V 54Nm BODY",
+      "candidates": [
+        {
+          "name": "Makita wiertarko-wkrętarka udarowa 54Nm DHP484ZJ"
+        },
+        {
+          "name": "Wiertarko-wkrętarka Makita DHP484Z 18V"
+        },
+        {
+          "name": "Wiertarko-wkrętarka udarowa Makita DHP484 18V 54Nm BODY"
+        },
+        {
+          "name": "MAKITA DHP484ZJ WIERTARKO-WKRĘTARKA 18V WALIZKA"
+        },
+        {
+          "name": "Wiertarko-wkrętarka Makita DHP484RTJ 18 V 2 x akumulator 5 Ah"
+        }
+      ],
+      "expectMainDevice": true,
+      "expectManualReview": false
+    },
+    {
+      "query": "Roborock S8 MaxV Ultra robot odkurzający",
+      "model": "S8 MaxV Ultra",
+      "oldTop1": "Roborock S8 MaxV Ultra robot odkurzający",
+      "candidates": [
+        {
+          "name": "Roborock S8 MaxV Ultra robot odkurzający"
+        }
+      ],
+      "expectMainDevice": true,
+      "expectManualReview": false
+    },
+    {
+      "query": "Sony WH-1000XM5 nauszne",
+      "model": "WH-1000XM5",
+      "oldTop1": "Słuchawki bezprzewodowe nauszne Sony WH-1000XM5 srebrne",
+      "candidates": [
+        {
+          "name": "Słuchawki bezprzewodowe nauszne Sony WH-1000XM5 srebrne"
+        },
+        {
+          "name": "Słuchawki bezprzewodowe nauszne Sony WH-1000XM5 Wireless ANC niebieski"
+        }
+      ],
+      "expectMainDevice": true,
+      "expectManualReview": false
+    },
+    {
+      "query": "telefon SM-S921B",
+      "model": "SM-S921B",
+      "oldTop1": "TAŚMA GŁÓWNA DO TELEFONU SAMSUNG GALAXY S24 5G DEMONTAŻ SM-S921B",
+      "candidates": [
+        {
+          "name": "TAŚMA GŁÓWNA DO TELEFONU SAMSUNG GALAXY S24 5G DEMONTAŻ SM-S921B"
+        }
+      ],
+      "expectMainDevice": false,
+      "expectManualReview": true
+    },
+    {
+      "query": "Dreame L50 Ultra robot odkurzający",
+      "model": "L50 Ultra",
+      "oldTop1": null,
+      "candidates": [],
+      "expectMainDevice": false,
+      "expectManualReview": false
+    },
+    {
+      "query": "Samsung Galaxy A55 smartfon",
+      "model": "SM-A556B",
+      "oldTop1": "FOLIA HYDROŻELOWA Samsung Galaxy S25 S24 S23 A16 A25 A35 A52 A55 M15 Ultra",
+      "candidates": [
+        {
+          "name": "Smartfon Samsung Galaxy A55 5G 8/256GB 5G SuperAMOLED 120Hz 25W Fioletowy"
+        },
+        {
+          "name": "Smartfon Samsung Galaxy A55 8 GB / 128 GB 5G czarny"
+        },
+        {
+          "name": "Smartfon Samsung Galaxy A55 8 GB / 128 GB 5G fioletowy"
+        },
+        {
+          "name": "FOLIA HYDROŻELOWA Samsung Galaxy S25 S24 S23 A16 A25 A35 A52 A55 M15 Ultra"
+        },
+        {
+          "name": "FOLIA OCHRONNA DO SAMSUNG GALAXY A55 MOCNA"
+        }
+      ],
+      "expectMainDevice": true,
+      "expectManualReview": false
+    },
+    {
+      "query": "Xiaomi 14T smartfon",
+      "model": "14T",
+      "oldTop1": "Atrapa eksponat wystawa prezenter smartfon XIAOMI 14T",
+      "candidates": [
+        {
+          "name": "Atrapa eksponat wystawa prezenter smartfon XIAOMI 14T"
+        },
+        {
+          "name": "Atrapa eksponat wystawa prezenter smartfon XIAOMI 14T Pro"
+        },
+        {
+          "name": "FOLIA OCHRONNA DO XIAOMI 14T MOCNA"
+        },
+        {
+          "name": "FOLIA OCHRONNA DO XIAOMI 14T PRO MOCNA"
+        },
+        {
+          "name": "NOWA Atrapa eksponat wystawa prezenter telefon smartfon XIAOMI 14T"
+        }
+      ],
+      "expectMainDevice": false,
+      "expectManualReview": true
+    }
+  ]
+}
