@@ -588,6 +588,12 @@
       }
     );
     const data=await response.json().catch(()=>({}));
+    if(response.status===404) {
+      throw new Error('Wyszukiwanie ASIN nie jest jeszcze wdrożone na tym Workerze (brak /api/asin).');
+    }
+    if(response.status===503) {
+      throw new Error(data.error || 'Brak konfiguracji SerpApi. Ustaw sekret SERPAPI_API_KEY w Cloudflare Workerze.');
+    }
     if(!response.ok) throw new Error(data.error || 'Nie udało się pobrać danych ASIN.');
     return data;
   }
@@ -753,6 +759,21 @@
       requireConfig().toast?.('Usunięto historię testów.');
     };
     renderAuditHistory();
+    $('productFinderQuery')?.addEventListener('input',()=>{
+      const asin=$('productFinderAsin');
+      // A fresh main query must not silently reuse the previous ASIN field.
+      if(asin && asin.value) asin.value='';
+    });
+    $('productFinderAsin')?.addEventListener('input',()=>{
+      const query=$('productFinderQuery');
+      if(query && $('productFinderAsin')?.value?.trim()) query.value='';
+    });
+    $('productFinderAsin')?.addEventListener('keydown',event=>{
+      if(event.key==='Enter'){
+        event.preventDefault();
+        runSearch();
+      }
+    });
     $('productFinderQuery')?.addEventListener('keydown', event => {
       if (event.key === 'Enter') {
         event.preventDefault();
