@@ -43,6 +43,7 @@ container.querySelectorAll=(selector)=>{
   cachedSelectors[selector]=ret;
   return ret;
 };
+let injectedStatus=0;
 let payload={
   best:{id:'main',name:'Samsung Galaxy S24 SM-S921B',model:'SM-S921B',score:88},
   candidates:[
@@ -79,7 +80,7 @@ const context={
   Date,Math,URLSearchParams,setTimeout,
   fetch:async(url,opts={})=>{
     requestLog.push({url,opts});
-    return {ok:true,async json(){return payload;}};
+    return {ok:!injectedStatus,status:injectedStatus||200,async json(){return payload;}};
   }
 };
 vm.runInNewContext(fs.readFileSync('product-finder.js','utf8'),context);
@@ -209,6 +210,24 @@ finder.setup({safe:escapeHtml,apiBase:()=> 'https://test.invalid',toast:m=>toast
   assert.equal(usedAmazon?.source,'amazon');
   assert.equal(usedAmazon?.best?.asin,'B072MQ5BRX');
 
+  // Missing production endpoint must show a specific deployment error and
+  // a safe Amazon link, without copying nonexistent data to master.
+  injectedStatus=404;
+  payload={error:'Not found'};
+  await finder.runSearch({force:true});
+  assert(container.innerHTML.includes('nie jest jeszcze wdrożone'));
+  assert(container.innerHTML.includes('www.amazon.de/dp/B072MQ5BRX'));
+  assert(container.innerHTML.includes('nie mogą zostać automatycznie zapisane'));
+  injectedStatus=503;
+  payload={error:'Wyszukiwanie ASIN wymaga konfiguracji klucza SerpApi w Workerze (SERPAPI_API_KEY).'};
+  await finder.runSearch({force:true});
+  assert(container.innerHTML.includes('SERPAPI_API_KEY'));
+  injectedStatus=0;
+  payload={
+    source:'amazon',marketplace:'amazon.pl',
+    query:{asin:'B072MQ5BRX'},best:{id:'B072MQ5BRX',asin:'B072MQ5BRX',
+      name:'Produkt Amazon',asinMatched:true},candidates:[],confidence:null
+  };
   // The ASIN can also be pasted into the primary finder field.
   elements.productFinderAsin.value='';
   elements.productFinderQuery.value='B072MQ5BRX';
