@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {analyzeResearchCandidates} from '../worker/src/product-research.js';
 const snapshot=JSON.parse(readFileSync('tests/fixtures/allegro-live-v43-10.json','utf8'));
-const accessory=/\\bbateria\\b|\\bakumulator\\b|\\betui\\b|futerał|pokrowiec|\\bfiltr\\b|uchwyt|złącze|buzzer|klapka|\\bekran\\b|wyświetlacz|szkło|folia|mop|szmatka|szczotka|worki|obudowa|przełącznik|wymiana ekranu|akcesori|części|\\bczęść\\b/i;
+const accessory=/\bbateria\b|\bakumulator\b|\betui\b|futerał|pokrowiec|\bfiltr\b|uchwyt|złącze|buzzer|klapka|\bekran\b|wyświetlacz|szkło|folia|mop|szmatka|szczotka|worki|obudowa|spód|blok zaparzający|mocowanie|czujnik|przełącznik|wymiana ekranu|akcesori|części|\bczęść\b/i;
 const device={
   phone:/smartfon|telefon|galaxy s24|galaxy a55|xiaomi 14t/i,
   headphones:/słuchawki (bezprzewodowe|nauszne|wokółuszne)/i,
@@ -22,10 +22,15 @@ function correct(item,row){
   if(!title || !exactIdentity(item,row) || accessory.test(title))return false;
   if(!device[row.type].test(title))return false;
   if(!compact(title).includes(compact(row.brand)))return false;
-  if(row.query==='DHP484' && /\\bzestaw\\b|dlx2180/i.test(title))return false;
+  if(row.query==='DHP484' && /\bzestaw\b|dlx2180/i.test(title))return false;
   if(/atrapa|eksponat|dummy|makieta|display unit/i.test(title))return false;
   return true;
 }
+// Guard against falsely counting coffee-maker spare parts or bundles as a
+// complete machine. Ground truth is based on human-readable listing identity.
+assert.equal(correct({name:'Spód obudowy ekspresu Philips EP2220/10'},snapshot.cases.find(x=>x.query==='Philips EP2220/10')),false);
+assert.equal(correct({name:'Bosch GSR 18V-55 wiertarko-wkrętarka'},snapshot.cases.find(x=>x.query==='GSR 18V-55')),true);
+assert.equal(correct({name:'Bosch DHP484 cordless drill driver'},snapshot.cases.find(x=>x.query==='DHP484')),false);
 const rows=[];
 for(const source of snapshot.cases){
   const candidates=source.returnedCandidates.map(x=>({...x,score:undefined}));
