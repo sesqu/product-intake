@@ -451,6 +451,12 @@ const primaryBundleFixtures = [
     query:'DHP484'
   },
   {
+    name:'Ekspres do kawy Philips EP2220/10 + filtr wody',
+    brand:'Philips',model:'Philips EP2220/10',
+    category:'Ekspresy automatyczne',
+    query:'EP2220/10'
+  },
+  {
     name:'Robot odkurzający Dreame L50 Ultra ze szczotką',
     brand:'Dreame',model:'Dreame L50 Ultra',
     category:'Odkurzacze automatyczne',
