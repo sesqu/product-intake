@@ -86,6 +86,8 @@ const ACCESSORY_NOUNS = [
   'atrapa','eksponat','prezenter','dummy',
   'mata ochronna','lacznik','noga','stojak','glowica','korpus',
   'kabel','przewod','adapter','ladowarka','szklo','case','cover',
+  'battery','batteries','charger','charging port','screen protector',
+  'replacement screen','spare part','housing','earpads',
   'replacement','zamienny','zamienna','zamienne','kompatybilny','kompatybilna'
 ];
 
@@ -96,7 +98,8 @@ const RELATION_WORDS = [
 
 const ACCESSORY_CATEGORY_WORDS = [
   'akcesoria','czesci','baterie','akumulatory','etui','pokrowce','filtry',
-  'uchwyty','zasilacze','tonery','bebny','kable','ladowarki','wyswietlacze'
+  'uchwyty','zasilacze','tonery','bebny','kable','ladowarki','wyswietlacze',
+  'accessories','spare parts','replacement parts','batteries','chargers','cases'
 ];
 
 const HARD_ACCESSORY_NOUNS = [
@@ -109,7 +112,9 @@ const HARD_ACCESSORY_NOUNS = [
   'tusz','atrament','kartridz','cartridge','stojan','kontroler','glowka',
   'silnik','wylacznik','przelacznik','pierscien','kolo zebate','grzalka',
   'kosz','blok zaparzajacy','glosnik rozmow','charging board','nausznik','nakladk','folia',
-  'mata ochronna','lacznik','noga','stojak','glowica','korpus'
+  'mata ochronna','lacznik','noga','stojak','glowica','korpus',
+  'battery','batteries','charger','charging port','screen protector',
+  'replacement screen','spare part','housing','earpads'
 ];
 
 
