@@ -107,10 +107,12 @@ assert.equal(lookup.getState().sourceSnapshot.amazon.fieldChoices.name.selected,
     delegated++;
   }};
   fields.ean.value='';
-  fields.asin.value='B072MQ5BRX';
+  // Exact user-reported regression: ASIN entered under the master form
+  // and "Sprawdź produkt" clicked instead of using advanced Finder.
+  fields.asin.value='B01A7AL1NM';
   await win.lookup();
   assert.equal(delegated,1);
-  assert.equal(fields.productFinderAsin.value,'B072MQ5BRX');
+  assert.equal(fields.productFinderAsin.value,'B01A7AL1NM');
 
   fields.productFinderAsin.value='';
   fields.asin.value='wrong';
