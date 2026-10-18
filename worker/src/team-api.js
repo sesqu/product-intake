@@ -42,9 +42,9 @@ async function authenticate(request,env,db,workspace){
   if(actor.email===firstOwner){
     // Only the fixed configured owner can bootstrap the first member.
     await bind(db,`INSERT OR IGNORE INTO team_users
-      (workspace_id,email,access_sub,role,active,created_at,updated_at)
-      VALUES (?, ?, ?, 'owner', 1, ?, ?)`,
-      workspace,actor.email,actor.sub,now(),now()).run();
+      (workspace_id,email,access_sub,role,active,created_at,updated_at,changed_by)
+      VALUES (?, ?, ?, 'owner', 1, ?, ?, ?)`,
+      workspace,actor.email,actor.sub,now(),now(),actor.email).run();
   }
   const user=await bind(db,`SELECT email,role,access_sub,active
     FROM team_users WHERE workspace_id=? AND email=?`,
@@ -140,6 +140,13 @@ export async function handleTeamApi(request,env){
          FROM team_users WHERE workspace_id=? ORDER BY email`,workspace).all();
       return result({members:members.results||[]});
     }
+    if(route==='/members/history'&&request.method==='GET'){
+      restricted(user,['owner']);
+      const audit=await bind(db,`SELECT event_id,email,role,active,actor_email,action,at
+        FROM team_user_events WHERE workspace_id=? ORDER BY event_id DESC LIMIT 100`,
+        workspace).all();
+      return result({history:audit.results||[]});
+    }
     if(route==='/members'&&request.method==='POST'){
       restricted(user,['owner']);
       const body=await jsonBody(request);
@@ -148,11 +155,12 @@ export async function handleTeamApi(request,env){
         !roles.has(role))problem(400,'Nieprawidłowy e-mail lub rola');
       if(role==='owner')problem(403,'Drugie konto owner wymaga osobnej procedury');
       await bind(db,`INSERT INTO team_users
-        (workspace_id,email,role,active,created_at,updated_at)
-        VALUES(?,?,?,1,?,?)
+        (workspace_id,email,role,active,created_at,updated_at,changed_by)
+        VALUES(?,?,?,1,?,?,?)
         ON CONFLICT(workspace_id,email) DO UPDATE
-        SET role=excluded.role,active=1,updated_at=excluded.updated_at`,
-        workspace,email,role,now(),now()).run();
+        SET role=excluded.role,active=1,updated_at=excluded.updated_at,
+            changed_by=excluded.changed_by`,
+        workspace,email,role,now(),now(),user.email).run();
       return result({email,role,invited:true},201);
     }
     if(route==='/members'&&request.method==='PATCH'){
@@ -170,9 +178,9 @@ export async function handleTeamApi(request,env){
       const active=body.active===undefined?Number(member.active):body.active?1:0;
       if(!roles.has(role)||role==='owner'||![0,1].includes(active))
         problem(400,'Nieprawidłowa rola lub status');
-      await bind(db,`UPDATE team_users SET role=?,active=?,updated_at=?
+      await bind(db,`UPDATE team_users SET role=?,active=?,updated_at=?,changed_by=?
         WHERE workspace_id=? AND email=? AND role<>'owner'`,
-        role,active,now(),workspace,email).run();
+        role,active,now(),user.email,workspace,email).run();
       return result({email,role,active:Boolean(active)});
     }
     if(route==='/products'&&request.method==='GET'){
