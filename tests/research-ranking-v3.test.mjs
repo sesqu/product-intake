@@ -469,6 +469,8 @@ const accessoryNotBundles = [
     model:'Brother DCP-L2622DW',category:'Tonery i bębny',query:'DCP-L2622DW'},
   {name:'Silnik do odkurzacza Dreame L50 Ultra',
     model:'Dreame L50 Ultra',category:'Części do odkurzaczy',query:'L50 Ultra'},
+  {name:'Smartfon Samsung Galaxy S24 SM-S921B wyświetlacz zamienny',
+    model:'Samsung SM-S921B',category:'Telefony',query:'SM-S921B'},
   {name:'Bateria do wiertarko-wkrętarki Makita DHP484',
     model:'Makita DHP484',category:'Akumulatory',query:'DHP484'}
 ];
