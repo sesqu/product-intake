@@ -28,6 +28,7 @@ jobs:
       V44B_STAGING_ALLEGRO_CLIENT_ID: ${{ secrets.V44B_STAGING_ALLEGRO_CLIENT_ID }}
       V44B_STAGING_ALLEGRO_CLIENT_SECRET: ${{ secrets.V44B_STAGING_ALLEGRO_CLIENT_SECRET }}
       V44B_STAGING_API_KEY: ${{ secrets.V44B_STAGING_API_KEY }}
+      V44B_SERPAPI_API_KEY: ${{ secrets.V44B_SERPAPI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -78,6 +79,9 @@ jobs:
           printf '%s' "$V44B_STAGING_ALLEGRO_CLIENT_ID" | npx wrangler secret put ALLEGRO_CLIENT_ID --config wrangler.staging.jsonc
           printf '%s' "$V44B_STAGING_ALLEGRO_CLIENT_SECRET" | npx wrangler secret put ALLEGRO_CLIENT_SECRET --config wrangler.staging.jsonc
           printf '%s' "$V44B_STAGING_API_KEY" | npx wrangler secret put STAGING_API_KEY --config wrangler.staging.jsonc
+          if [ -n "$V44B_SERPAPI_API_KEY" ]; then
+            printf '%s' "$V44B_SERPAPI_API_KEY" | npx wrangler secret put SERPAPI_API_KEY --config wrangler.staging.jsonc
+          fi
       - name: Validate public health identity after deployment
         run: |
           node --input-type=module -e '
