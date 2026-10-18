@@ -37,6 +37,10 @@ for(const test of cases){
       v44Score:ranked?.confidence??null,
       v44RequiresTesterChoice:ranked?.requiresTesterChoice??true,
       oldTop5:pool.map(x=>x.name),
+      candidateInputs:pool.map(x=>({
+        id:x.id,name:x.name,model:x.model,mpn:x.mpn,
+        brand:x.brand,manufacturer:x.manufacturer,category:x.category
+      })),
       v44Top5:ranked?.ranked?.map(x=>({name:x.name,score:x.score,relation:x.relation?.type}))||[],
       error:res.ok?null:data.error||'HTTP '+res.status
     };
