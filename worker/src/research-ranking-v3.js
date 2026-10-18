@@ -166,6 +166,11 @@ export function classifyCandidateRelation(candidate,input = {}) {
   const nameFp = modelFingerprint(candidate?.name);
 
   const noun = ACCESSORY_NOUNS.find(word => hasNormalizedTerm(name,word)) || '';
+  // Retail display dummies carry a real model name but are not functional
+  // devices. This overrides even an exact catalog model/MPN match.
+  if (['atrapa','eksponat','prezenter','dummy'].some(word => hasNormalizedTerm(name,word))) {
+    return {type:'accessory',confidence:'strong',reason:'atrapa / eksponat, nie pełny produkt'};
+  }
   const phoneSpeaker = Boolean(
     hasNormalizedTerm(name,'glosnik') &&
     (
