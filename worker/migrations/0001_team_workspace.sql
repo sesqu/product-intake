@@ -9,8 +9,33 @@ CREATE TABLE IF NOT EXISTS team_users (
  active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),
  created_at INTEGER NOT NULL,
  updated_at INTEGER NOT NULL,
+ changed_by TEXT NOT NULL,
  PRIMARY KEY(workspace_id,email)
 );
+CREATE TABLE IF NOT EXISTS team_user_events (
+  event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  workspace_id TEXT NOT NULL,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL,
+  active INTEGER NOT NULL,
+  actor_email TEXT NOT NULL,
+  action TEXT NOT NULL CHECK(action IN ('invite','modify')),
+  at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS team_user_events_workspace
+ ON team_user_events(workspace_id,event_id DESC);
+
+CREATE TRIGGER IF NOT EXISTS team_user_invited AFTER INSERT ON team_users
+BEGIN
+ INSERT INTO team_user_events(workspace_id,email,role,active,actor_email,action,at)
+ VALUES(NEW.workspace_id,NEW.email,NEW.role,NEW.active,NEW.changed_by,'invite',NEW.updated_at);
+END;
+CREATE TRIGGER IF NOT EXISTS team_user_modified AFTER UPDATE OF role,active ON team_users
+BEGIN
+ INSERT INTO team_user_events(workspace_id,email,role,active,actor_email,action,at)
+ VALUES(NEW.workspace_id,NEW.email,NEW.role,NEW.active,NEW.changed_by,'modify',NEW.updated_at);
+END;
+
 CREATE UNIQUE INDEX IF NOT EXISTS team_user_subject_unique
  ON team_users(workspace_id,access_sub) WHERE access_sub IS NOT NULL;
 
