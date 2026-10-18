@@ -489,6 +489,22 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
     /[0-9]/.test(queryFingerprint)
   );
   const selectedAccessory = selected?.relation?.type === 'accessory';
+  // Exact catalog model/MPN identity is required before a code-like query
+  // can be treated as unambiguous. A product-family title or a code prefix
+  // alone is not enough to silently accept a particular physical variant.
+  const exactCatalogIdentity = Boolean(
+    queryFingerprint &&
+    [selected?.model,selected?.mpn]
+      .map(modelFingerprint)
+      .some(value => value && value === queryFingerprint)
+  );
+  const identityNeedsReview = Boolean(
+    !requested &&
+    queryFingerprint.length >= 4 &&
+    /[a-z]/.test(queryFingerprint) &&
+    /[0-9]/.test(queryFingerprint) &&
+    !exactCatalogIdentity
+  );
   const strongestPrimary = ranked.find(item => item?.relation?.type !== 'accessory') || null;
   const noConfidentProduct = Boolean(
     selectedAccessory ||
@@ -504,6 +520,7 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
       closeCompetition ||
       brandCollision ||
       shortModelAmbiguity ||
+      identityNeedsReview ||
       selectedAccessory ||
       selected.score < 55
     ),
@@ -513,6 +530,7 @@ export function analyzeResearchCandidates(products, input = {}, selectedId = '')
       closeCompetition,
       brandCollision,
       shortModelAmbiguity,
+      identityNeedsReview,
       selectedAccessory,
       noConfidentProduct,
       strongestPrimaryScore:strongestPrimary?.score ?? null,
