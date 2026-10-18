@@ -94,6 +94,18 @@ export function shouldTryMpnMode(input = {}) {
   return Boolean(inferMpnSearchPhrase(input));
 }
 
+// Search text ("telefon SM-S921B") is useful for Allegro retrieval,
+// but identity scoring must compare the actual manufacturer model code.
+// Preserve the exact user phrase for network requests and trace history.
+export function scoringInputForQuery(input = {}) {
+  const original=clean(input.query);
+  if(clean(input.model || input.mpn) || !original) return input;
+  const code=inferMpnSearchPhrase(input);
+  if(!code || code.toLowerCase()===original.toLowerCase() ||
+     !original.toLowerCase().includes(code.toLowerCase()))return input;
+  return {...input,model:code};
+}
+
 export function buildAllegroResearchQueries(input = {}) {
   const query = clean(input.query);
   const brand = clean(input.brand || input.manufacturer);
@@ -143,6 +155,7 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   if (!token) throw new Error('Brak tokenu Allegro');
 
   const queries = buildAllegroResearchQueries(input);
+  const rankingInput=scoringInputForQuery(input);
   if (!queries.length) return {products:[],queriesUsed:[]};
 
   const queriesUsed = [];
@@ -155,11 +168,11 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   const nextPageByMode = new Map();
   const maxAttempts = 3;
   function hasStrongPrimary() {
-    const target=modelFingerprint(input?.mpn || input?.model || input?.query);
+    const target=modelFingerprint(rankingInput?.mpn || rankingInput?.model || rankingInput?.query);
     const codeLike=target.length>=4 && /[a-z]/.test(target) && /[0-9]/.test(target);
     return products.some(product => {
       const candidate=candidateHint(product);
-      const ranked=rankResearchCandidate(candidate,input);
+      const ranked=rankResearchCandidate(candidate,rankingInput);
       if(ranked.relation?.type === 'accessory' || ranked.score < 55) return false;
       if(!codeLike) return true;
       // A high score for another version of the same product family must
@@ -257,7 +270,7 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     !input?.model &&
     !input?.mpn
   )
-    ? buildModelQueryVariants(input,products.map(candidateHint))
+    ? buildModelQueryVariants(rankingInput,products.map(candidateHint))
     : [];
 
   for (const phrase of recovered) {
