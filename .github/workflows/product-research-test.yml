@@ -20,6 +20,8 @@ on:
       - 'tests/allegro-pagination.test.mjs'
       - 'tests/research-ranking-v3.test.mjs'
       - 'tests/allegro-api-v44.test.mjs'
+      - 'tests/allegro-stage-isolation.test.mjs'
+      - 'worker/scripts/prepare-allegro-stage.mjs'
       - 'tests/allegro-live-fixture-rerank.mjs'
       - 'tests/allegro-live-refined-regression.mjs'
       - 'tests/fixtures/allegro-live-refined-8.json'
@@ -48,6 +50,8 @@ on:
       - 'tests/allegro-pagination.test.mjs'
       - 'tests/research-ranking-v3.test.mjs'
       - 'tests/allegro-api-v44.test.mjs'
+      - 'tests/allegro-stage-isolation.test.mjs'
+      - 'worker/scripts/prepare-allegro-stage.mjs'
       - 'tests/allegro-live-fixture-rerank.mjs'
       - 'tests/allegro-live-refined-regression.mjs'
       - 'tests/fixtures/allegro-live-refined-8.json'
@@ -74,6 +78,8 @@ jobs:
         run: node tests/research-ranking-v3.test.mjs
       - name: Test Allegro API comparison and multiple candidates
         run: node tests/allegro-api-v44.test.mjs
+      - name: Check isolated staging gates and production resource isolation
+        run: node tests/allegro-stage-isolation.test.mjs
       - name: Differential check on fifty real v43 catalog candidates
         run: node tests/allegro-live-fixture-rerank.mjs
       - name: Guard device-first ranking on eight real refined catalog samples
