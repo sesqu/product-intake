@@ -930,5 +930,13 @@ export function buildModelQueryVariants(input = {}, candidates = []) {
       a.phrase.localeCompare(b.phrase,'pl')
     );
 
-  return [original,...ranked.map(item => item.phrase)].slice(0,3);
+  // Keep one additional recovered candidate: product-type enrichment must
+  // not silently evict the strongly repeated canonical family alias.
+  // The HTTP request budget is enforced separately in searchAllegroForResearch.
+  const selected = ranked.slice(0,3);
+  const repeatedAlias = ranked.find(item => item.reason === 'repeated-alias');
+  if (repeatedAlias && !selected.some(item => item.phrase === repeatedAlias.phrase)) {
+    selected[Math.max(0,selected.length - 1)] = repeatedAlias;
+  }
+  return [original,...selected.map(item => item.phrase)].slice(0,4);
 }
