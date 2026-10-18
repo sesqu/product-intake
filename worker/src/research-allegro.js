@@ -113,6 +113,7 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   const searchAttempts = [];
   const products = [];
   const seen = new Set();
+  const firstSeenById = {};
   const seenRequests = new Set();
   const maxAttempts = 3;
 
@@ -123,25 +124,33 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
 
     seenRequests.add(requestKey);
     queriesUsed.push(mode ? phrase + ' [' + mode + ']' : phrase);
-    searchAttempts.push({phrase,mode:mode || '',reason});
+    const attempt = {phrase,mode:mode || '',reason,foundCount:0,uniqueAdded:0};
+    searchAttempts.push(attempt);
 
     let found = [];
     try {
       found = await requestProducts(token,userAgent,phrase,mode);
     } catch (error) {
       if (mode === 'MPN' && [400,422].includes(Number(error?.status))) {
-        searchAttempts[searchAttempts.length - 1].error = clean(error?.message || 'MPN search rejected');
+        attempt.error = clean(error?.message || 'MPN search rejected');
         return;
       }
       throw error;
     }
 
+    attempt.foundCount = found.length;
     for (const product of found) {
       const id = clean(product?.id);
       const productKey = id || norm(product?.name);
       if (!productKey || seen.has(productKey)) continue;
       seen.add(productKey);
       products.push(product);
+      attempt.uniqueAdded += 1;
+      if (id) firstSeenById[id] = {
+        mode:mode || 'PHRASE',
+        reason,
+        attempt:searchAttempts.length
+      };
     }
   }
 
@@ -184,6 +193,7 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     // truncate to 40 before the combined ranking has inspected the results.
     products:products.slice(0,90),
     queriesUsed,
-    searchAttempts
+    searchAttempts,
+    firstSeenById
   };
 }
