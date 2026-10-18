@@ -176,10 +176,10 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
     if (clean(input?.brand || input?.manufacturer) || !selected) return null;
     const identity=clean(rankingInput?.model || rankingInput?.mpn || rankingInput?.query);
     const target=modelFingerprint(identity);
-    if(target.length<4 || !/[a-z]/.test(target) || !/\\d/.test(target))return null;
+    if(target.length<4 || !/[a-z]/.test(target) || !/\d/.test(target))return null;
     const selectedInfo=candidateHint(selected);
     const selectedBrand=normalizeText(selectedInfo.brand || selectedInfo.manufacturer ||
-      clean(selectedInfo.name).split(/\\s+/)[0]);
+      clean(selectedInfo.name).split(/\s+/)[0]);
     if(!selectedBrand || ['bez marki','unknown','other'].includes(selectedBrand))return null;
     const support=new Map();
     for(const raw of products){
@@ -188,7 +188,7 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
       if(!modelFingerprint(hint.name).includes(target))continue;
       if(rankResearchCandidate(hint,rankingInput).relation?.type!=='accessory')continue;
       const contexts=extractContextualModelPhrases(hint.name,identity);
-      const rawBrand=clean(contexts[0]?.split(/\\s+/)[0]);
+      const rawBrand=clean(contexts[0]?.split(/\s+/)[0]);
       const key=normalizeText(rawBrand);
       if(!key || key===selectedBrand || key.length<3 ||
          ['telefon','smartfon','model','oryginal','original','czesci','kabel'].includes(key))continue;
@@ -201,7 +201,7 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
 
   function primaryAndBrandDispute() {
     const target=modelFingerprint(rankingInput?.mpn || rankingInput?.model || rankingInput?.query);
-    const codeLike=target.length>=4 && /[a-z]/.test(target) && /\\d/.test(target);
+    const codeLike=target.length>=4 && /[a-z]/.test(target) && /\d/.test(target);
     const primary=products.find(product=>{
       const candidate=candidateHint(product);
       const ranked=rankResearchCandidate(candidate,rankingInput);
