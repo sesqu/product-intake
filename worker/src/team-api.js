@@ -155,6 +155,26 @@ export async function handleTeamApi(request,env){
         workspace,email,role,now(),now()).run();
       return result({email,role,invited:true},201);
     }
+    if(route==='/members'&&request.method==='PATCH'){
+      restricted(user,['owner']);
+      const body=await jsonBody(request);
+      const email=clean(body.email).toLowerCase();
+      if(!/^\S+@\S+\.\S+$/.test(email)||email.length>254)
+        problem(400,'Nieprawidłowy e-mail');
+      if(email===user.email)problem(403,'Nie możesz wyłączyć ani zmienić roli własnego konta');
+      const member=await bind(db,`SELECT role,active FROM team_users
+        WHERE workspace_id=? AND email=?`,workspace,email).first();
+      if(!member)problem(404,'Pracownik nie istnieje');
+      if(member.role==='owner')problem(403,'Nie można zmienić konta właściciela');
+      const role=body.role===undefined?member.role:clean(body.role);
+      const active=body.active===undefined?Number(member.active):body.active?1:0;
+      if(!roles.has(role)||role==='owner'||![0,1].includes(active))
+        problem(400,'Nieprawidłowa rola lub status');
+      await bind(db,`UPDATE team_users SET role=?,active=?,updated_at=?
+        WHERE workspace_id=? AND email=? AND role<>'owner'`,
+        role,active,now(),workspace,email).run();
+      return result({email,role,active:Boolean(active)});
+    }
     if(route==='/products'&&request.method==='GET'){
       const list=await bind(db,`SELECT lpn,revision,updated_by,updated_at,
         locked_by,lock_expires_at FROM team_products
