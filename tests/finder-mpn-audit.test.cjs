@@ -28,6 +28,7 @@ const escapeHtml = text=>String(text??'')
 const win = {};
 let payload;
 let calls=0;
+let clock=1_800_000_000_000;
 const storage={};
 const context = {
   window:win,
@@ -40,6 +41,7 @@ const context = {
     setItem(key,value){storage[key]=value}
   },
   URLSearchParams,
+  Date:{now:()=>clock},
   setTimeout,
   fetch:async()=>({
     ok:true,
@@ -89,5 +91,22 @@ payload = {
   assert(resultBox.innerHTML.includes('&lt;script'));
   assert(!resultBox.innerHTML.includes('<img'));
   assert(!resultBox.innerHTML.includes('<script'));
-  console.log('PASS Finder audit: per-attempt MPN diagnostics, manual-review note, empty results and escaping.');
+
+  // Negative / ambiguous searches refresh after 15 minutes rather than
+  // hiding a newly found product behind a stale 24-hour cache entry.
+  clock += 16*60*1000;
+  payload={
+    best:{id:'now-found',name:'Samsung SM-S921B',score:85},
+    candidates:[{id:'now-found',name:'Samsung SM-S921B',score:85}],
+    requiresTesterChoice:false
+  };
+  await win.ProductIntakeProductFinder.runSearch();
+  assert.equal(calls,3,'Expired uncertain cache must trigger fresh search');
+  assert(resultBox.innerHTML.includes('now-found'));
+  clock += 60*60*1000;
+  payload={candidates:[]};
+  await win.ProductIntakeProductFinder.runSearch();
+  assert.equal(calls,3,'High confidence cache can be reused within 24h');
+  assert(resultBox.innerHTML.includes('pamięć 24h'));
+  console.log('PASS Finder audit: per-attempt MPN diagnostics, escaping and uncertainty-aware cache.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
