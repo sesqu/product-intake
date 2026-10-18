@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "product-intake-v44b-staging",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-25",
+  "workers_dev": true,
+  "vars": {
+    "STAGING_ONLY": "1",
+    "ALLOWED_ORIGIN": "https://sesqu.github.io",
+    "ALLEGRO_REDIRECT_URI": "https://product-intake-v44b-staging.sesquu.workers.dev/api/allegro/callback",
+    "ALLEGRO_USER_AGENT": "Product-Intake-v44b-staging/1.0 (+https://github.com/sesqu/product-intake)",
+    "APP_VERSION": "v44b-staging"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "AUTH"
+    }
+  ]
+}
