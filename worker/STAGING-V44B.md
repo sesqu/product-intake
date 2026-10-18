@@ -117,6 +117,23 @@ Zwykła identyfikacja i dodawanie produktów nadal korzystają z dotychczasowego
 API. Funkcja jest na gałęzi PR #8 (nie na `main`) i nie będzie widoczna
 w publicznym Product Intake, dopóki nie nastąpi świadoma publikacja frontendu.
 
+## ASIN Amazon w tym samym Product Intake
+
+W module **Dodaj produkt → Znajdź produkt** dodano osobne wyszukiwanie
+po ASIN, domyślnie na amazon.pl, z opcją amazon.de i amazon.com.
+Wybierz ASIN w zwykłym lub zaawansowanym polu, a następnie
+uruchom wyszukiwanie. Dane pochodzą z SerpApi (Free 250/miesiąc),
+nie z oficjalnego API Amazon.
+
+Na stagingu należy **osobno** skonfigurować sekret Workera
+`SERPAPI_API_KEY`, albo ustawić Actions secret
+`V44B_SERPAPI_API_KEY` przed wdrożeniem stagingu.
+Brak konfiguracji nie uprawnia do udawania prawdziwych wyników:
+backend zwróci 503. **Nigdy nie wklejaj klucza SerpApi w frontend.**
+
+Pełna instrukcja, ograniczenia, cache i wybór wartości w razie
+konfliktów: [ASIN-SERPAPI.md](ASIN-SERPAPI.md).
+
 ## Test MPN z przeglądarki (bez terminala)
 
 Po potwierdzeniu połączenia testowego Allegro otworzyć:
