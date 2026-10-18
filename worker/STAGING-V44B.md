@@ -88,6 +88,35 @@ testowej aplikacji Allegro. Callback zapisze tokeny **tylko** w nowym KV.
 Sprawdzić, czy `/health` pokazuje `configured=true` i `connected=true`.
 Do testu można użyć odrębnego konta Allegro, jeśli dostępne.
 
+## Diagnostyka bezpośrednio w Product Intake (zalecana)
+
+Po wdrożeniu nowej wersji interfejsu:
+
+1. Wejdź w **Dodaj produkt → Znajdź produkt**.
+2. Zaznacz **Tryb testowania wyszukiwania**.
+3. Wybierz **Testuj wyszukiwanie na osobnym Workerze v44b**, podaj klucz
+   stagingu i wpisz model / MPN. Bez aktywnego stagingu i OAuth próba zakończy
+   się komunikatem o błędzie; sama zmiana w GitHubie nie publikuje aplikacji.
+4. Kliknij **Szukaj**. Ta sama strona pokaże porównanie dwóch grup wyników:
+   standardowe zapytania frazowe i `mode=MPN`, a także liczby wyników oraz
+   najlepszego kandydata z każdej grupy. Porównanie korzysta z tych samych,
+   maksymalnie trzech zapytań Allegro; żadne dodatkowe wywołanie nie jest
+   wykonywane tylko do diagnostyki.
+5. Sprawdź fizyczny produkt. Użyj **Potwierdź** przy właściwym kandydacie
+   albo **Nie ma właściwego produktu** / **Nie wiem**.
+6. Otwórz **Historia testów na tym urządzeniu** i skopiuj JSON do
+   dalszej analizy. Możesz również skasować lokalną historię.
+
+**Zabezpieczenia:** po włączeniu testowego Workera nie da się użyć wyniku do
+master produktu, a klucz jest przesyłany tylko w nagłówku żądania i nie jest
+zapisywany w localStorage/raporcie. Wyszukiwania stagingu nie są cache'owane.
+Wyłączenie testowego Workera czyści pole klucza i poprzedni wynik. Dane historii
+pozostają lokalne na tym urządzeniu, bez synchronizacji między urządzeniami.
+
+Zwykła identyfikacja i dodawanie produktów nadal korzystają z dotychczasowego
+API. Funkcja jest na gałęzi PR #8 (nie na `main`) i nie będzie widoczna
+w publicznym Product Intake, dopóki nie nastąpi świadoma publikacja frontendu.
+
 ## Test MPN z przeglądarki (bez terminala)
 
 Po potwierdzeniu połączenia testowego Allegro otworzyć:
