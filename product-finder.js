@@ -649,7 +649,21 @@
     } catch (error) {
       if (searchId !== activeSearch) return;
       if (box) {
-        box.innerHTML = '<div class="note">Błąd: '+requireConfig().safe(error.message || 'nie udało się wyszukać produktu')+'</div>';
+        const safe=requireConfig().safe;
+        let fallback='';
+        if(state.kind==='asin'){
+          const code=clean(input.asin || input.query).toUpperCase();
+          const domain=['amazon.pl','amazon.de','amazon.com'].includes(input.domain)
+            ? input.domain : 'amazon.pl';
+          if(/^[A-Z0-9]{10}$/.test(code)){
+            const href='https://www.'+domain+'/dp/'+code;
+            fallback='<p style="margin:10px 0">Możesz sprawdzić ASIN ręcznie:'+
+              ' <a href="'+safe(href)+'" target="_blank" rel="noopener noreferrer">Otwórz produkt na Amazon ↗</a>'+
+              '</p><div class="muted" style="font-size:12px">Dane nie zostały pobrane, więc nie mogą zostać automatycznie zapisane do mastera.</div>';
+          }
+        }
+        box.innerHTML = '<div class="note">Błąd: '+safe(error.message || 'nie udało się wyszukać produktu')+
+          fallback+'</div>';
       }
     }
   }
