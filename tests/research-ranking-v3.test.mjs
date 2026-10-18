@@ -510,4 +510,26 @@ assert.equal(shortCodeWithBrand.ambiguity.shortModelAmbiguity,false);
 const shortCodeConfirmed = analyzeResearchCandidates([shortCodeMain],{query:'L3250'},'epson-l3250');
 assert.equal(shortCodeConfirmed.ambiguity.shortModelAmbiguity,false);
 
+
+const partialPhoneIdentity = {
+  id:'s24-ultra-family',
+  name:'Smartfon Samsung Galaxy S24 Ultra 12 GB / 1 TB',
+  brand:'Samsung',
+  model:'Galaxy S24 Ultra',
+  mpn:'SM-S928BZKG',
+  category:'Smartfony',
+  trust:{brand:true,model:true,mpn:false}
+};
+const partialPhoneResult = analyzeResearchCandidates(
+  [partialPhoneIdentity],{query:'SM-S928B',brand:'Samsung'}
+);
+assert.equal(partialPhoneResult.requiresTesterChoice,true,
+  'Matching phone family / MPN prefix alone must require tester approval');
+assert.equal(partialPhoneResult.ambiguity.identityNeedsReview,true);
+const exactPhoneResult = analyzeResearchCandidates(
+  [{...partialPhoneIdentity,mpn:'SM-S928B'}],{query:'SM-S928B',brand:'Samsung'}
+);
+assert.equal(exactPhoneResult.ambiguity.identityNeedsReview,false,
+  'Exact catalog MPN counts as verified model identity');
+
 console.log('PASS Research ranking v3: model fingerprint, primary-product ranking, accessory penalties, brand handling and query recovery.');
