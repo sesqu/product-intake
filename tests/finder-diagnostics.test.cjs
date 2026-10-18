@@ -13,7 +13,9 @@ for(const key of [
   'productFinderQuery','productFinderBrand','productFinderMpn','productFinderDetails',
   'productFinderResult','productFinderSearch','productFinderDiagnosticsToggle',
   'productFinderAuditList','productFinderAuditCount','productFinderAuditExport',
-  'productFinderAuditClear','productFinderRefresh'
+  'productFinderAuditClear','productFinderRefresh',
+  'productFinderDiagnosticOptions','productFinderStagingToggle',
+  'productFinderStagingCredentials','productFinderStagingKey'
 ])elements[key]=element();
 elements.productFinderQuery.value='SM-S921B';
 elements.productFinderDiagnosticsToggle.checked=true;
@@ -57,6 +59,7 @@ let payload={
   requiresTesterChoice:true
 };
 let clipboard='';
+let requestLog=[];
 const context={
   window:{},document:{
     getElementById:id=>elements[id]||null,
@@ -70,7 +73,10 @@ const context={
   navigator:{clipboard:{async writeText(v){clipboard=v}}},
   confirm:()=>true,
   Date,Math,URLSearchParams,setTimeout,
-  fetch:async()=>({ok:true,async json(){return payload;}})
+  fetch:async(url,opts={})=>{
+    requestLog.push({url,opts});
+    return {ok:true,async json(){return payload;}};
+  }
 };
 vm.runInNewContext(fs.readFileSync('product-finder.js','utf8'),context);
 let toasts=[];
@@ -123,5 +129,48 @@ finder.setup({safe:escapeHtml,apiBase:()=> 'https://test.invalid',toast:m=>toast
   await finder.runSearch({force:true});
   assert(!container.innerHTML.includes('Test identyfikacji produktu'));
   assert.equal(elements.productFinderAuditCount.textContent,'1');
-  console.log('PASS integrated Finder: comparison, manual correct/other/none, local history, JSON export, clear, opt-out.');
+
+  // Switch to the independent staging Worker INSIDE the same Finder.
+  elements.productFinderDiagnosticsToggle.checked=true;
+  elements.productFinderDiagnosticsToggle.listeners.change();
+  elements.productFinderStagingToggle.checked=true;
+  elements.productFinderStagingToggle.listeners.change();
+  assert.equal(elements.productFinderStagingCredentials.style.display,'block');
+  elements.productFinderStagingKey.value='test-stage-key-only-in-browser-123456';
+  payload={
+    best:{id:'stage-main',name:'Telefon z testowego Allegro',score:91},
+    candidates:[{id:'stage-main',name:'Telefon z testowego Allegro',score:91}],
+    comparison:{
+      phrase:{count:7,best:{name:'Akcesorium frazowe',score:12}},
+      mpn:{count:1,best:{name:'Telefon z testowego Allegro',score:91}}
+    },
+    requiresTesterChoice:true
+  };
+  await finder.runSearch({force:true});
+  const last=requestLog[requestLog.length-1];
+  assert.equal(last.url,'https://product-intake-v44b-staging.sesquu.workers.dev/api/research');
+  assert.equal(last.opts.headers['x-staging-test-key'],'test-stage-key-only-in-browser-123456');
+  assert(container.innerHTML.includes('Wyniki z odizolowanego stagingu'));
+  assert(!container.innerHTML.includes('data-finder-use='),
+    'Staging candidates must not be imported to the master');
+  assert(!container.innerHTML.includes('data-finder-description='),
+    'Staging candidates must not enter the normal description path');
+  assert(!JSON.stringify(storage).includes('test-stage-key-only-in-browser-123456'),
+    'Staging API key must never enter local cache or history');
+  assert.equal(container.querySelectorAll('[data-finder-verify]').length,1);
+  container.querySelectorAll('[data-finder-verify]')[0].onclick();
+  assert(!JSON.stringify(storage).includes('test-stage-key-only-in-browser-123456'));
+
+  elements.productFinderStagingToggle.checked=false;
+  elements.productFinderStagingToggle.listeners.change();
+  assert.equal(elements.productFinderStagingKey.value,'','Stage key must clear on exit');
+  assert.equal(elements.productFinderStagingCredentials.style.display,'none');
+  assert(!container.innerHTML.includes('Telefon z testowego Allegro'));
+  payload={best:{id:'normal',name:'Produkt ze zwykłego API'},candidates:[]};
+  await finder.runSearch({force:true});
+  const normalCall=requestLog[requestLog.length-1];
+  assert.equal(normalCall.url,'https://example.invalid/api/research');
+  assert(!('x-staging-test-key' in normalCall.opts.headers));
+  assert(container.innerHTML.includes('data-finder-use='));
+  console.log('PASS integrated Finder: local diagnostics, stage isolation, browser-only key and master protection.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
