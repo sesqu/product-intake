@@ -697,7 +697,8 @@ async function handle(request, env) {
         asin,
         domain,
         apiKey:env.SERPAPI_API_KEY,
-        kv:env.AUTH
+        kv:env.AUTH,
+        clientIp:request.headers.get('cf-connecting-ip') || ''
       });
       const best = lookup.product || null;
       return out({
