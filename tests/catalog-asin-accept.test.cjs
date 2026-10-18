@@ -15,10 +15,12 @@ let identified=false;
 let saved=0;
 let history=[];
 const win={};
+const confirmationDecisions=[];
 const safe=x=>String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 vm.runInNewContext(fs.readFileSync('catalog-lookup.js','utf8'),{
   window:win,
   document:{getElementById:id=>fields[id]||null},
+  confirm:()=>confirmationDecisions.shift()===true,
   Date
 });
 const lookup=win.ProductIntakeCatalogLookup;
@@ -67,4 +69,34 @@ assert.equal(saved,savedBefore,'Unverified catalog ASIN must not be imported');
 assert.equal(lookup.acceptAsinResult({...result,best:{...product,asin:'B072MQ5BRZ'}}),false);
 assert.equal(saved,savedBefore);
 assert.equal(lookup.acceptAsinResult({...result,source:'allegro'}),false);
+const conflictRecord={
+  ...product,
+  name:'Amazon chce zmienić nazwę',
+  brand:'Inna marka',
+  model:'Inny model',
+  category:'Inne kategorie'
+};
+fields.productName.value='Ręcznie zweryfikowana nazwa';
+fields.brand.value='Zaufana marka';
+fields.model.value='Ręczny model';
+fields.category.value='Nasza kategoria';
+fields.parameters.value='Waga: 1 kg';
+confirmationDecisions.push(false,false,false,false,false);
+assert.equal(lookup.acceptAsinResult({...result,best:conflictRecord}),true);
+assert.equal(fields.productName.value,'Ręcznie zweryfikowana nazwa');
+assert.equal(fields.brand.value,'Zaufana marka');
+assert.equal(fields.model.value,'Ręczny model');
+assert.equal(fields.category.value,'Nasza kategoria');
+assert.equal(fields.parameters.value,'Waga: 1 kg');
+assert.equal(lookup.getState().sourceSnapshot.amazon.name,'Amazon chce zmienić nazwę',
+  'Original source data must remain intact even if tester keeps existing field');
+assert.equal(lookup.getState().sourceSnapshot.amazon.fieldChoices.name.selected,'existing');
+assert.equal(lookup.getState().sourceSnapshot.amazon.fieldChoices.parameters.selected,'existing');
+
+confirmationDecisions.push(true,false,false,false,false);
+assert.equal(lookup.acceptAsinResult({...result,best:conflictRecord}),true);
+assert.equal(fields.productName.value,'Amazon chce zmienić nazwę',
+  'Tester can explicitly choose Amazon value without losing other existing fields');
+assert.equal(fields.brand.value,'Zaufana marka');
+assert.equal(lookup.getState().sourceSnapshot.amazon.fieldChoices.name.selected,'amazon');
 console.log('PASS Amazon ASIN master: explicit tester acceptance, source snapshot, EAN safety and unknown confidence.');
