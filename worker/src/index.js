@@ -4,7 +4,7 @@ import {
   buildResearchResult
 } from './product-research.js';
 import { searchAllegroForResearch } from './research-allegro.js';
-import { stagingConnectPage, stagingConnectScript } from './staging-onboarding.js';
+import { stagingConnectPage, stagingConnectScript, stagingOAuthStatusPage } from './staging-onboarding.js';
 import { stagingProbePage, stagingProbeScript } from './staging-probe.js';
 
 const AAPI = "https://api.allegro.pl";
@@ -523,8 +523,7 @@ async function handle(request, env) {
   }
 
   if (stagingOnly && url.pathname === "/staging/oauth") {
-    const result = clean(url.searchParams.get("allegro"));
-    return out({environment:"staging",oauth:result || "unknown"},200,origin);
+    return stagingOAuthStatusPage(clean(url.searchParams.get("allegro")));
   }
 
   if (url.pathname === "/health") {
