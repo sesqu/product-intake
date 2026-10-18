@@ -51,6 +51,34 @@ try {
   const ranked=buildResearchResult(result.products.map(mapAllegroResearchProduct),{query:'SM-S921B'});
   assert.equal(ranked.selected?.id,'samsung-main','Complete product on second page must beat compatible parts');
 
+  // Structured brand + model previously used request #3 on a redundant
+  // short phrase, preventing page 2 of the exact MPN search from being read.
+  requestLog.length=0;
+  globalThis.fetch=async url=>{
+    const target=new URL(url);
+    const mode=target.searchParams.get('mode')||'';
+    const phrase=target.searchParams.get('phrase');
+    const cursor=target.searchParams.get('page.id');
+    requestLog.push({phrase,mode,cursor});
+    const parts=Array.from({length:30},(_,i)=>port('structured-'+mode+'-'+i));
+    return {ok:true,async json(){
+      return {
+        products:cursor?[rawPhone]:parts,
+        nextPage:mode==='MPN'&&!cursor?{id:'structured-mpn-page-two'}:null
+      };
+    }};
+  };
+  const structured=await searchAllegroForResearch({
+    token:'test',input:{brand:'Samsung',model:'SM-S921B'}
+  });
+  assert.deepEqual(requestLog.map(x=>x.mode),['','MPN','MPN'],
+    'With strong evidence only of accessories, third call must use second MPN page');
+  assert.equal(requestLog[2].cursor,'structured-mpn-page-two');
+  assert(!requestLog.some(x=>x.phrase==='SM-S921B' && x.mode===''),
+    'Avoid wasting the last request on the old shorter phrase fallback');
+  assert(structured.products.some(x=>x.id==='samsung-main'));
+  assert.equal(structured.searchAttempts[2].reason,'mpn-page');
+
   requestLog.length=0;
   globalThis.fetch=async url=>{
     const target=new URL(url);
