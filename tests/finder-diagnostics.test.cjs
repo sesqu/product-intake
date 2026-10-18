@@ -257,6 +257,8 @@ finder.setup({safe:escapeHtml,apiBase:()=> 'https://test.invalid',toast:m=>toast
   assert(container.innerHTML.includes('Model SM-S921B 11'));
   const moreButton=elements.productFinderMoreCandidates;
   const extraCandidates=elements.productFinderExtraCandidates;
+  // Mock the inline style on the real dynamically inserted DOM element.
+  extraCandidates.style.display='none';
   assert.equal(typeof moreButton.onclick,'function');
   moreButton.onclick();
   assert.equal(extraCandidates.style.display,'grid');
