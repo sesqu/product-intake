@@ -1,4 +1,4 @@
-import { buildModelQueryVariants, inferProductTypeHint, modelFingerprint, rankResearchCandidate } from './research-ranking-v3.js';
+import { buildModelQueryVariants, extractContextualModelPhrases, inferProductTypeHint, modelFingerprint, normalizeText, rankResearchCandidate } from './research-ranking-v3.js';
 const AAPI = 'https://api.allegro.pl';
 const clean = value => String(value ?? '').trim();
 const norm = value => clean(value).toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
@@ -167,19 +167,58 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   const seenRequests = new Set();
   const nextPageByMode = new Map();
   const maxAttempts = 3;
-  function hasStrongPrimary() {
+  // An isolated whole-device result can be misbranded in the Allegro
+  // catalog. If two distinct exact-model accessories explicitly refer to
+  // another brand, use the remaining request to check that brand instead
+  // of prematurely accepting the lone device. This is a *lead* for a search,
+  // never automatic proof of the correct manufacturer.
+  function disputedBrandLead(selected) {
+    if (clean(input?.brand || input?.manufacturer) || !selected) return null;
+    const identity=clean(rankingInput?.model || rankingInput?.mpn || rankingInput?.query);
+    const target=modelFingerprint(identity);
+    if(target.length<4 || !/[a-z]/.test(target) || !/\\d/.test(target))return null;
+    const selectedInfo=candidateHint(selected);
+    const selectedBrand=normalizeText(selectedInfo.brand || selectedInfo.manufacturer ||
+      clean(selectedInfo.name).split(/\\s+/)[0]);
+    if(!selectedBrand || ['bez marki','unknown','other'].includes(selectedBrand))return null;
+    const support=new Map();
+    for(const raw of products){
+      if(raw===selected)continue;
+      const hint=candidateHint(raw);
+      if(!modelFingerprint(hint.name).includes(target))continue;
+      if(rankResearchCandidate(hint,rankingInput).relation?.type!=='accessory')continue;
+      const contexts=extractContextualModelPhrases(hint.name,identity);
+      const rawBrand=clean(contexts[0]?.split(/\\s+/)[0]);
+      const key=normalizeText(rawBrand);
+      if(!key || key===selectedBrand || key.length<3 ||
+         ['telefon','smartfon','model','oryginal','original','czesci','kabel'].includes(key))continue;
+      if(!support.has(key))support.set(key,{brand:rawBrand,ids:new Set()});
+      support.get(key).ids.add(clean(raw?.id) || hint.name);
+    }
+    return [...support.values()].filter(x=>x.ids.size>=2)
+      .sort((a,b)=>b.ids.size-a.ids.size)[0] || null;
+  }
+
+  function primaryAndBrandDispute() {
     const target=modelFingerprint(rankingInput?.mpn || rankingInput?.model || rankingInput?.query);
-    const codeLike=target.length>=4 && /[a-z]/.test(target) && /[0-9]/.test(target);
-    return products.some(product => {
+    const codeLike=target.length>=4 && /[a-z]/.test(target) && /\\d/.test(target);
+    const primary=products.find(product=>{
       const candidate=candidateHint(product);
       const ranked=rankResearchCandidate(candidate,rankingInput);
-      if(ranked.relation?.type === 'accessory' || ranked.score < 55) return false;
-      if(!codeLike) return true;
-      // A high score for another version of the same product family must
-      // not prevent searching the next MPN page for an exact model identity.
+      if(ranked.relation?.type==='accessory' || ranked.score<55)return false;
+      if(!codeLike)return true;
       return [candidate.model,candidate.mpn].map(modelFingerprint).includes(target) ||
         modelFingerprint(candidate.name).includes(target);
-    });
+    }) || null;
+    return {
+      primary,
+      dispute:primary ? disputedBrandLead(primary) : null
+    };
+  }
+
+  function hasStrongPrimary() {
+    const found=primaryAndBrandDispute();
+    return Boolean(found.primary && !found.dispute);
   }
 
   async function runPhrase(phrase, mode = '', reason = 'phrase', pageId = '') {
@@ -243,6 +282,26 @@ export async function searchAllegroForResearch({token,userAgent,input} = {}) {
   const mpnPhrase = inferMpnSearchPhrase(input);
   if (mpnPhrase && shouldTryMpnMode(input)) {
     await runPhrase(mpnPhrase,'MPN','mpn');
+  }
+
+  // Before generic family recovery, challenge a brand contradiction using
+  // the actual code and inferred device type. E.g. an isolated "Bosch DHP484"
+  // alongside several Makita DHP484 parts should try "Makita DHP484
+  // wiertarko-wkrętarka" instead of concluding the Bosch is correct.
+  if(searchAttempts.length<maxAttempts){
+    const context=primaryAndBrandDispute();
+    if(context.dispute){
+      const target=clean(rankingInput.model || rankingInput.mpn ||
+        inferMpnSearchPhrase(input));
+      const type=inferProductTypeHint(products.map(candidateHint));
+      const localizedType={
+        'wiertarko-wkretarka':'wiertarko-wkrętarka',
+        sluchawki:'słuchawki',
+        'robot odkurzajacy':'robot odkurzający'
+      }[type] || type;
+      const phrase=[context.dispute.brand,target,localizedType].filter(Boolean).join(' ');
+      if(target) await runPhrase(phrase,'','brand-review');
+    }
   }
 
   // A device-family alias repeatedly reported by accessories may recover
