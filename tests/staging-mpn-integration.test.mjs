@@ -67,6 +67,32 @@ try {
   assert.equal(mpn?.uniqueAdded,1);
   assert.equal(calls.filter(c=>c.mode==='MPN').length,1);
   assert(body.searchAttempts.every(x=>x.foundCount>=0 && x.uniqueAdded>=0));
+  // Lower-ranked but legitimate variants must remain available to the
+  // tester rather than disappearing at the old five-result cutoff.
+  calls.length=0;
+  globalThis.fetch=async (url,options={})=>{
+    const target=new URL(String(url));
+    assert.equal(target.hostname,'api.allegro.pl');
+    assert.equal(options.headers.authorization,'Bearer mock-oauth-access');
+    calls.push({mode:target.searchParams.get('mode')||''});
+    return {ok:true,status:200,async json(){
+      return {products:Array.from({length:14},(_,i)=>({
+        ...phone,id:'variant-'+i,
+        name:'Smartfon Samsung Galaxy S24 SM-S921B wariant '+i
+      }))};
+    }};
+  };
+  const extended=await worker.fetch(new Request(stageUrl+'/api/research',{
+    method:'POST',
+    headers:{'content-type':'application/json','x-staging-test-key':secret},
+    body:JSON.stringify({query:'SM-S921B'})
+  }),env);
+  assert.equal(extended.status,200);
+  const extendedBody=await extended.json();
+  assert.equal(extendedBody.candidates.length,12,'Up to 12 variants must reach Finder');
+  assert.equal(new Set(extendedBody.candidates.map(x=>x.id)).size,12);
+  assert(calls.length<=3);
+
   console.log('PASS staging API MPN integration: OAuth token, staging key, ranking and source provenance.');
 } finally {
   globalThis.fetch=originalFetch;
