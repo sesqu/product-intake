@@ -18,7 +18,14 @@ for(const key of [
 elements.productFinderQuery.value='SM-S921B';
 elements.productFinderDiagnosticsToggle.checked=true;
 const container=elements.productFinderResult;
+let cachedHtml='';
+let cachedSelectors={};
 container.querySelectorAll=(selector)=>{
+  if (cachedHtml !== container.innerHTML) {
+    cachedHtml=container.innerHTML;
+    cachedSelectors={};
+  }
+  if (cachedSelectors[selector]) return cachedSelectors[selector];
   const attr=selector.match(/^\[([^\]]+)\]$/)?.[1];
   if(!attr)return [];
   const regex=new RegExp(attr+'="([^"]*)"','g');
@@ -29,6 +36,7 @@ container.querySelectorAll=(selector)=>{
     button.dataset[camel]=match[1].replaceAll('&amp;','&');
     ret.push(button);
   }
+  cachedSelectors[selector]=ret;
   return ret;
 };
 let payload={
