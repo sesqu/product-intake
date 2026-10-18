@@ -94,6 +94,25 @@ try{
   });
   assert.equal(r.status,200);
   assert.equal(r.data.product.revision,2);
+  // Two browser tabs carrying the same valid user identity can race.
+  // Exactly one write for revision 2 may succeed; the other must be rejected.
+  const [tabA,tabB]=await Promise.all([
+    ask(tester,'PUT','/api/team/products/LPN-100',{
+      expectedRevision:2,product:{lpn:'LPN-100',productName:'Edited in tab A'}
+    }),
+    ask(tester,'PUT','/api/team/products/LPN-100',{
+      expectedRevision:2,product:{lpn:'LPN-100',productName:'Edited in tab B'}
+    })
+  ]);
+  assert.deepEqual([tabA.status,tabB.status].sort(),[200,409],
+    'Optimistic revision check must prevent lost updates across concurrent tabs');
+  const newProduct=(await ask(tester,'GET','/api/team/products/LPN-100')).data.product;
+  assert.equal(newProduct.revision,3);
+  assert(['Edited in tab A','Edited in tab B'].includes(newProduct.data.productName));
+  const memberHistory=await ask(owner,'GET','/api/team/members/history');
+  assert.equal(memberHistory.status,200);
+  assert(memberHistory.data.history.some(x=>x.action==='invite'&&x.email==='staff@example.test'));
+
   r=await ask(tester,'PUT','/api/team/products/LPN-100',{
     expectedRevision:1,product:{lpn:'LPN-100',productName:'Stale'}
   });
@@ -101,7 +120,7 @@ try{
   r=await ask(tester,'GET','/api/team/products/LPN-100');
   assert.equal(r.data.product.data.productName,'Phone revised');
   r=await ask(tester,'GET','/api/team/products/LPN-100/history');
-  assert.deepEqual(r.data.history.map(x=>x.action),['update','create'],
+  assert.deepEqual(r.data.history.map(x=>x.action),['update','update','create'],
     'Database trigger creates durable change history');
   r=await ask(tester,'POST','/api/team/products/LPN-100/release');
   assert.equal(r.status,200);
@@ -109,7 +128,7 @@ try{
   assert.equal(r.status,200);
   assert.equal(r.data.product.locked_by,'owner@example.test');
   r=await ask(tester,'PUT','/api/team/products/LPN-100',{
-    expectedRevision:2,product:{lpn:'LPN-100',productName:'Unclaimed'}
+    expectedRevision:3,product:{lpn:'LPN-100',productName:'Unclaimed'}
   });
   assert.equal(r.status,423,'Previous editor can no longer write');
   r=await ask(owner,'PATCH','/api/team/members',{
