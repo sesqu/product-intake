@@ -23,6 +23,8 @@ on:
       - 'tests/allegro-stage-isolation.test.mjs'
       - 'worker/scripts/prepare-allegro-stage.mjs'
       - 'tests/allegro-live-fixture-rerank.mjs'
+      - 'tests/allegro-live-100-offline-rerank.mjs'
+      - 'tests/fixtures/allegro-live-v43-100-2026-10-21.json'
       - 'tests/allegro-live-refined-regression.mjs'
       - 'tests/fixtures/allegro-live-refined-8.json'
       - 'tests/allegro-suggestion-offline.mjs'
@@ -53,6 +55,8 @@ on:
       - 'tests/allegro-stage-isolation.test.mjs'
       - 'worker/scripts/prepare-allegro-stage.mjs'
       - 'tests/allegro-live-fixture-rerank.mjs'
+      - 'tests/allegro-live-100-offline-rerank.mjs'
+      - 'tests/fixtures/allegro-live-v43-100-2026-10-21.json'
       - 'tests/allegro-live-refined-regression.mjs'
       - 'tests/fixtures/allegro-live-refined-8.json'
       - 'tests/allegro-suggestion-offline.mjs'
@@ -82,6 +86,8 @@ jobs:
         run: node tests/allegro-stage-isolation.test.mjs
       - name: Differential check on fifty real v43 catalog candidates
         run: node tests/allegro-live-fixture-rerank.mjs
+      - name: Replay 100 actual v43 model results through v44 ranking
+        run: node tests/allegro-live-100-offline-rerank.mjs
       - name: Guard device-first ranking on eight real refined catalog samples
         run: node tests/allegro-live-refined-regression.mjs
       - name: Inspect recovery query suggestions from live fixture
