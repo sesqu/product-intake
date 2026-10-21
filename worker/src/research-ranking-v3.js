@@ -77,6 +77,7 @@ const ACCESSORY_NOUNS = [
   'bateria','akumulator','etui','futeral','pokrowiec','filtr','uchwyt',
   'zasilacz','plyta glowna','plytka','plyta','zlacz','buzzer','klapka','wyswietl',
   'mocowanie','front','oslona','toner','beben','chip','slizgacze',
+  'podstawa','wlacznik','chlodzenie',
   'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
   'pilot','mop','szmatk','szczotk','worek','worki','akcesori','wklad',
   'tusz','atrament','kartridz','cartridge','stojan','kontroler','glowka',
@@ -106,6 +107,7 @@ const HARD_ACCESSORY_NOUNS = [
   'bateria','akumulator','etui','futeral','pokrowiec','filtr','case','cover',
   'folia','szklo','tusz','atrament','kartridz','cartridge',
   'mocowanie','front','oslona','toner','beben','chip','zlacz','buzzer',
+  'podstawa','wlacznik','chlodzenie',
   'klapka','plyta glowna','plytka','plyta','zasilacz','wyswietl',
   'obudow','blokad','czujnik','modul','tasma','ekran','przycisk','ramka',
   'pilot','mop','szmatk','szczotk','worek','worki','akcesori','wklad',
@@ -142,7 +144,8 @@ const BUNDLE_ITEM_NOUNS = new Set([
 ]);
 const REPAIR_ONLY_NOUNS = [
   'wyswietl','ekran','plyta glowna','buzzer','charging port',
-  'replacement screen','screen protector','spare part','kontroler','stojan'
+  'replacement screen','screen protector','spare part','kontroler','stojan',
+  'podstawa','wlacznik','chlodzenie'
 ];
 
 function isClearPrimaryDevice(candidate,noun) {
