@@ -5,6 +5,7 @@ on:
     paths:
       - 'worker/src/product-research.js'
       - 'worker/src/research-allegro.js'
+      - 'worker/src/research-ranking-v3.js'
       - 'worker/src/index.js'
       - 'product-research.js'
       - 'product-finder.js'
@@ -16,6 +17,19 @@ on:
       - 'sw.js'
       - 'version.json'
       - 'tests/product-research.test.mjs'
+      - 'tests/allegro-pagination.test.mjs'
+      - 'tests/research-ranking-v3.test.mjs'
+      - 'tests/allegro-api-v44.test.mjs'
+      - 'tests/allegro-stage-isolation.test.mjs'
+      - 'worker/scripts/prepare-allegro-stage.mjs'
+      - 'tests/allegro-live-fixture-rerank.mjs'
+      - 'tests/allegro-live-100-offline-rerank.mjs'
+      - 'tests/fixtures/allegro-live-v43-100-2026-10-21.json'
+      - 'tests/allegro-live-refined-regression.mjs'
+      - 'tests/fixtures/allegro-live-refined-8.json'
+      - 'tests/allegro-suggestion-offline.mjs'
+      - 'tests/fixtures/allegro-live-v43-10.json'
+      - 'tests/finder-allegro-v44.test.cjs'
       - 'tests/research-live.test.mjs'
       - 'tests/frontend-syntax.test.cjs'
       - '.github/workflows/product-research-test.yml'
@@ -23,6 +37,7 @@ on:
     paths:
       - 'worker/src/product-research.js'
       - 'worker/src/research-allegro.js'
+      - 'worker/src/research-ranking-v3.js'
       - 'worker/src/index.js'
       - 'product-research.js'
       - 'product-finder.js'
@@ -34,6 +49,19 @@ on:
       - 'sw.js'
       - 'version.json'
       - 'tests/product-research.test.mjs'
+      - 'tests/allegro-pagination.test.mjs'
+      - 'tests/research-ranking-v3.test.mjs'
+      - 'tests/allegro-api-v44.test.mjs'
+      - 'tests/allegro-stage-isolation.test.mjs'
+      - 'worker/scripts/prepare-allegro-stage.mjs'
+      - 'tests/allegro-live-fixture-rerank.mjs'
+      - 'tests/allegro-live-100-offline-rerank.mjs'
+      - 'tests/fixtures/allegro-live-v43-100-2026-10-21.json'
+      - 'tests/allegro-live-refined-regression.mjs'
+      - 'tests/fixtures/allegro-live-refined-8.json'
+      - 'tests/allegro-suggestion-offline.mjs'
+      - 'tests/fixtures/allegro-live-v43-10.json'
+      - 'tests/finder-allegro-v44.test.cjs'
       - 'tests/frontend-syntax.test.cjs'
       - '.github/workflows/product-research-test.yml'
   workflow_dispatch:
@@ -48,6 +76,24 @@ jobs:
           node-version: '22'
       - name: Test product research engine
         run: node tests/product-research.test.mjs
+      - name: Test Allegro pagination and exact model recovery
+        run: node tests/allegro-pagination.test.mjs
+      - name: Test model and accessory ranking
+        run: node tests/research-ranking-v3.test.mjs
+      - name: Test Allegro API comparison and multiple candidates
+        run: node tests/allegro-api-v44.test.mjs
+      - name: Check isolated staging gates and production resource isolation
+        run: node tests/allegro-stage-isolation.test.mjs
+      - name: Differential check on fifty real v43 catalog candidates
+        run: node tests/allegro-live-fixture-rerank.mjs
+      - name: Replay 100 actual v43 model results through v44 ranking
+        run: node tests/allegro-live-100-offline-rerank.mjs
+      - name: Guard device-first ranking on eight real refined catalog samples
+        run: node tests/allegro-live-refined-regression.mjs
+      - name: Inspect recovery query suggestions from live fixture
+        run: node tests/allegro-suggestion-offline.mjs
+      - name: Test integrated Finder display and escaping
+        run: node tests/finder-allegro-v44.test.cjs
       - name: Test frontend syntax and wiring
         run: node tests/frontend-syntax.test.cjs
       - name: Live production model research smoke test

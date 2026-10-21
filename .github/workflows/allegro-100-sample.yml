@@ -1,0 +1,56 @@
+name: Allegro 100-model balanced sample
+
+on:
+  push:
+    branches:
+      - feature/allegro-search-quality-v44
+    paths:
+      - 'tests/allegro-benchmark-100.mjs'
+      - 'tests/fixtures/allegro-sample-100.json'
+      - '.github/workflows/allegro-100-sample.yml'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'production (current v43) or isolated staging (v44 OAuth required)'
+        type: choice
+        options: [production, staging]
+        required: true
+        default: production
+      batch:
+        description: '0-9 = 10 diverse products each; all = 100 (explicit)'
+        type: choice
+        options: ['0','1','2','3','4','5','6','7','8','9',all]
+        required: true
+        default: '0'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      BENCHMARK_TARGET: ${{ github.event_name == 'workflow_dispatch' && inputs.target || 'production' }}
+      BENCHMARK_BATCH: ${{ github.event_name == 'workflow_dispatch' && inputs.batch || '0' }}
+      V44_STAGE_KEY: ${{ secrets.V44_STAGE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate 100 cases, unique models and 10 balanced categories
+        run: |
+          BENCHMARK_TARGET=validate BENCHMARK_BATCH=all ALLOW_100_LIVE=true node tests/allegro-benchmark-100.mjs
+      - name: Call selected read-only API with a bounded sample
+        env:
+          ALLOW_100_LIVE: ${{ inputs.batch == 'all' && 'true' || 'false' }}
+        run: node tests/allegro-benchmark-100.mjs
+      - name: Preserve actual API replies for manual quality assessment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allegro-sample100-${{ github.run_id }}
+          path: benchmark-results/*.json
+          if-no-files-found: ignore
+          retention-days: 14

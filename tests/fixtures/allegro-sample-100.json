@@ -1,0 +1,909 @@
+{
+  "schemaVersion": 1,
+  "description": "100 curated, plausible real consumer product model identities, 10 balanced categories × 10, index order interleaved so each batch of ten covers every category. Human/manual catalog verification remains necessary; existence and variant match must NOT be assumed by code.",
+  "createdAt": "2026-10-21",
+  "humanVerified": false,
+  "sources": "Model strings are seed hypotheses; no current manufacturer or catalog validation claimed.",
+  "cases": [
+    {
+      "id": "A001",
+      "category": "smartfon",
+      "query": "SM-S921B",
+      "expectedBrand": "Samsung",
+      "expectedModel": "Galaxy S24",
+      "expectedKind": "smartfon",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A002",
+      "category": "sluchawki_audio",
+      "query": "WH-1000XM5",
+      "expectedBrand": "Sony",
+      "expectedModel": "WH-1000XM5",
+      "expectedKind": "sluchawki_audio",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A003",
+      "category": "robot_sprzatajacy",
+      "query": "L50 Ultra",
+      "expectedBrand": "Dreame",
+      "expectedModel": "L50 Ultra",
+      "expectedKind": "robot_sprzatajacy",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A004",
+      "category": "elektronarzedzie",
+      "query": "GSR 18V-55",
+      "expectedBrand": "Bosch",
+      "expectedModel": "GSR 18V-55",
+      "expectedKind": "elektronarzedzie",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A005",
+      "category": "ekspres_kawa",
+      "query": "EP2220/10",
+      "expectedBrand": "Philips",
+      "expectedModel": "EP2220/10",
+      "expectedKind": "ekspres_kawa",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A006",
+      "category": "laptop",
+      "query": "ThinkPad T14 Gen 3",
+      "expectedBrand": "Lenovo",
+      "expectedModel": "ThinkPad T14 Gen 3",
+      "expectedKind": "laptop",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A007",
+      "category": "monitor",
+      "query": "LG 27GP850-B",
+      "expectedBrand": "LG",
+      "expectedModel": "27GP850-B",
+      "expectedKind": "monitor",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A008",
+      "category": "konsola_peryferia",
+      "query": "PlayStation 5 CFI-1216A",
+      "expectedBrand": "Sony",
+      "expectedModel": "CFI-1216A",
+      "expectedKind": "konsola_peryferia",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A009",
+      "category": "aparat_kamera",
+      "query": "EOS R50",
+      "expectedBrand": "Canon",
+      "expectedModel": "EOS R50",
+      "expectedKind": "aparat_kamera",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A010",
+      "category": "agd",
+      "query": "Dyson V15 Detect",
+      "expectedBrand": "Dyson",
+      "expectedModel": "V15 Detect",
+      "expectedKind": "agd",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A011",
+      "category": "smartfon",
+      "query": "SM-S928B",
+      "expectedBrand": "Samsung",
+      "expectedModel": "Galaxy S24 Ultra",
+      "expectedKind": "smartfon",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A012",
+      "category": "sluchawki_audio",
+      "query": "WH-1000XM4",
+      "expectedBrand": "Sony",
+      "expectedModel": "WH-1000XM4",
+      "expectedKind": "sluchawki_audio",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A013",
+      "category": "robot_sprzatajacy",
+      "query": "X50 Ultra",
+      "expectedBrand": "Dreame",
+      "expectedModel": "X50 Ultra",
+      "expectedKind": "robot_sprzatajacy",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A014",
+      "category": "elektronarzedzie",
+      "query": "GSB 18V-55",
+      "expectedBrand": "Bosch",
+      "expectedModel": "GSB 18V-55",
+      "expectedKind": "elektronarzedzie",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A015",
+      "category": "ekspres_kawa",
+      "query": "EP2231/40",
+      "expectedBrand": "Philips",
+      "expectedModel": "EP2231/40",
+      "expectedKind": "ekspres_kawa",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A016",
+      "category": "laptop",
+      "query": "ThinkPad X1 Carbon Gen 10",
+      "expectedBrand": "Lenovo",
+      "expectedModel": "ThinkPad X1 Carbon Gen 10",
+      "expectedKind": "laptop",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A017",
+      "category": "monitor",
+      "query": "Dell U2723QE",
+      "expectedBrand": "Dell",
+      "expectedModel": "U2723QE",
+      "expectedKind": "monitor",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A018",
+      "category": "konsola_peryferia",
+      "query": "PlayStation 5 Slim CFI-2016A",
+      "expectedBrand": "Sony",
+      "expectedModel": "CFI-2016A",
+      "expectedKind": "konsola_peryferia",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A019",
+      "category": "aparat_kamera",
+      "query": "EOS R10",
+      "expectedBrand": "Canon",
+      "expectedModel": "EOS R10",
+      "expectedKind": "aparat_kamera",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A020",
+      "category": "agd",
+      "query": "Dyson V12 Detect Slim",
+      "expectedBrand": "Dyson",
+      "expectedModel": "V12 Detect Slim",
+      "expectedKind": "agd",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A021",
+      "category": "smartfon",
+      "query": "SM-A556B",
+      "expectedBrand": "Samsung",
+      "expectedModel": "Galaxy A55",
+      "expectedKind": "smartfon",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A022",
+      "category": "sluchawki_audio",
+      "query": "WF-1000XM5",
+      "expectedBrand": "Sony",
+      "expectedModel": "WF-1000XM5",
+      "expectedKind": "sluchawki_audio",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A023",
+      "category": "robot_sprzatajacy",
+      "query": "L40 Ultra",
+      "expectedBrand": "Dreame",
+      "expectedModel": "L40 Ultra",
+      "expectedKind": "robot_sprzatajacy",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A024",
+      "category": "elektronarzedzie",
+      "query": "GSR 12V-15",
+      "expectedBrand": "Bosch",
+      "expectedModel": "GSR 12V-15",
+      "expectedKind": "elektronarzedzie",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A025",
+      "category": "ekspres_kawa",
+      "query": "EP3246/70",
+      "expectedBrand": "Philips",
+      "expectedModel": "EP3246/70",
+      "expectedKind": "ekspres_kawa",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A026",
+      "category": "laptop",
+      "query": "Latitude 5420",
+      "expectedBrand": "Dell",
+      "expectedModel": "Latitude 5420",
+      "expectedKind": "laptop",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A027",
+      "category": "monitor",
+      "query": "Dell P2422H",
+      "expectedBrand": "Dell",
+      "expectedModel": "P2422H",
+      "expectedKind": "monitor",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A028",
+      "category": "konsola_peryferia",
+      "query": "Xbox Series X",
+      "expectedBrand": "Microsoft",
+      "expectedModel": "Xbox Series X",
+      "expectedKind": "konsola_peryferia",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A029",
+      "category": "aparat_kamera",
+      "query": "EOS R8",
+      "expectedBrand": "Canon",
+      "expectedModel": "EOS R8",
+      "expectedKind": "aparat_kamera",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A030",
+      "category": "agd",
+      "query": "XW9383/01",
+      "expectedBrand": "Philips",
+      "expectedModel": "XW9383/01",
+      "expectedKind": "agd",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A031",
+      "category": "smartfon",
+      "query": "SM-A546B",
+      "expectedBrand": "Samsung",
+      "expectedModel": "Galaxy A54",
+      "expectedKind": "smartfon",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A032",
+      "category": "sluchawki_audio",
+      "query": "WF-1000XM4",
+      "expectedBrand": "Sony",
+      "expectedModel": "WF-1000XM4",
+      "expectedKind": "sluchawki_audio",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A033",
+      "category": "robot_sprzatajacy",
+      "query": "L10s Ultra",
+      "expectedBrand": "Dreame",
+      "expectedModel": "L10s Ultra",
+      "expectedKind": "robot_sprzatajacy",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A034",
+      "category": "elektronarzedzie",
+      "query": "GWS 18V-10",
+      "expectedBrand": "Bosch",
+      "expectedModel": "GWS 18V-10",
+      "expectedKind": "elektronarzedzie",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A035",
+      "category": "ekspres_kawa",
+      "query": "EP5447/90",
+      "expectedBrand": "Philips",
+      "expectedModel": "EP5447/90",
+      "expectedKind": "ekspres_kawa",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A036",
+      "category": "laptop",
+      "query": "Latitude 7430",
+      "expectedBrand": "Dell",
+      "expectedModel": "Latitude 7430",
+      "expectedKind": "laptop",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A037",
+      "category": "monitor",
+      "query": "ASUS VG27AQ",
+      "expectedBrand": "ASUS",
+      "expectedModel": "VG27AQ",
+      "expectedKind": "monitor",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A038",
+      "category": "konsola_peryferia",
+      "query": "Xbox Series S",
+      "expectedBrand": "Microsoft",
+      "expectedModel": "Xbox Series S",
+      "expectedKind": "konsola_peryferia",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A039",
+      "category": "aparat_kamera",
+      "query": "ILCE-7M4",
+      "expectedBrand": "Sony",
+      "expectedModel": "ILCE-7M4",
+      "expectedKind": "aparat_kamera",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A040",
+      "category": "agd",
+      "query": "TY9958",
+      "expectedBrand": "Tefal",
+      "expectedModel": "TY9958",
+      "expectedKind": "agd",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A041",
+      "category": "smartfon",
+      "query": "SM-S911B",
+      "expectedBrand": "Samsung",
+      "expectedModel": "Galaxy S23",
+      "expectedKind": "smartfon",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A042",
+      "category": "sluchawki_audio",
+      "query": "Tune 770NC",
+      "expectedBrand": "JBL",
+      "expectedModel": "Tune 770NC",
+      "expectedKind": "sluchawki_audio",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A043",
+      "category": "robot_sprzatajacy",
+      "query": "S8 MaxV Ultra",
+      "expectedBrand": "Roborock",
+      "expectedModel": "S8 MaxV Ultra",
+      "expectedKind": "robot_sprzatajacy",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A044",
+      "category": "elektronarzedzie",
+      "query": "GBH 2-26",
+      "expectedBrand": "Bosch",
+      "expectedModel": "GBH 2-26",
+      "expectedKind": "elektronarzedzie",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A045",
+      "category": "ekspres_kawa",
+      "query": "ECAM 22.110.B",
+      "expectedBrand": "De'Longhi",
+      "expectedModel": "ECAM 22.110.B",
+      "expectedKind": "ekspres_kawa",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A046",
+      "category": "laptop",
+      "query": "EliteBook 840 G8",
+      "expectedBrand": "HP",
+      "expectedModel": "EliteBook 840 G8",
+      "expectedKind": "laptop",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A047",
+      "category": "monitor",
+      "query": "AOC 24G2SPU/BK",
+      "expectedBrand": "AOC",
+      "expectedModel": "24G2SPU/BK",
+      "expectedKind": "monitor",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A048",
+      "category": "konsola_peryferia",
+      "query": "Switch OLED HEG-001",
+      "expectedBrand": "Nintendo",
+      "expectedModel": "HEG-001",
+      "expectedKind": "konsola_peryferia",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A049",
+      "category": "aparat_kamera",
+      "query": "ZV-E10",
+      "expectedBrand": "Sony",
+      "expectedModel": "ZV-E10",
+      "expectedKind": "aparat_kamera",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A050",
+      "category": "agd",
+      "query": "WD 3 V-17/4/20",
+      "expectedBrand": "Kärcher",
+      "expectedModel": "WD 3 V-17/4/20",
+      "expectedKind": "agd",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A051",
+      "category": "smartfon",
+      "query": "SM-S918B",
+      "expectedBrand": "Samsung",
+      "expectedModel": "Galaxy S23 Ultra",
+      "expectedKind": "smartfon",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A052",
+      "category": "sluchawki_audio",
+      "query": "Live 770NC",
+      "expectedBrand": "JBL",
+      "expectedModel": "Live 770NC",
+      "expectedKind": "sluchawki_audio",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A053",
+      "category": "robot_sprzatajacy",
+      "query": "S7 MaxV Ultra",
+      "expectedBrand": "Roborock",
+      "expectedModel": "S7 MaxV Ultra",
+      "expectedKind": "robot_sprzatajacy",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A054",
+      "category": "elektronarzedzie",
+      "query": "DHP484",
+      "expectedBrand": "Makita",
+      "expectedModel": "DHP484",
+      "expectedKind": "elektronarzedzie",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A055",
+      "category": "ekspres_kawa",
+      "query": "ECAM 290.61.B",
+      "expectedBrand": "De'Longhi",
+      "expectedModel": "ECAM 290.61.B",
+      "expectedKind": "ekspres_kawa",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A056",
+      "category": "laptop",
+      "query": "ProBook 450 G9",
+      "expectedBrand": "HP",
+      "expectedModel": "ProBook 450 G9",
+      "expectedKind": "laptop",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A057",
+      "category": "monitor",
+      "query": "MSI G274QPF-QD",
+      "expectedBrand": "MSI",
+      "expectedModel": "G274QPF-QD",
+      "expectedKind": "monitor",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A058",
+      "category": "konsola_peryferia",
+      "query": "Switch HAC-001",
+      "expectedBrand": "Nintendo",
+      "expectedModel": "HAC-001",
+      "expectedKind": "konsola_peryferia",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A059",
+      "category": "aparat_kamera",
+      "query": "Nikon Z6 II",
+      "expectedBrand": "Nikon",
+      "expectedModel": "Z6 II",
+      "expectedKind": "aparat_kamera",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A060",
+      "category": "agd",
+      "query": "BCS711XXL",
+      "expectedBrand": "Bosch",
+      "expectedModel": "BCS711XXL",
+      "expectedKind": "agd",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A061",
+      "category": "smartfon",
+      "query": "iPhone 13 Pro",
+      "expectedBrand": "Apple",
+      "expectedModel": "iPhone 13 Pro",
+      "expectedKind": "smartfon",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A062",
+      "category": "sluchawki_audio",
+      "query": "JBL Flip 6",
+      "expectedBrand": "JBL",
+      "expectedModel": "Flip 6",
+      "expectedKind": "sluchawki_audio",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A063",
+      "category": "robot_sprzatajacy",
+      "query": "S8 Pro Ultra",
+      "expectedBrand": "Roborock",
+      "expectedModel": "S8 Pro Ultra",
+      "expectedKind": "robot_sprzatajacy",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A064",
+      "category": "elektronarzedzie",
+      "query": "DDF484",
+      "expectedBrand": "Makita",
+      "expectedModel": "DDF484",
+      "expectedKind": "elektronarzedzie",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A065",
+      "category": "ekspres_kawa",
+      "query": "TE657319RW",
+      "expectedBrand": "Siemens",
+      "expectedModel": "TE657319RW",
+      "expectedKind": "ekspres_kawa",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A066",
+      "category": "laptop",
+      "query": "Vivobook 15 X1504",
+      "expectedBrand": "ASUS",
+      "expectedModel": "X1504",
+      "expectedKind": "laptop",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A067",
+      "category": "monitor",
+      "query": "BenQ EX2710Q",
+      "expectedBrand": "BenQ",
+      "expectedModel": "EX2710Q",
+      "expectedKind": "monitor",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A068",
+      "category": "konsola_peryferia",
+      "query": "Steam Deck OLED",
+      "expectedBrand": "Valve",
+      "expectedModel": "Steam Deck OLED",
+      "expectedKind": "konsola_peryferia",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A069",
+      "category": "aparat_kamera",
+      "query": "Nikon Z50",
+      "expectedBrand": "Nikon",
+      "expectedModel": "Z50",
+      "expectedKind": "aparat_kamera",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A070",
+      "category": "agd",
+      "query": "AF400EU",
+      "expectedBrand": "Ninja",
+      "expectedModel": "AF400EU",
+      "expectedKind": "agd",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A071",
+      "category": "smartfon",
+      "query": "iPhone 15",
+      "expectedBrand": "Apple",
+      "expectedModel": "iPhone 15",
+      "expectedKind": "smartfon",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A072",
+      "category": "sluchawki_audio",
+      "query": "JBL Charge 5",
+      "expectedBrand": "JBL",
+      "expectedModel": "Charge 5",
+      "expectedKind": "sluchawki_audio",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A073",
+      "category": "robot_sprzatajacy",
+      "query": "Qrevo Master",
+      "expectedBrand": "Roborock",
+      "expectedModel": "Qrevo Master",
+      "expectedKind": "robot_sprzatajacy",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A074",
+      "category": "elektronarzedzie",
+      "query": "DTD153",
+      "expectedBrand": "Makita",
+      "expectedModel": "DTD153",
+      "expectedKind": "elektronarzedzie",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A075",
+      "category": "ekspres_kawa",
+      "query": "EA8108",
+      "expectedBrand": "Krups",
+      "expectedModel": "EA8108",
+      "expectedKind": "ekspres_kawa",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A076",
+      "category": "laptop",
+      "query": "Aspire 5 A515-57",
+      "expectedBrand": "Acer",
+      "expectedModel": "A515-57",
+      "expectedKind": "laptop",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A077",
+      "category": "monitor",
+      "query": "Gigabyte M27Q",
+      "expectedBrand": "Gigabyte",
+      "expectedModel": "M27Q",
+      "expectedKind": "monitor",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A078",
+      "category": "konsola_peryferia",
+      "query": "DualSense CFI-ZCT1W",
+      "expectedBrand": "Sony",
+      "expectedModel": "CFI-ZCT1W",
+      "expectedKind": "konsola_peryferia",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A079",
+      "category": "aparat_kamera",
+      "query": "Fujifilm X-S20",
+      "expectedBrand": "Fujifilm",
+      "expectedModel": "X-S20",
+      "expectedKind": "aparat_kamera",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A080",
+      "category": "agd",
+      "query": "HD9252/90",
+      "expectedBrand": "Philips",
+      "expectedModel": "HD9252/90",
+      "expectedKind": "agd",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A081",
+      "category": "smartfon",
+      "query": "Xiaomi 14T",
+      "expectedBrand": "Xiaomi",
+      "expectedModel": "14T",
+      "expectedKind": "smartfon",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A082",
+      "category": "sluchawki_audio",
+      "query": "AirPods Pro 2",
+      "expectedBrand": "Apple",
+      "expectedModel": "AirPods Pro 2",
+      "expectedKind": "sluchawki_audio",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A083",
+      "category": "robot_sprzatajacy",
+      "query": "Q Revo",
+      "expectedBrand": "Roborock",
+      "expectedModel": "Q Revo",
+      "expectedKind": "robot_sprzatajacy",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A084",
+      "category": "elektronarzedzie",
+      "query": "DHR243",
+      "expectedBrand": "Makita",
+      "expectedModel": "DHR243",
+      "expectedKind": "elektronarzedzie",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A085",
+      "category": "ekspres_kawa",
+      "query": "Essenza Mini C30",
+      "expectedBrand": "Nespresso",
+      "expectedModel": "Essenza Mini C30",
+      "expectedKind": "ekspres_kawa",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A086",
+      "category": "laptop",
+      "query": "MacBook Air A2681",
+      "expectedBrand": "Apple",
+      "expectedModel": "A2681",
+      "expectedKind": "laptop",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A087",
+      "category": "monitor",
+      "query": "Philips 275E1S/00",
+      "expectedBrand": "Philips",
+      "expectedModel": "275E1S/00",
+      "expectedKind": "monitor",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A088",
+      "category": "konsola_peryferia",
+      "query": "G Pro X Superlight",
+      "expectedBrand": "Logitech",
+      "expectedModel": "G Pro X Superlight",
+      "expectedKind": "konsola_peryferia",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A089",
+      "category": "aparat_kamera",
+      "query": "GoPro HERO12 Black",
+      "expectedBrand": "GoPro",
+      "expectedModel": "HERO12 Black",
+      "expectedKind": "aparat_kamera",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A090",
+      "category": "agd",
+      "query": "Smart Air Purifier 4 Pro",
+      "expectedBrand": "Xiaomi",
+      "expectedModel": "Smart Air Purifier 4 Pro",
+      "expectedKind": "agd",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A091",
+      "category": "smartfon",
+      "query": "Google Pixel 8",
+      "expectedBrand": "Google",
+      "expectedModel": "Pixel 8",
+      "expectedKind": "smartfon",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A092",
+      "category": "sluchawki_audio",
+      "query": "Bose QuietComfort Ultra Headphones",
+      "expectedBrand": "Bose",
+      "expectedModel": "QuietComfort Ultra Headphones",
+      "expectedKind": "sluchawki_audio",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A093",
+      "category": "robot_sprzatajacy",
+      "query": "DEEBOT X2 OMNI",
+      "expectedBrand": "Ecovacs",
+      "expectedModel": "DEEBOT X2 OMNI",
+      "expectedKind": "robot_sprzatajacy",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A094",
+      "category": "elektronarzedzie",
+      "query": "DCD796",
+      "expectedBrand": "DeWalt",
+      "expectedModel": "DCD796",
+      "expectedKind": "elektronarzedzie",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A095",
+      "category": "ekspres_kawa",
+      "query": "TAS1002",
+      "expectedBrand": "Bosch",
+      "expectedModel": "TAS1002",
+      "expectedKind": "ekspres_kawa",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A096",
+      "category": "laptop",
+      "query": "Surface Laptop 5",
+      "expectedBrand": "Microsoft",
+      "expectedModel": "Surface Laptop 5",
+      "expectedKind": "laptop",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A097",
+      "category": "monitor",
+      "query": "Samsung S27AG500PP",
+      "expectedBrand": "Samsung",
+      "expectedModel": "S27AG500PP",
+      "expectedKind": "monitor",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A098",
+      "category": "konsola_peryferia",
+      "query": "G502 X Lightspeed",
+      "expectedBrand": "Logitech",
+      "expectedModel": "G502 X Lightspeed",
+      "expectedKind": "konsola_peryferia",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A099",
+      "category": "aparat_kamera",
+      "query": "Osmo Action 4",
+      "expectedBrand": "DJI",
+      "expectedModel": "Osmo Action 4",
+      "expectedKind": "aparat_kamera",
+      "verifiedGroundTruth": false
+    },
+    {
+      "id": "A100",
+      "category": "agd",
+      "query": "Core 300S",
+      "expectedBrand": "Levoit",
+      "expectedModel": "Core 300S",
+      "expectedKind": "agd",
+      "verifiedGroundTruth": false
+    }
+  ]
+}

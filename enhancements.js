@@ -24,7 +24,7 @@
   const SecondaryViews = window.ProductIntakeSecondaryViews;
   const Navigation = window.ProductIntakeNavigation;
 
-  window.ProductIntakePWA?.setup({build:43,label:'v43'});
+  window.ProductIntakePWA?.setup({build:44,label:'v44'});
 
   function getProducts() {
     return IntakeSession.getProducts();

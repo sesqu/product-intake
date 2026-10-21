@@ -1,0 +1,568 @@
+{
+  "description": "Anonymized public Allegro catalog listings, exact TOP5 as returned by deployed production v43; no auth credentials or private product records. All PR9 reranking is strictly offline.",
+  "sourceRun": "https://github.com/sesqu/product-intake/actions/runs/39130721590",
+  "asOf": "2026-10-18",
+  "note": "This fixture cannot show candidates omitted by production v43 or newly discoverable via MPN/page.id.",
+  "cases": [
+    {
+      "brand": "Samsung",
+      "type": "phone",
+      "query": "SM-S921B",
+      "baselineTop1": {
+        "id": "a9511f60-fad2-47ea-a089-e4228cba4a46",
+        "name": "Złącze USB-C do Samsung SM-S921B",
+        "model": "SM-S921B",
+        "mpn": "",
+        "category": "19303",
+        "score": 50
+      },
+      "baselineTesterChoice": true,
+      "returnedCandidates": [
+        {
+          "id": "a9511f60-fad2-47ea-a089-e4228cba4a46",
+          "name": "Złącze USB-C do Samsung SM-S921B",
+          "model": "SM-S921B",
+          "mpn": "",
+          "category": "19303",
+          "score": 50
+        },
+        {
+          "id": "853d60e3-6966-4032-a037-da145f758d8b",
+          "name": "Bateria EB-BS921ABE do SM-S921B Samsung Galaxy S24",
+          "model": "Galaxy S24",
+          "mpn": "EB-BS921ABE",
+          "category": "352",
+          "score": 43
+        },
+        {
+          "id": "68525af6-ac7e-4f37-82ed-295550e9dab8",
+          "name": "Buzzer do Samsung Galaxy S24 (SM-S921B)",
+          "model": "Samsung Galaxy S24 (SM-S921B)",
+          "mpn": "",
+          "category": "75515",
+          "score": 43
+        },
+        {
+          "id": "3ab21f30-3a13-4e76-bc23-74b39e144b68",
+          "name": "Galaxy S24 czarny ekran z otworem TFT (brak odcisku) SM-S921B SM-S921U",
+          "model": "QG261009GP1D1896-BCL",
+          "mpn": "QG261009GP1D1896-BCL",
+          "category": "311009",
+          "score": 43
+        },
+        {
+          "id": "33c70b12-8f01-4f6f-a11a-b6942507b564",
+          "name": "Klapka baterii do Samsung Galaxy S24 (SM-S921B) zielony",
+          "model": "Samsung Galaxy S24 (SM-S921B)",
+          "mpn": "",
+          "category": "310061",
+          "score": 43
+        }
+      ]
+    },
+    {
+      "brand": "Samsung",
+      "type": "phone",
+      "query": "SM-S928B",
+      "baselineTop1": {
+        "id": "ef26b6d0-6be1-405c-af6e-32634456b88f",
+        "name": "Bateria EB-BS928ABY do Samsung S24 Ultra SM-S928B, SM-S928B/DS, SM-S928E",
+        "model": "MARS2_EB-BS928ABY",
+        "mpn": "MARS2_EB-BS928ABY",
+        "category": "67369",
+        "score": 43
+      },
+      "baselineTesterChoice": true,
+      "returnedCandidates": [
+        {
+          "id": "ef26b6d0-6be1-405c-af6e-32634456b88f",
+          "name": "Bateria EB-BS928ABY do Samsung S24 Ultra SM-S928B, SM-S928B/DS, SM-S928E",
+          "model": "MARS2_EB-BS928ABY",
+          "mpn": "MARS2_EB-BS928ABY",
+          "category": "67369",
+          "score": 43
+        },
+        {
+          "id": "be411b1f-6e32-4eaf-9f74-9cb3ee18971d",
+          "name": "Buzzer do Samsung Galaxy S24 Ultra (SM-S928B)",
+          "model": "Samsung Galaxy S24 Ultra (SM-S928B)",
+          "mpn": "",
+          "category": "75515",
+          "score": 43
+        },
+        {
+          "id": "1a0f52c1-40bd-4f6d-ab66-e5cfaaa2e759",
+          "name": "Buzzer do Samsung GALAXY S24 ULTRA SM-S928B",
+          "model": "GALAXY S24 ULTRA SM-S928B",
+          "mpn": "",
+          "category": "75515",
+          "score": 43
+        },
+        {
+          "id": "9dc7783c-ce34-4a4f-ab8a-769899da3dae",
+          "name": "GŁOŚNIK BUZZER DOLNY DZWONKÓW SPEAKER DO SAMSUNG S24 ULTRA, SM-S928B",
+          "model": "GALAXY S24 ULTRA, SM-S928B",
+          "mpn": "",
+          "category": "300837",
+          "score": 43
+        },
+        {
+          "id": "30431ce9-9afe-4a71-978f-03b76991c612",
+          "name": "Klapka baterii do Samsung S24 Ultra, SM-S928B czarny",
+          "model": "S24 Ultra",
+          "mpn": "",
+          "category": "310061",
+          "score": 43
+        }
+      ]
+    },
+    {
+      "brand": "Samsung",
+      "type": "phone",
+      "query": "SM-A556B",
+      "baselineTop1": {
+        "id": "7c540268-7af7-4a8e-a56e-e22e63aedaf0",
+        "name": "6,6 cala wymiana ekranu dla Galaxy A55 5G SM-A556E SM-A556B SM-A556U 31",
+        "model": "",
+        "mpn": "",
+        "category": "311009",
+        "score": 43
+      },
+      "baselineTesterChoice": false,
+      "returnedCandidates": [
+        {
+          "id": "7c540268-7af7-4a8e-a56e-e22e63aedaf0",
+          "name": "6,6 cala wymiana ekranu dla Galaxy A55 5G SM-A556E SM-A556B SM-A556U 31",
+          "model": "",
+          "mpn": "",
+          "category": "311009",
+          "score": 43
+        },
+        {
+          "id": "165a62e5-da36-4a04-9044-b48e0e00cf8c",
+          "name": "6,6 cala wymiana ekranu dla Galaxy A55 5G SM-A556E SM-A556B SM-A556U 45",
+          "model": "",
+          "mpn": "",
+          "category": "311009",
+          "score": 43
+        },
+        {
+          "id": "4576689e-d182-4f3d-8d50-f3ebb50c2979",
+          "name": "Bateria EB-BA546ABY do Samsung Galaxy A55 5G SM-A5560 SM-A556B SM-A556B/DS",
+          "model": "EB-BA546ABY_5905367641956",
+          "mpn": "EB-BA546ABY_5905367641956",
+          "category": "67369",
+          "score": 43
+        },
+        {
+          "id": "b4405920-2210-460c-b05b-5f8d8575199f",
+          "name": "Buzzer do Samsung Galaxy A55 5G (SM-A556B)",
+          "model": "Samsung Galaxy A55 5G (SM-A556B)",
+          "mpn": "",
+          "category": "75515",
+          "score": 43
+        },
+        {
+          "id": "bf0acaca-4ff2-4a41-addc-7ad37b8b177a",
+          "name": "EKRAN LCD SAMSUNG GALAXY A55 5G SM-A556B SM-A556E, SM-A556S",
+          "model": "Samsung A55 5g",
+          "mpn": "",
+          "category": "19302",
+          "score": 43
+        }
+      ]
+    },
+    {
+      "brand": "Sony",
+      "type": "headphones",
+      "query": "WH-1000XM5",
+      "baselineTop1": {
+        "id": "0b520d60-d32e-4809-9838-534354aff5d6",
+        "name": "BATERIA AKUMULATOR SP723741 DO SŁUCHAWEK SONY WH-1000XM5",
+        "model": "WH-1000XM5",
+        "mpn": "WH-1000XM5",
+        "category": "110675",
+        "score": 50
+      },
+      "baselineTesterChoice": true,
+      "returnedCandidates": [
+        {
+          "id": "0b520d60-d32e-4809-9838-534354aff5d6",
+          "name": "BATERIA AKUMULATOR SP723741 DO SŁUCHAWEK SONY WH-1000XM5",
+          "model": "WH-1000XM5",
+          "mpn": "WH-1000XM5",
+          "category": "110675",
+          "score": 50
+        },
+        {
+          "id": "8f57f72c-b869-4ded-90ec-2217ad66a0d7",
+          "name": "Etui Futerał do słuchawek Sony WH-1000XM5 Pokrowiec Oryginał",
+          "model": "WH-1000XM5",
+          "mpn": "000003",
+          "category": "314093",
+          "score": 50
+        },
+        {
+          "id": "35459330-8589-4a8b-a439-5399977061f6",
+          "name": "ETUI POKROWIEC NA SŁUCHAWKI SONY WH-1000XM5",
+          "model": "WH-1000XM5",
+          "mpn": "WH-1000XM5",
+          "category": "314093",
+          "score": 50
+        },
+        {
+          "id": "d64066cb-c119-44e7-bfc7-82159f3a0edb",
+          "name": "Słuchawki bezprzewodowe nauszne Sony WH-1000XM5 srebrne",
+          "model": "WH-1000XM5",
+          "mpn": "WH1000XM5S",
+          "category": "85166",
+          "score": 50
+        },
+        {
+          "id": "e120b95a-1e21-4fac-8c84-fead7a8769ba",
+          "name": "Słuchawki bezprzewodowe wokółuszne Sony WH-1000XM5 ANC",
+          "model": "WH-1000XM5",
+          "mpn": "WH-1000XM5",
+          "category": "85166",
+          "score": 50
+        }
+      ]
+    },
+    {
+      "brand": "Bosch",
+      "type": "drill",
+      "query": "GSR 18V-55",
+      "baselineTop1": {
+        "id": "94ac26c5-8d72-4857-980a-e686fbc8c6ee",
+        "name": "Bosch GSR 18V-55 wiertarko-wkrętarka akumulatorowa",
+        "model": "GSR 18V-55",
+        "mpn": "GSR 18V-55",
+        "category": "259924",
+        "score": 50
+      },
+      "baselineTesterChoice": true,
+      "returnedCandidates": [
+        {
+          "id": "94ac26c5-8d72-4857-980a-e686fbc8c6ee",
+          "name": "Bosch GSR 18V-55 wiertarko-wkrętarka akumulatorowa",
+          "model": "GSR 18V-55",
+          "mpn": "GSR 18V-55",
+          "category": "259924",
+          "score": 50
+        },
+        {
+          "id": "59deb0d7-ac3a-482f-ae35-8339d4be5109",
+          "name": "Akumulator 18V 8.0Ah do Bosch GSR 18V-55 GWS 18V-10 Li-Ion bateria zamienna",
+          "model": "BS-18V-8.0Ah",
+          "mpn": "BS-18V-8.0Ah",
+          "category": "257357",
+          "score": 43
+        },
+        {
+          "id": "c9e44fe7-55d0-4a3c-80e3-23c0a53a2739",
+          "name": "Akumulator kompatybilny z Bosch GSR 18V-55 GSB 18V-55 18V 6Ah BMS 21700",
+          "model": "BS-21700-18V-6.0Ah-5X-1",
+          "mpn": "BS-21700-18V-6.0Ah-5X-1",
+          "category": "257357",
+          "score": 43
+        },
+        {
+          "id": "2812b29a-52e9-4ac4-97c7-c357dc9f4b48",
+          "name": "Akumulator zamienny do Bosch 18V 6,0Ah 21700 5 ogniw GSR 18V-55 GSB 18V-50",
+          "model": "BS-27100-18V-6.0Ah",
+          "mpn": "BS-27100-18V-6.0Ah",
+          "category": "257357",
+          "score": 43
+        },
+        {
+          "id": "6ecb5567-e925-4bfc-b9d2-d34905b792e6",
+          "name": "Bosch 06019H5209 GSR 18V-55 wiertarko-wkrętarka zestaw 2x4Ah 18V Organizer",
+          "model": "06019H5209",
+          "mpn": "06019H5209",
+          "category": "147662",
+          "score": 43
+        }
+      ]
+    },
+    {
+      "brand": "Makita",
+      "type": "drill",
+      "query": "DHP484",
+      "baselineTop1": {
+        "id": "61f89c48-655c-4179-8723-c53972459c54",
+        "name": "Bosch DHP484 cordless drill driver",
+        "model": "DHP484",
+        "mpn": "DHP484",
+        "category": "319856",
+        "score": 50
+      },
+      "baselineTesterChoice": true,
+      "returnedCandidates": [
+        {
+          "id": "61f89c48-655c-4179-8723-c53972459c54",
+          "name": "Bosch DHP484 cordless drill driver",
+          "model": "DHP484",
+          "mpn": "DHP484",
+          "category": "319856",
+          "score": 50
+        },
+        {
+          "id": "89e4e2a9-a773-4fbf-9005-6470e99981a7",
+          "name": "123738-1 PRZEŁĄCZNIK ZMIANY BIEGÓW DO DHP484",
+          "model": "123743238-1",
+          "mpn": "123743238-1",
+          "category": "319856",
+          "score": 43
+        },
+        {
+          "id": "45a5b35d-7d57-4f55-b218-74af816f5e53",
+          "name": "MAKITA DHP484 OBUDOWA KOMPLET ORYGINAŁ 183L79-9",
+          "model": "183L79-9",
+          "mpn": "183L79-9",
+          "category": "319856",
+          "score": 43
+        },
+        {
+          "id": "bb3ee76d-88a0-422a-8ad9-22973ce13f58",
+          "name": "MAKITA DHP484 OBUDOWA TYLNA ORYGINAŁ 456967-4",
+          "model": "456967-4",
+          "mpn": "456967-4",
+          "category": "319856",
+          "score": 43
+        },
+        {
+          "id": "7fe72600-3a06-4f17-bab6-dfd9c51f8eb8",
+          "name": "MAKITA DLX2180TJ DTD153 DHP484 MAKPAC 2x5.0Ah",
+          "model": "DLX2180TJ",
+          "mpn": "DLX2180TJ",
+          "category": "300893",
+          "score": 43
+        }
+      ]
+    },
+    {
+      "brand": "Dreame",
+      "type": "robot",
+      "query": "L50 Ultra",
+      "baselineTop1": {
+        "id": "a0bc6a98-6594-44ee-83c4-2184514cee09",
+        "name": "14 szt. szczotki boczne do Dreame X50 Ultra/L50 Ultra/L40s Pro V50",
+        "model": "XiChenQi005849-QL",
+        "mpn": "XiChenQi005849-QL",
+        "category": "258227",
+        "score": 43
+      },
+      "baselineTesterChoice": true,
+      "returnedCandidates": [
+        {
+          "id": "a0bc6a98-6594-44ee-83c4-2184514cee09",
+          "name": "14 szt. szczotki boczne do Dreame X50 Ultra/L50 Ultra/L40s Pro V50",
+          "model": "XiChenQi005849-QL",
+          "mpn": "XiChenQi005849-QL",
+          "category": "258227",
+          "score": 43
+        },
+        {
+          "id": "b0798e65-95c0-4315-823d-187578515b98",
+          "name": "20 szt. akcesoria do Dreame X50 Ultra/L50 Ultra/L40s Ultra/L40s Pro",
+          "model": "XiChenQi02361-QL",
+          "mpn": "XiChenQi02361-QL",
+          "category": "258227",
+          "score": 43
+        },
+        {
+          "id": "5c550ab5-28d1-4be4-a02b-836799d24991",
+          "name": "26 szt. akcesoria do X50 Ultra X50 Master L50 Pro Ultra L50 Ultra",
+          "model": "XiChenQi02582-QL",
+          "mpn": "XiChenQi02582-QL",
+          "category": "258227",
+          "score": 43
+        },
+        {
+          "id": "953aa9c7-7fb4-4518-aeab-93f3d1c5280a",
+          "name": "26 szt. szczotki boczne do Dreame X50 Ultra/L50 Ultra/L40s Pro V50",
+          "model": "XiChenQi05041-QL",
+          "mpn": "XiChenQi05041-QL",
+          "category": "258227",
+          "score": 43
+        },
+        {
+          "id": "ebf5df14-878e-4e59-9e1b-1ad0f55718a1",
+          "name": "2x Filtr do Dreame X50 Ultra, X50 Master, L40s Pro Ultra, L50 Ultra",
+          "model": "Filtr do Dreame X50 Ultra Master, L50 Ultra",
+          "mpn": "Filtr do Dreame X50 Ultra Master, L50 Ultra",
+          "category": "67468",
+          "score": 43
+        }
+      ]
+    },
+    {
+      "brand": "Roborock",
+      "type": "robot",
+      "query": "S8 MaxV Ultra",
+      "baselineTop1": {
+        "id": "bf45de34-f3c3-46a1-9b35-3976a09b8961",
+        "name": "Oryginalny Mop Szmatka główna do Roborock S8 MaxV Ultra 2 szt.",
+        "model": "S8 MaxV Ultra",
+        "mpn": "S8 MaxV Ultra",
+        "category": "257013",
+        "score": 50
+      },
+      "baselineTesterChoice": true,
+      "returnedCandidates": [
+        {
+          "id": "bf45de34-f3c3-46a1-9b35-3976a09b8961",
+          "name": "Oryginalny Mop Szmatka główna do Roborock S8 MaxV Ultra 2 szt.",
+          "model": "S8 MaxV Ultra",
+          "mpn": "S8 MaxV Ultra",
+          "category": "257013",
+          "score": 50
+        },
+        {
+          "id": "4425ffdb-1d5e-459a-b12e-f4af23910dc1",
+          "name": "Zestaw akcesoriów Roborock S8 MaxV Ultra, 2x szczotka, 2x filtr",
+          "model": "S8 maxV Ultra",
+          "mpn": "Roborock S8 maxV Ultra",
+          "category": "257013",
+          "score": 50
+        },
+        {
+          "id": "d998c0c0-76fd-4390-b547-6b6dbaa8e88f",
+          "name": "12x worki do Roborock S7 Max Ultra S8 MaxV Ultra / Q5 Pro Q7 Q8 Max Q Revo",
+          "model": "S7 MAX ULTRA S8 MAXV ULTRA Q5 PRO Q7 Q8 MAX Q REVO",
+          "mpn": "MM-3743",
+          "category": "67469",
+          "score": 43
+        },
+        {
+          "id": "ff89a4e6-d873-4a7e-82b7-2184f35b776b",
+          "name": "12x WORKI DO ROBOROCK S7 MAX ULTRA S8 MAXV ULTRA / Q5 PRO Q7 Q8 MAX Q REVO",
+          "model": "S7 MAX ULTRA S8 MAXV ULTRA Q5 PRO Q7 Q8 MAX Q REVO",
+          "mpn": "WORKI ROBOROCK S7 MAX ULTRA S8 MAXV ULTRA",
+          "category": "67469",
+          "score": 43
+        },
+        {
+          "id": "afa31861-b54b-40fe-9389-e32843846129",
+          "name": "12x WORKI DO ROBOROCK S7 MAX ULTRA S8 MAXV ULTRA / Q5 PRO Q7 Q8 MAX Q REVO",
+          "model": "ROBOROCK Q5 PRO Q7 Q8 MAX Q REVO S7 MAX ULTRA",
+          "mpn": "WORKI ROBOROCK S7 MAX ULTRA S8 MAXV ULTRA 12X",
+          "category": "67469",
+          "score": 43
+        }
+      ]
+    },
+    {
+      "brand": "Xiaomi",
+      "type": "phone",
+      "query": "Xiaomi 14T",
+      "baselineTop1": {
+        "id": "22413357-19b7-4aeb-9b33-6965abcb46f8",
+        "name": "3x ODPORNE SZKŁO HARTOWANE 2,5D XIAOMI 14T",
+        "model": "14T",
+        "mpn": "XIAOMI 14T",
+        "category": "10532",
+        "score": 50
+      },
+      "baselineTesterChoice": false,
+      "returnedCandidates": [
+        {
+          "id": "22413357-19b7-4aeb-9b33-6965abcb46f8",
+          "name": "3x ODPORNE SZKŁO HARTOWANE 2,5D XIAOMI 14T",
+          "model": "14T",
+          "mpn": "XIAOMI 14T",
+          "category": "10532",
+          "score": 50
+        },
+        {
+          "id": "3688206e-11ea-479f-a601-b42f132df67d",
+          "name": "3x SZKŁO HARTOWANE 9D XIAOMI 14T",
+          "model": "14T",
+          "mpn": "XIAOMI 14T",
+          "category": "10532",
+          "score": 50
+        },
+        {
+          "id": "ead95e5d-a4cb-4d95-a016-ba49c8c5fcde",
+          "name": "Etui z klapką Special do Xiaomi 14T czarny",
+          "model": "14T",
+          "mpn": "Xiaomi 14T",
+          "category": "353",
+          "score": 50
+        },
+        {
+          "id": "697f2b67-4e90-4a15-81bd-ad96431e18ce",
+          "name": "Etui z klapką tele do Xiaomi 14T czarny",
+          "model": "14T",
+          "mpn": "Xiaomi 14T",
+          "category": "353",
+          "score": 50
+        },
+        {
+          "id": "9d5a52cd-55b4-4f64-a89a-68ce1403ca1a",
+          "name": "Etui z klapką Teleextra do Xiaomi 14T czarny",
+          "model": "14T",
+          "mpn": "Xiaomi 14T",
+          "category": "353",
+          "score": 50
+        }
+      ]
+    },
+    {
+      "brand": "Philips",
+      "type": "coffee",
+      "query": "Philips EP2220/10",
+      "baselineTop1": {
+        "id": "051bc973-0858-4024-bea8-4f27c37c9d85",
+        "name": "Czarny Spód Obudowy V2 OMP/B ASSY ekspresu do kawy Philips EP2220/10",
+        "model": "421945015211",
+        "mpn": "421945015211",
+        "category": "67422",
+        "score": 43
+      },
+      "baselineTesterChoice": true,
+      "returnedCandidates": [
+        {
+          "id": "051bc973-0858-4024-bea8-4f27c37c9d85",
+          "name": "Czarny Spód Obudowy V2 OMP/B ASSY ekspresu do kawy Philips EP2220/10",
+          "model": "421945015211",
+          "mpn": "421945015211",
+          "category": "67422",
+          "score": 43
+        },
+        {
+          "id": "d2e6f819-7004-44db-971e-36381e216299",
+          "name": "Filtr Do Ekspresu Philips EP2220/10 Ciśnieniowy, Wydajny, Wody, Ochrona",
+          "model": "5908030426386",
+          "mpn": "5908030426386",
+          "category": "319589",
+          "score": 43
+        },
+        {
+          "id": "dd02baa5-f5d2-442d-b4fb-1c02afe665eb",
+          "name": "Mocowanie złącza dyszy pary do ekspresu Philips EP2220/10",
+          "model": "EP2220/10",
+          "mpn": "EP2220/10",
+          "category": "319643",
+          "score": 43
+        },
+        {
+          "id": "e01d7f3b-38dd-47a1-b7fb-4c93e2f0ed17",
+          "name": "Philips EP2220/10 Blok zaparzający do ekspresu do kawy",
+          "model": "4367347356743",
+          "mpn": "4367347356743",
+          "category": "67422",
+          "score": 43
+        },
+        {
+          "id": "0cd305b0-272a-4911-acda-1a871a9f1952",
+          "name": "Philips EP2220/10 Czujnik poziomu wody do ekspresu do kawy",
+          "model": "4367347356755",
+          "mpn": "4367347356755",
+          "category": "67422",
+          "score": 43
+        }
+      ]
+    }
+  ]
+}

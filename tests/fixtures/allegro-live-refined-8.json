@@ -1,0 +1,302 @@
+{
+  "sourceRun": "https://github.com/sesqu/product-intake/actions/runs/39133057772",
+  "details": "Real current-v43 production catalog TOP5 from context-enriched search phrases; old backend retrieval only, not a validation of v44 end-to-end.",
+  "captured": "2026-10-18",
+  "items": [
+    {
+      "query": "Samsung Galaxy S24 smartfon",
+      "model": "SM-S921B",
+      "oldTop1": "Atrapa eksponat wystawa prezenter smartfon Samsung Galaxy S24",
+      "candidates": [
+        {
+          "id": "43875b16-064a-4f0d-bfda-d9314968477f",
+          "name": "Atrapa eksponat wystawa prezenter smartfon Samsung Galaxy S24",
+          "model": "Galaxy S24",
+          "mpn": "",
+          "brand": "Samsung",
+          "manufacturer": "Samsung",
+          "category": "8539"
+        },
+        {
+          "id": "69ff7fdb-36df-4de9-902b-3161232d6134",
+          "name": "Atrapa eksponat wystawa prezenter smartfon Samsung Galaxy S24+",
+          "model": "Galaxy S24+",
+          "mpn": "",
+          "brand": "Samsung",
+          "manufacturer": "Samsung",
+          "category": "8539"
+        },
+        {
+          "id": "6b05aaff-a647-401d-9dac-eedb7272800d",
+          "name": "Etui magnetyczne z klapką na Telefon Smartfon Samsung Galaxy S24 Ultra 5G",
+          "model": "Galaxy S24 Ultra",
+          "mpn": "",
+          "brand": "bez marki",
+          "manufacturer": "bez marki",
+          "category": "353"
+        },
+        {
+          "id": "0a50d91e-86d9-4aa2-9425-b8de5ea35886",
+          "name": "NOWA Atrapa eksponat wystawa prezenter smartfon Samsung Galaxy S24 FE",
+          "model": "Galaxy S24 FE",
+          "mpn": "",
+          "brand": "Samsung",
+          "manufacturer": "Samsung",
+          "category": "8539"
+        },
+        {
+          "id": "3dea04db-3132-444c-aa49-07eb87f06fb4",
+          "name": "Smartfon Samsung Galaxy S24 12 GB / 512 GB 5G żółty",
+          "model": "Galaxy S24",
+          "mpn": "SM-S926BZOGEUB",
+          "brand": "Samsung",
+          "manufacturer": "Samsung",
+          "category": "165"
+        }
+      ],
+      "expectMainDevice": true,
+      "expectManualReview": false,
+      "observedV44Top1": "Smartfon Samsung Galaxy S24 12 GB / 512 GB 5G żółty"
+    },
+    {
+      "query": "Makita DHP484 wiertarko-wkrętarka",
+      "model": "DHP484",
+      "oldTop1": "Wiertarko-wkrętarka udarowa Makita DHP484 18V 54Nm BODY",
+      "candidates": [
+        {
+          "id": "66f5b906-14be-497e-9015-be8282ec06ef",
+          "name": "Wiertarko-wkrętarka udarowa Makita DHP484 18V 54Nm BODY",
+          "model": "DHP484RTJ",
+          "mpn": "DHP484RTJ",
+          "brand": "Makita",
+          "manufacturer": "Makita",
+          "category": "147662"
+        },
+        {
+          "id": "b59feab5-2db9-44e6-9e27-09058a7e9520",
+          "name": "MAKITA DHP484ZJ WIERTARKO-WKRĘTARKA 18V WALIZKA",
+          "model": "",
+          "mpn": "",
+          "brand": "bez marki",
+          "manufacturer": "bez marki",
+          "category": "252043"
+        },
+        {
+          "id": "9aea1ddf-a071-4355-b8fa-3fc5ee41aba1",
+          "name": "Makita wiertarko-wkrętarka udarowa 54Nm DHP484ZJ",
+          "model": "DHP484ZJ",
+          "mpn": "DHP484ZJ",
+          "brand": "Makita",
+          "manufacturer": "Makita",
+          "category": "252043"
+        },
+        {
+          "id": "f99ad674-f061-40a6-946a-26408291548f",
+          "name": "Wiertarko-wkrętarka Makita DHP484RTJ 18 V 2 x akumulator 5 Ah",
+          "model": "088381826228",
+          "mpn": "088381826228",
+          "brand": "Makita",
+          "manufacturer": "Makita",
+          "category": "147662"
+        },
+        {
+          "id": "327b5eb3-0817-44d2-8900-b91e299329ba",
+          "name": "Wiertarko-wkrętarka Makita DHP484Z 18V",
+          "model": "DHP484Z",
+          "mpn": "DHP484Z",
+          "brand": "Makita",
+          "manufacturer": "Makita",
+          "category": "147662"
+        }
+      ],
+      "expectMainDevice": true,
+      "expectManualReview": false,
+      "observedV44Top1": "Makita wiertarko-wkrętarka udarowa 54Nm DHP484ZJ"
+    },
+    {
+      "query": "Roborock S8 MaxV Ultra robot odkurzający",
+      "model": "S8 MaxV Ultra",
+      "oldTop1": "Roborock S8 MaxV Ultra robot odkurzający",
+      "candidates": [
+        {
+          "id": "08c91e5b-8db1-4bd1-a695-2beffcee48f2",
+          "name": "Roborock S8 MaxV Ultra robot odkurzający",
+          "model": "s8",
+          "mpn": "B0CRV7F37B",
+          "brand": "bez marki",
+          "manufacturer": "bez marki",
+          "category": "256019"
+        }
+      ],
+      "expectMainDevice": true,
+      "expectManualReview": false,
+      "observedV44Top1": "Roborock S8 MaxV Ultra robot odkurzający"
+    },
+    {
+      "query": "Sony WH-1000XM5 nauszne",
+      "model": "WH-1000XM5",
+      "oldTop1": "Słuchawki bezprzewodowe nauszne Sony WH-1000XM5 srebrne",
+      "candidates": [
+        {
+          "id": "d64066cb-c119-44e7-bfc7-82159f3a0edb",
+          "name": "Słuchawki bezprzewodowe nauszne Sony WH-1000XM5 srebrne",
+          "model": "WH-1000XM5",
+          "mpn": "WH1000XM5S",
+          "brand": "Sony",
+          "manufacturer": "Sony",
+          "category": "85166"
+        },
+        {
+          "id": "36fe4964-5fcc-4216-8923-8c65f772ece8",
+          "name": "Słuchawki bezprzewodowe nauszne Sony WH-1000XM5 Wireless ANC niebieski",
+          "model": "WH-1000XM5",
+          "mpn": "4548736134294",
+          "brand": "Sony",
+          "manufacturer": "Sony",
+          "category": "85166"
+        }
+      ],
+      "expectMainDevice": true,
+      "expectManualReview": false,
+      "observedV44Top1": "Słuchawki bezprzewodowe nauszne Sony WH-1000XM5 srebrne"
+    },
+    {
+      "query": "telefon SM-S921B",
+      "model": "SM-S921B",
+      "oldTop1": "TAŚMA GŁÓWNA DO TELEFONU SAMSUNG GALAXY S24 5G DEMONTAŻ SM-S921B",
+      "candidates": [
+        {
+          "id": "5e5ce507-ba5f-40cb-8d60-0cd3112d9aea",
+          "name": "TAŚMA GŁÓWNA DO TELEFONU SAMSUNG GALAXY S24 5G DEMONTAŻ SM-S921B",
+          "model": "ORYGINALNA TAŚMA GŁÓWNA SM-S921B",
+          "mpn": "",
+          "brand": "Samsung",
+          "manufacturer": "Samsung",
+          "category": "19303"
+        }
+      ],
+      "expectMainDevice": false,
+      "expectManualReview": true,
+      "observedV44Top1": "TAŚMA GŁÓWNA DO TELEFONU SAMSUNG GALAXY S24 5G DEMONTAŻ SM-S921B"
+    },
+    {
+      "query": "Dreame L50 Ultra robot odkurzający",
+      "model": "L50 Ultra",
+      "oldTop1": null,
+      "candidates": [],
+      "expectMainDevice": false,
+      "expectManualReview": false,
+      "observedV44Top1": null
+    },
+    {
+      "query": "Samsung Galaxy A55 smartfon",
+      "model": "SM-A556B",
+      "oldTop1": "FOLIA HYDROŻELOWA Samsung Galaxy S25 S24 S23 A16 A25 A35 A52 A55 M15 Ultra",
+      "candidates": [
+        {
+          "id": "6fd70a0f-3b34-45fc-8fbd-c5fef7347308",
+          "name": "FOLIA HYDROŻELOWA Samsung Galaxy S25 S24 S23 A16 A25 A35 A52 A55 M15 Ultra",
+          "model": "Galaxy A01",
+          "mpn": "CRBT folie hydrożelowe smartfon telefon",
+          "brand": "Samsung",
+          "manufacturer": "Clean",
+          "category": "10532"
+        },
+        {
+          "id": "0b721d42-a295-4075-911e-ac52cd103df2",
+          "name": "FOLIA OCHRONNA DO SAMSUNG GALAXY A55 MOCNA",
+          "model": "Galaxy A55",
+          "mpn": "Folia ochronna na ekran smartfon ochrona",
+          "brand": "Samsung",
+          "manufacturer": "nieznany producent",
+          "category": "10532"
+        },
+        {
+          "id": "283b905b-340f-4780-a247-f9429a44dc58",
+          "name": "Smartfon Samsung Galaxy A55 5G 8/256GB 5G SuperAMOLED 120Hz 25W Fioletowy",
+          "model": "Galaxy A55",
+          "mpn": "SM-A556BLVCEUE",
+          "brand": "Samsung",
+          "manufacturer": "Samsung",
+          "category": "165"
+        },
+        {
+          "id": "6e6131b6-3cee-4266-aeea-e7782328deb8",
+          "name": "Smartfon Samsung Galaxy A55 8 GB / 128 GB 5G czarny",
+          "model": "Galaxy A55",
+          "mpn": "SM-A556BZKAEEE",
+          "brand": "Samsung",
+          "manufacturer": "Samsung",
+          "category": "165"
+        },
+        {
+          "id": "9c3750a4-c044-4d6d-9401-93994fea071b",
+          "name": "Smartfon Samsung Galaxy A55 8 GB / 128 GB 5G fioletowy",
+          "model": "Galaxy A55",
+          "mpn": "SM-A556BLVAEUE",
+          "brand": "Samsung",
+          "manufacturer": "Samsung",
+          "category": "165"
+        }
+      ],
+      "expectMainDevice": true,
+      "expectManualReview": false,
+      "observedV44Top1": "Smartfon Samsung Galaxy A55 5G 8/256GB 5G SuperAMOLED 120Hz 25W Fioletowy"
+    },
+    {
+      "query": "Xiaomi 14T smartfon",
+      "model": "14T",
+      "oldTop1": "Atrapa eksponat wystawa prezenter smartfon XIAOMI 14T",
+      "candidates": [
+        {
+          "id": "d215adb2-d3bb-41a6-90bf-26ffb0a2b24b",
+          "name": "Atrapa eksponat wystawa prezenter smartfon XIAOMI 14T",
+          "model": "14T",
+          "mpn": "",
+          "brand": "Xiaomi",
+          "manufacturer": "Xiaomi",
+          "category": "8539"
+        },
+        {
+          "id": "b6738350-f0bf-435d-ade3-c6c65d6091f2",
+          "name": "Atrapa eksponat wystawa prezenter smartfon XIAOMI 14T Pro",
+          "model": "14T Pro",
+          "mpn": "",
+          "brand": "Xiaomi",
+          "manufacturer": "Xiaomi",
+          "category": "8539"
+        },
+        {
+          "id": "db93418e-fd6b-4bad-b83d-5fae545e1dba",
+          "name": "FOLIA OCHRONNA DO XIAOMI 14T MOCNA",
+          "model": "Folia ochronna na ekran smartfon ochrona",
+          "mpn": "Folia ochronna na ekran smartfon ochrona",
+          "brand": "Xiaomi",
+          "manufacturer": "nieznany producent",
+          "category": "10532"
+        },
+        {
+          "id": "0d50b13d-0722-425f-a890-9f613f3565e4",
+          "name": "FOLIA OCHRONNA DO XIAOMI 14T PRO MOCNA",
+          "model": "Folia ochronna na ekran smartfon ochrona",
+          "mpn": "Folia ochronna na ekran smartfon ochrona",
+          "brand": "Xiaomi",
+          "manufacturer": "nieznany producent",
+          "category": "10532"
+        },
+        {
+          "id": "21d07d03-07e3-4275-9a1d-ab4029f16df9",
+          "name": "NOWA Atrapa eksponat wystawa prezenter telefon smartfon XIAOMI 14T",
+          "model": "XIAOMI 14T",
+          "mpn": "",
+          "brand": "Xiaomi",
+          "manufacturer": "Xiaomi",
+          "category": "8539"
+        }
+      ],
+      "expectMainDevice": false,
+      "expectManualReview": true,
+      "observedV44Top1": "Atrapa eksponat wystawa prezenter smartfon XIAOMI 14T"
+    }
+  ]
+}

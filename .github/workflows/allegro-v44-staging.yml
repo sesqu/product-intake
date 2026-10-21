@@ -1,0 +1,54 @@
+name: Deploy isolated Allegro v44 search staging
+
+on:
+  push:
+    branches:
+      - feature/allegro-search-quality-v44
+    paths:
+      - 'worker/src/**'
+      - 'worker/scripts/prepare-allegro-stage.mjs'
+      - '.github/workflows/allegro-v44-staging.yml'
+      - 'tests/allegro-v44-stage-live.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staging:
+    if: vars.V44_STAGE_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: allegro-v44-staging
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.V44_STAGE_CF_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.V44_STAGE_CF_ACCOUNT_ID }}
+      V44_STAGE_URL: https://product-intake-v44-search-staging.sesquu.workers.dev/
+      V44_STAGE_KV_ID: ${{ secrets.V44_STAGE_KV_ID }}
+      V44_STAGE_ALLEGRO_CLIENT_ID: ${{ secrets.V44_STAGE_ALLEGRO_CLIENT_ID }}
+      V44_STAGE_ALLEGRO_CLIENT_SECRET: ${{ secrets.V44_STAGE_ALLEGRO_CLIENT_SECRET }}
+      V44_STAGE_KEY: ${{ secrets.V44_STAGE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail closed if isolated stage isn't configured
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          node scripts/prepare-allegro-stage.mjs
+      - name: Install Wrangler
+        run: npm install --no-audit --no-fund
+      - name: Deploy separate test Worker
+        run: npx wrangler deploy --config wrangler.allegro-stage.runtime.json
+      - name: Configure only test Worker secrets
+        run: |
+          printf '%s' "$V44_STAGE_ALLEGRO_CLIENT_SECRET" | npx wrangler secret put ALLEGRO_CLIENT_SECRET --config wrangler.allegro-stage.runtime.json
+          printf '%s' "$V44_STAGE_KEY" | npx wrangler secret put V44_STAGE_KEY --config wrangler.allegro-stage.runtime.json
+      - name: Run end-to-end v44 search smoke tests on REAL staging
+        working-directory: .
+        run: node tests/allegro-v44-stage-live.mjs

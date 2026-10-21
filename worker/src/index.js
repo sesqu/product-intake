@@ -3,7 +3,7 @@ import {
   mapAllegroResearchProduct,
   buildResearchResult
 } from './product-research.js';
-import { searchAllegroForResearch } from './research-allegro.js';
+import { searchAllegroForResearch, scoringInputForQuery } from './research-allegro.js';
 
 const AAPI = "https://api.allegro.pl";
 const AOAUTH = "https://allegro.pl/auth/oauth";
@@ -493,6 +493,23 @@ async function handle(request, env) {
 
   const url = new URL(request.url);
 
+  // Staging MUST remain inaccessible without its own test key. The OAuth
+  // callback is exempt because Allegro redirects the browser to it, but its
+  // one-time state/PKCE verifier is checked by the callback itself.
+  if (env.STAGING_ONLY === '1' &&
+      url.pathname.startsWith('/api/') &&
+      url.pathname !== '/api/allegro/callback') {
+    const provided=clean(request.headers.get('x-v44-stage-key'));
+    const expected=clean(env.V44_STAGE_KEY);
+    if(expected.length<32) {
+      return out({error:'Izolowane środowisko v44 nie ma skonfigurowanego klucza.'},503,origin);
+    }
+    const [a,b]=await Promise.all([sha256Hex(provided),sha256Hex(expected)]);
+    if(!provided || a!==b) {
+      return out({error:'Brak autoryzacji testowego Workera.'},401,origin);
+    }
+  }
+
   if (url.pathname === "/health") {
     return out({
       status: "ok",
@@ -679,19 +696,54 @@ async function handle(request, env) {
         .map(mapAllegroResearchProduct)
         .filter(Boolean);
 
-      const result = buildResearchResult(products,input,candidateId);
+      const scoringInput=scoringInputForQuery(input);
+      const result = buildResearchResult(products,scoringInput,candidateId);
+      if(candidateId && (!result.selected || result.selected.id !== candidateId)){
+        return out({
+          error:'Wybrany kandydat nie jest już dostępny w wynikach Allegro. Wyszukaj ponownie, aby uniknąć błędnej identyfikacji.',
+          reason:'candidate-not-found'
+        },409,origin);
+      }
+
+      // Reuse collected candidate evidence. Comparison performs zero extra
+      // Allegro calls; the same catalog ID may occur in both search modes.
+      const sources=search.foundModesById || {};
+      const rankSubset=mode=>{
+        const subset=products.filter(item=>(sources[item.id]||[]).includes(mode));
+        if(!subset.length) return {count:0,best:null,confidence:null};
+        const ranked=buildResearchResult(subset,scoringInput);
+        return {
+          count:subset.length,
+          best:ranked.selected ? {
+            id:ranked.selected.id,
+            name:ranked.selected.name,
+            score:ranked.selected.score ?? ranked.confidence
+          }:null,
+          confidence:ranked.confidence,
+          requiresTesterChoice:ranked.requiresTesterChoice
+        };
+      };
 
       return out({
         query:{...input,candidateId},
         source:"allegro",
         provider:"allegro-catalog",
         queriesUsed:search.queriesUsed || [],
+        searchAttempts:search.searchAttempts || [],
+        identifiedModel:scoringInput.model || input.mpn || null,
+        comparison:{
+          phrase:rankSubset('PHRASE'),
+          mpn:rankSubset('MPN'),
+          method:'same-request-plan-deduplicated-overlap'
+        },
+        bestFoundBy:(result.selected?.id && search.firstSeenById?.[result.selected.id]) || null,
         best:result.selected,
-        candidates:(result.ranked || []).slice(0,5),
+        candidates:(result.ranked || []).slice(0,12),
         confidence:result.confidence,
         confidenceMethod:result.confidenceMethod,
         requiresTesterChoice:result.requiresTesterChoice,
         selectedBy:result.selectedBy,
+        ambiguity:result.ambiguity || null,
         warnings:result.warnings || [],
         description:result.description || null,
         searchMode:input.query ? "query" : (input.mpn ? "mpn" : "model")

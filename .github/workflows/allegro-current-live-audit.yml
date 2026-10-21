@@ -1,0 +1,35 @@
+name: Audit current Allegro production search (read-only)
+
+on:
+  push:
+    branches:
+      - feature/allegro-search-quality-v44
+    paths:
+      - 'tests/allegro-current-production-audit.mjs'
+      - 'tests/allegro-phrase-ab-live.mjs'
+      - 'tests/allegro-family-live.mjs'
+      - 'tests/allegro-live-enriched-rerank.mjs'
+      - '.github/workflows/allegro-current-live-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.ref == 'refs/heads/feature/allegro-search-quality-v44'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read-only production API sample — 10 models
+        run: node tests/allegro-current-production-audit.mjs
+      - name: Read-only test of product-type refined phrases
+        run: node tests/allegro-phrase-ab-live.mjs
+      - name: Read-only test of Galaxy-family and catalog device-type queries
+        run: node tests/allegro-family-live.mjs
+      - name: Test v44 local ranking on real enriched catalog results
+        run: node tests/allegro-live-enriched-rerank.mjs
