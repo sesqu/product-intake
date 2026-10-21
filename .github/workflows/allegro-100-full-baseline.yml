@@ -1,0 +1,38 @@
+name: Allegro v43 baseline — all 100 models (read-only)
+
+on:
+  push:
+    branches:
+      - feature/allegro-search-quality-v44
+    paths:
+      - '.github/workflows/allegro-100-full-baseline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify balanced dataset before querying Allegro
+        run: BENCHMARK_TARGET=validate BENCHMARK_BATCH=all ALLOW_100_LIVE=true node tests/allegro-benchmark-100.mjs
+      - name: Read-only evaluation of all 100 production v43 queries
+        env:
+          BENCHMARK_TARGET: production
+          BENCHMARK_BATCH: all
+          ALLOW_100_LIVE: 'true'
+        run: node tests/allegro-benchmark-100.mjs
+      - name: Save observations for manual brand/model/variant scoring
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allegro-v43-100-model-results-${{ github.run_id }}
+          path: benchmark-results/production-batch-all.json
+          if-no-files-found: ignore
+          retention-days: 30
