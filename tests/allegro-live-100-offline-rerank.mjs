@@ -20,6 +20,15 @@ for(const row of record.results){
     brand:row.expectedBrand
   });
   const first=result.selected||null;
+  // Two failures discovered only after scaling up to 100 REAL catalog
+  // samples. A stand must never replace a matching Dell monitor, and
+  // a switch must never replace a Bosch drill already in the pool.
+  if(row.query==='Dell P2422H')
+    assert(/monitor/i.test(first?.name||''),
+      'A Dell monitor stand was incorrectly promoted ahead of a full P2422H monitor');
+  if(row.query==='GBH 2-26')
+    assert(/młotowiertarka/i.test(first?.name||''),
+      'A replacement drill switch was incorrectly promoted ahead of a Bosch power tool');
   selected+=Number(Boolean(first));
   review+=Number(Boolean(result.requiresTesterChoice));
   if(first?.name!==row.top1?.name){
