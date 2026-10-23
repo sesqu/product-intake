@@ -1,0 +1,41 @@
+name: Secure multi-user workspace tests
+
+on:
+  push:
+    branches:
+      - feature/team-workspace-security-v1
+    paths:
+      - 'worker/src/team-api.js'
+      - 'worker/src/team-auth.js'
+      - 'worker/src/index.js'
+      - 'worker/migrations/**'
+      - 'tests/team-workspace.test.mjs'
+      - '.github/workflows/team-workspace-test.yml'
+  pull_request:
+    paths:
+      - 'worker/src/team-api.js'
+      - 'worker/src/team-auth.js'
+      - 'worker/src/index.js'
+      - 'worker/migrations/**'
+      - 'tests/team-workspace.test.mjs'
+      - '.github/workflows/team-workspace-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  team-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Signed authentication, role and concurrency tests on real SQLite
+        run: node --experimental-sqlite tests/team-workspace.test.mjs
+      - name: Check team and Worker JavaScript syntax
+        run: |
+          node --check worker/src/team-api.js
+          node --check worker/src/team-auth.js
+          node --check worker/src/index.js

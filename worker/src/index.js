@@ -4,6 +4,7 @@ import {
   buildResearchResult
 } from './product-research.js';
 import { searchAllegroForResearch, scoringInputForQuery } from './research-allegro.js';
+import { handleTeamApi } from './team-api.js';
 
 const AAPI = "https://api.allegro.pl";
 const AOAUTH = "https://allegro.pl/auth/oauth";
@@ -492,6 +493,16 @@ async function handle(request, env) {
   if (request.method === "OPTIONS") return out({ ok: true }, 204, origin);
 
   const url = new URL(request.url);
+
+  // Team mode is a separate isolated app: the old shared workspace-key
+  // endpoints MUST NOT remain a bypass of user identity, roles or D1 locks.
+  if(env.TEAM_MODE==='1'){
+    if(url.pathname.startsWith('/api/team/'))return handleTeamApi(request,env);
+    if(url.pathname.startsWith('/api/'))
+      return out({error:'Legacy API disabled in team mode'},403,origin);
+  }
+  if(url.pathname.startsWith('/api/team/'))
+    return out({error:'Team mode unavailable on this deployment'},404,origin);
 
   // Staging MUST remain inaccessible without its own test key. The OAuth
   // callback is exempt because Allegro redirects the browser to it, but its
